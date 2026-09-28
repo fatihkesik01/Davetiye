@@ -1,0 +1,34 @@
+[agents]
+enabled = true
+
+[agents.architect]
+description = "Plans architecture, technical boundaries, contracts, and implementation strategy before substantial development."
+config_file = "agents/architect.toml"
+
+[agents.backend]
+description = "Implements and reviews ASP.NET Core backend, APIs, authentication, authorization, business rules, and integrations."
+config_file = "agents/backend.toml"
+
+[agents.frontend]
+description = "Implements the React frontend, responsive screens, creator panel, invitation renderer, and frontend integrations."
+config_file = "agents/frontend.toml"
+
+[agents.database]
+description = "Owns PostgreSQL schema design, migrations, constraints, indexes, data integrity, and query performance."
+config_file = "agents/database.toml"
+
+[agents.ui_ux]
+description = "Reviews and guides UI/UX, responsive behavior, accessibility, visual consistency, and invitation creation usability."
+config_file = "agents/ui-ux.toml"
+
+[agents.tester]
+description = "Tests implemented features, critical user flows, regressions, API behavior, and edge cases."
+config_file = "agents/tester.toml"
+
+[agents.security]
+description = "Reviews authentication, authorization, uploads, public endpoints, secrets, abuse prevention, and common web vulnerabilities."
+config_file = "agents/security.toml"
+
+[agents.reviewer]
+description = "Performs independent code review after implementation and identifies correctness, maintainability, security, and product-scope issues."
+config_file = "agents/reviewer.toml"

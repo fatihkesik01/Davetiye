@@ -1,0 +1,49 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# React / Node
+node_modules/
+dist/
+build/
+.vite/
+coverage/
+
+# Environment / Secrets
+.env
+.env.*
+!.env.example
+appsettings.Development.json
+appsettings.Production.json
+
+# IDE
+.vs/
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Local database / storage
+*.db
+*.sqlite
+uploads/
+
+# Test artifacts
+TestResults/
+playwright-report/
+test-results/
