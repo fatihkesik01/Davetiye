@@ -66,21 +66,21 @@ jobs:
           docker compose -f docker-compose.prod.yml --env-file .env logs
           exit 1
       - name: Scan API image
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: davetiye-api:latest
           format: table
           exit-code: '1'
           severity: HIGH,CRITICAL
       - name: Scan migrator image
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: davetiye-migrator:latest
           format: table
           exit-code: '1'
           severity: HIGH,CRITICAL
       - name: Scan web image
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: davetiye-web:latest
           format: table
@@ -94,7 +94,7 @@ jobs:
     needs: container-smoke
     steps:
       - uses: actions/checkout@v4
-      - uses: aquasecurity/trivy-action@0.33.1
+      - uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: fs
           scan-ref: .
