@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>Davetiye.Api</RootNamespace>
+    <AssemblyName>Davetiye.Api</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Davetiye.Application/Davetiye.Application.csproj" />
+    <ProjectReference Include="../Davetiye.Infrastructure/Davetiye.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

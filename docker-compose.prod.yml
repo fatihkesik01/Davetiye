@@ -1,0 +1,121 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: davetiye-postgres-prod
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?set in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?set in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+    volumes:
+      - davetiye_postgres_data:/var/lib/postgresql/data
+    networks:
+      - davetiye-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  migrator:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrator
+    image: davetiye-migrator:latest
+    container_name: davetiye-migrator-prod
+    environment:
+      Database__ConnectionString: Host=postgres;Port=5432;Database=${POSTGRES_DB:?set in .env};Username=${POSTGRES_USER:?set in .env};Password=${POSTGRES_PASSWORD:?set in .env}
+      DataProtection__KeyRingDirectory: /tmp/davetiye-dp-keys
+      PublicWeb__BaseUrl: ${PUBLIC_WEB_BASE_URL:?set in .env}
+      Cors__AllowedOrigins__0: ${PUBLIC_WEB_ORIGIN:?set in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - davetiye-internal
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: davetiye-api:latest
+    container_name: davetiye-api-prod
+    environment:
+      Database__ConnectionString: Host=postgres;Port=5432;Database=${POSTGRES_DB:?set in .env};Username=${POSTGRES_USER:?set in .env};Password=${POSTGRES_PASSWORD:?set in .env}
+      DataProtection__KeyRingDirectory: /var/davetiye/dp-keys
+      PublicWeb__BaseUrl: ${PUBLIC_WEB_BASE_URL:?set in .env}
+      Cors__AllowedOrigins__0: ${PUBLIC_WEB_ORIGIN:?set in .env}
+      TrustedProxies__Networks__0: 172.16.0.0/12
+      GoogleAuth__Enabled: "false"
+    volumes:
+      - davetiye_dataprotection_keys:/var/davetiye/dp-keys
+    read_only: true
+    tmpfs:
+      - /tmp
+    # The entrypoint starts as root only to claim ownership of the named key
+    # volume, then drops to the image's app user before launching .NET.
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "127.0.0.1:5052:8080"
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    networks:
+      - davetiye-internal
+      - davetiye-edge
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/health/live"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    image: davetiye-web:latest
+    container_name: davetiye-web-prod
+    ports:
+      - "127.0.0.1:8082:8080"
+    networks:
+      - davetiye-edge
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+    restart: unless-stopped
+
+volumes:
+  davetiye_postgres_data:
+    name: davetiye_postgres_data
+  davetiye_dataprotection_keys:
+    name: davetiye_dataprotection_keys
+
+networks:
+  davetiye-internal:
+    name: davetiye_internal
+    internal: true
+  davetiye-edge:
+    name: davetiye_edge

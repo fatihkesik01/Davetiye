@@ -22,6 +22,10 @@ Davetiyeyi oluşturan bireysel kullanıcı veya organizasyon hesabıdır.
 Kendi davetiyelerini oluşturur, düzenler, yayınlar, pasife alır, siler
 ve gelen RSVP/anı/hediye bilgilerini yönetir.
 
+MVP'de organizasyon hesabı basit bir hesap türüdür ve tek kullanıcı
+tarafından yönetilir. Organization membership, ekip daveti, çalışan
+rolleri ve workspace sistemi MVP kapsamında değildir.
+
 ### Davetli
 
 Hesap açmaz. Kendisine gönderilen public davetiye linkine girer.
@@ -38,14 +42,22 @@ Gerektiğinde kullanıcı banlayabilir.
 ## 3. Hesap Sistemi
 
 -   Creator hesap açar.
--   E-posta + şifre temel giriş yöntemidir.
--   Google ile giriş desteklenebilir.
+-   E-posta + şifre ve Google ile giriş MVP'de desteklenir.
 -   E-posta doğrulama, şifre sıfırlama ve güvenli oturum yönetimi
     bulunur.
+-   Google web OAuth localhost dışında raw IP callback kabul etmediği
+    için ilk IP deployment email/password ile kullanılabilir; Google
+    login localhost geliştirmesinde test edilir ve production domain +
+    HTTPS yapılandırıldığında etkinleştirilir.
+-   IP üzerinden plain HTTP yalnız private smoke/health kullanımıdır.
+    Gerçek kullanıcı email/password ve session trafiği güvenilir HTTPS
+    olmadan açılmaz.
 -   Telefon/SMS altyapısı ileride kullanılabilecek şekilde düşünülebilir
     ancak MVP bağımlılığı değildir.
 -   Bireysel ve organizasyon hesabı ayrımı bulunur.
 -   Organizasyon hesapları çok sayıda müşteri davetiyesi yönetebilir.
+-   Bir organizasyon hesabını MVP'de yalnızca hesabın sahibi olan tek
+    kullanıcı yönetir.
 
 ## 4. Davetiye Oluşturma
 
@@ -66,7 +78,10 @@ kullanılabilir; esas veri backend'de tutulur.
 
 ## 5. Şablon Sistemi
 
--   İlk etapta yaklaşık **5--10 kaliteli şablon** oluşturulur.
+-   İlk etapta AI/coding agent tarafından yaklaşık **8 kaliteli başlangıç
+    şablonu** oluşturulur.
+-   Bu sekiz şablon final tasarım seti değildir. İleride UI/UX agent ile
+    ayrı ayrı yeniden tasarlanabilir ve geliştirilebilir.
 -   Şablonlar ciddi şekilde farklı tasarımlara sahip olabilir.
 -   Şablonları geliştirici/coding agent kod tarafında geliştirir.
 -   Kullanıcı veya Super Admin'in HTML/CSS yazarak şablon oluşturduğu
@@ -74,13 +89,16 @@ kullanılabilir; esas veri backend'de tutulur.
 -   React tarafında güvenli template renderer/component'ları kullanılır.
 -   DB'de template key, isim, kategori, aktif/pasif, ücretsiz/premium,
     preview, desteklenen modüller, gerekli ve önerilen alanlar gibi
-    metadata tutulabilir.
+    metadata tutulur ve yönetilebilir.
 -   Şablonlar public `/sablonlar` sayfasından üyelik olmadan
     incelenebilir.
 -   Demo verileriyle şablon önizlemesi yapılabilir.
 -   Creator kendi gerçek bilgileriyle preview yapabilir.
 -   Şablonların gelişimi mevcut yayınlanmış davetiyeleri bozmayacak
     şekilde ele alınır.
+-   Template renderer sözleşmesi değiştirilebilir ve genişletilebilir
+    olmalıdır. Yeni tasarımlar veya mevcut tasarımların yeniden
+    geliştirilmesi sistem mimarisinin yeniden yazılmasını gerektirmez.
 
 ## 6. Responsive Tasarım
 
@@ -124,7 +142,7 @@ tercih edilir.
 -   Kısa davet mesajı
 -   Kapak fotoğrafı/video
 -   Tarih ve mekan
--   Harita
+-   Opsiyonel interaktif harita
 -   Google Maps / Apple Maps yönlendirmesi
 -   Geri sayım
 -   Takvime ekleme
@@ -155,22 +173,32 @@ Creator davetiyesine fotoğraf ve video yükleyebilir ve galeri
 oluşturabilir.
 
 Fotoğraf/video dosyaları VPS diskinde veya PostgreSQL içinde tutulmaz.
-Medya için **Cloudflare tarafındaki uygun storage/video altyapısı**
-kullanılacaktır. Kesin servis seçimi teknik tasarım aşamasında güncel
-seçeneklere göre belirlenir.
+Fotoğrafların object storage katmanında **Cloudflare R2**, responsive
+teslimat ve dönüşümlerinde **Cloudflare Images Transformations**;
+videolarda **Cloudflare Stream** kullanılır.
+
+Yüklemelerde mümkün olduğunca direct upload yaklaşımı kullanılır. API,
+yükleme öncesinde sahiplik, modül durumu, paket hakkı, dosya boyutu ve
+güvenlik kontrollerini yaparak kısa ömürlü upload yetkisi üretir.
 
 DB yalnızca medya metadata'sını, sahiplik bilgisini, key/URL bilgisini,
 türünü, boyutunu ve durumunu tutar.
 
-Fotoğraf/video adet ve boyut limitleri paketlere göre değişebilir.
+Fotoğraf/video adet, boyut ve uygun olduğunda video süre limitleri
+paketlere göre değişir ve DB-driven entitlement olarak yönetilir.
 
 ## 10. RSVP
 
-Creator isterse RSVP modülünü açabilir.
+Creator isterse RSVP modülünü açabilir. Modül ilk açıldığında şu
+başlangıç soru seti oluşturulur:
 
-Varsayılan sorular sunulur ancak Creator: - değiştirebilir, -
-silebilir, - yeni soru ekleyebilir, - sıralayabilir, - zorunlu/opsiyonel
-yapabilir.
+-   Adınız
+-   Katılacak mısınız?
+-   Kaç kişi katılacaksınız?
+-   Notunuz / mesajınız (opsiyonel)
+
+Creator varsayılan soruları değiştirebilir, silebilir, yeniden
+sıralayabilir, zorunlu/opsiyonel yapabilir ve yeni soru ekleyebilir.
 
 Desteklenebilecek soru türleri: - Kısa metin - Uzun metin - Tek seçim -
 Çoklu seçim - Evet/Hayır - Sayı
@@ -187,6 +215,10 @@ verdiniz → Yanıtımı Güncelle** akışı sağlanabilir.
 Farklı cihaz, gizli sekme veya cookie temizleme durumlarında mükerrer
 cevap oluşabilmesi bilinen MVP kısıtıdır. Creator mükerrer kayıtları
 yönetebilir.
+
+Toplam katılımcı istatistiği, "Kaç kişi katılacaksınız?" sorusunun
+cevaplarından üretilebilir. Creator bu soruyu değiştirir veya silerse
+istatistiğin nasıl etkileneceği arayüzde açıkça belirtilir.
 
 ## 11. İletişim
 
@@ -206,7 +238,12 @@ bırakabilir.
 
 Görünürlüğü Creator seçer: - **Sadece Creator** - **Public**
 
-Creator her durumda gönderileri yönetebilir veya gizleyebilir.
+Creator memories'i Public olarak ayarladıysa yeni guest gönderileri
+zorunlu approval queue olmadan otomatik görünür olabilir. Creator her
+durumda gönderileri gizleyebilir veya silebilir.
+
+Memory bırakmak için ad, e-posta veya telefon zorunlu değildir. Guest
+isterse görünen bir isim yazabilir veya anonim bırakabilir.
 
 Misafir uploadlarında dosya türü/boyutu kontrolleri, güvenlik
 kontrolleri ve rate limit uygulanır.
@@ -217,13 +254,19 @@ Altyapıda genel bir **Gift Registry** mantığı kullanılır. Görünen başl�
 etkinlik türüne göre değişebilir.
 
 Creator ürün ve istenen miktarı ekler. Davetliler ürünleri rezerve
-edebilir.
+edebilir. Partial quantity reservation desteklenir; örneğin altı adet
+istenen bir üründen iki adet rezerve edilebilir.
+
+Rezervasyon sırasında guest adı zorunludur; iletişim bilgisi
+opsiyoneldir. Creator rezervasyonu yapan kişinin adını görebilir.
 
 Diğer davetliler rezervasyonu yapan kişinin kimliğini görmez; yalnızca
 ürünün seçildiğini veya miktar ilerlemesini görür.
 
 Creator kimin neyi seçtiğini görebilir ve gerektiğinde rezervasyonu
-kaldırabilir.
+kaldırabilir. Rezervasyon otomatik expire olmaz. Guest aynı browser'da
+saklanan anonim management token/cookie ile kendi rezervasyonunu iptal
+edebilir.
 
 ## 14. Duyuru, FAQ ve Ulaşım
 
@@ -259,10 +302,20 @@ Paylaşım Creator Panel üzerinden yapılır:
 
 Temel yaşam döngüsü:
 
-`Draft → Active → Paused → Expired`
+-   Hemen yayınlama: `Draft → Active`
+-   Planlı yayınlama: `Draft → Scheduled → Active`
+-   Geçici durdurma: `Active ↔ Paused`
+-   Hak süresi bitişi: `Active/Paused → Expired`
 
-Creator davetiyesini yayınlayabilir, pasife alabilir ve tekrar
-aktifleştirebilir.
+Creator normal yayınlama akışında **Yayınla** dediğinde davetiye hemen
+Active olur. İsterse yayın tarihini planlama seçeneğini açarak başlangıç
+tarih/saatini belirleyebilir; bu durumda davetiye başlangıç zamanına
+kadar Scheduled durumunda tutulur ve zamanı geldiğinde Active olur.
+
+Creator gerekirse yayın bitiş tarih/saatini de seçebilir. Seçilen bitiş
+zamanı paket hakkının izin verdiği maksimum yayın süresini aşamaz.
+Creator aktif davetiyesini pasife alabilir ve hakkı devam ettiği sürece
+tekrar aktifleştirebilir.
 
 Gerçekten gerekli ve şablonun düzgün çalışması için zorunlu bir alan
 eksikse yayınlamaya izin verilmez.
@@ -271,6 +324,9 @@ Opsiyonel/recommended alanlar eksikse sistem uyarı verir ancak Creator
 **Yine de Yayınla** diyebilir.
 
 Validation şablonun ihtiyaçlarına göre çalışabilir.
+
+Expired davetiye yeni ve uygun bir yayın hakkı/paket alındığında tekrar
+aktif edilebilir. Aynı invitation kaydı, içerik ve public URL korunur.
 
 ## 18. Yayındaki Davetiyeyi Düzenleme
 
@@ -294,21 +350,41 @@ alması gerektiği açıkça belirtilir.
 
 ## 19. Yayın Süresi ve Paketler
 
-Bireysel kullanıcılar için ağırlıklı olarak tek seferlik **yayın hakkı**
-modeli düşünülür.
+Bireysel kullanıcılar için tek seferlik **yayın hakkı**, Organization
+hesapları için abonelik tabanlı paket yaklaşımı kullanılır.
 
-Başlangıç yaklaşımı: - **Free:** 1 davetiye, yaklaşık 1 günlük yayın -
-**Standard:** 1 davetiye, maksimum 30 günlük yayın - **Premium:** Daha
-uzun süre, daha yüksek limitler ve gelişmiş özellikler -
-**Organization:** Abonelik tabanlı, çok sayıda davetiye yönetimine uygun
+Yayın hakkı takvim bazlıdır. Süre, ilk aktivasyon veya planlanmış
+başlangıç zamanı ile işlemeye başlar. Pause işlemi süreyi durdurmaz,
+uzatmaz veya biriktirmez. Örneğin 30 günlük yayın hakkı başladıktan
+sonra davetiye pause edilse bile hak bitiş tarihi değişmez.
 
-Kesin paket değerleri daha sonra DB üzerinden ayarlanabilir.
+Başlangıç DB seed değerleri aşağıdadır. Bunlar kod sabiti değildir;
+Super Admin tarafından değiştirilebilen başlangıç ticari değerleridir.
+Liste fiyatlarının vergi/gösterim biçimi production öncesinde ticari ve
+hukuki olarak doğrulanır.
+
+| Özellik | Free | Standard | Premium | Organization |
+| --- | ---: | ---: | ---: | ---: |
+| Başlangıç fiyatı | 0 TRY | 699 TRY / tek sefer | 1.199 TRY / tek sefer | 2.499 TRY / ay |
+| `maxPublishDays` | 1 | 30 | 90 | 365 |
+| `maxActiveInvitations` | 1 | 1 | 1 | 10 |
+| `maxImages` (davetiye başına) | 5 | 30 | 100 | 250 |
+| `maxVideos` (davetiye başına) | 0 | 1 | 5 | 10 |
+| `maxImageSizeMb` | 5 | 10 | 10 | 10 |
+| `maxVideoSizeMb` | 0 | 250 | 500 | 1.000 |
+| `maxVideoDurationSeconds` | 0 | 180 | 600 | 900 |
+| `maxRSVPResponses` (davetiye başına) | 50 | 300 | 1.000 | 5.000 |
+| `memoriesEnabled` | Hayır | Evet | Evet | Evet |
+| `giftRegistryEnabled` | Hayır | Evet | Evet | Evet |
+| `premiumTemplatesEnabled` | Hayır | Hayır | Evet | Evet |
+
+Bu değerler lansman öncesinde Super Admin üzerinden değiştirilebilir;
+application release veya deploy gerektirmez.
 
 Creator paketinin izin verdiği maksimum süre içinde yayın tarihlerini
-belirleyebilir.
-
-Organizasyon paketleri ileride 10/50/unlimited gibi farklı limitlere
-sahip olabilir.
+belirleyebilir. Organization için ileride 10/50/unlimited gibi farklı
+paketler tanımlanabilir; MVP başlangıç paketi aynı anda en fazla 10 aktif
+davetiyeye izin verir.
 
 ## 20. DB-Driven Paket Sistemi
 
@@ -321,6 +397,7 @@ Paket özellikleri kod içine gömülmez.
 -   `maxVideos`
 -   `maxImageSizeMb`
 -   `maxVideoSizeMb`
+-   `maxVideoDurationSeconds`
 -   `maxActiveInvitations`
 -   `maxRSVPResponses`
 -   `memoriesEnabled`
@@ -328,7 +405,14 @@ Paket özellikleri kod içine gömülmez.
 -   `premiumTemplatesEnabled`
 
 Paket limitleri mümkün olduğunca deploy gerektirmeden DB'den
-değiştirilebilir.
+değiştirilebilir. Plans/PlanFeatures veya eşdeğer typed entitlement
+yapısı kullanılır. Plan ve entitlement değerleri Super Admin UI
+üzerinden; gerektiğinde doğrudan DB operasyonuyla yönetilebilir.
+
+Plan değişiklikleri mevcut kullanıcılara da uygulanabilir. Limit
+düşürülmesi mevcut kullanıcı verisini otomatik olarak silmez. Mevcut
+kullanım yeni limitin üzerindeyse içerik korunur; kullanım yeniden limit
+altına düşene kadar yeni içerik eklenmesine izin verilmez.
 
 ## 21. DB-Driven Sistem Ayarları
 
@@ -362,15 +446,30 @@ kotasından sayılmaz.
 
 Retention süresi sonrasında kalıcı silme süreci uygulanır.
 
-## 23. Süresi Bitmiş veya Pasif Davetiye
+Kalıcı purge, invitation'a bağlı aşağıdaki verileri ve diğer davetiye
+içeriklerini temizler:
 
-Davetiyenin süresi bittiyse veya pasife alındıysa public içerik
-gösterilmez.
+-   RSVP soru ve cevapları
+-   Memories kayıtları
+-   Guest media
+-   Creator invitation media
+-   Gift item ve reservation kayıtları
+-   Invitation istatistikleri
+-   Cloudflare üzerindeki ilişkili medya
+
+Payment/invoice kayıtları ve gerekli audit kayıtları operasyonel veya
+yasal retention gereklerine göre invitation content'ten ayrıştırılarak
+daha uzun süre tutulabilir.
+
+## 23. Planlanmış, Süresi Bitmiş veya Pasif Davetiye
+
+Davetiyenin planlanmış başlangıç zamanı henüz gelmediyse, süresi
+bittiyse veya davetiye pasife alındıysa public içerik gösterilmez.
 
 Genel bir durum sayfası gösterilir:
 
-> Bu davetiye şu anda yayında değil. Yayın süresi sona ermiş veya
-> davetiye geçici olarak pasife alınmış olabilir.
+> Bu davetiye şu anda yayında değil. Yayın henüz başlamamış, yayın
+> süresi sona ermiş veya davetiye geçici olarak pasife alınmış olabilir.
 
 İsim, fotoğraf, tarih gibi özel bilgiler gösterilmez.
 
@@ -381,15 +480,17 @@ Silinmiş veya hiç var olmamış URL normal 404 dönebilir.
 Creator kendi davetiyesi için bilgi/istatistik alanından genel verileri
 görebilir:
 
--   Görüntülenme
--   Yaklaşık tekil ziyaretçi
+-   Toplam sayfa görüntüleme
 -   RSVP cevapları
 -   Toplam katılım sayısı
 -   Anı sayısı
 -   Medya sayısı
 -   Hediye rezervasyonları
 
-Amaç kişileri izlemek değil, davetiyenin genel durumunu göstermektir.
+MVP'de anonymous visitor ID/cookie ile unique visitor tracking yapılmaz.
+Amaç kişileri izlemek değil, davetiyenin genel durumunu aggregate
+istatistiklerle göstermektir. Kişiye özel davetli linkleri ileride
+eklenirse gelişmiş visitor/guest analytics ayrıca tasarlanır.
 
 ## 25. Super Admin
 
@@ -415,6 +516,10 @@ bilgiler tutulabilir.
 
 Önemli Super Admin işlemleri audit log'a yazılır.
 
+Super Admin public registration üzerinden oluşturulmaz; kontrollü bir
+bootstrap yöntemi kullanılır. Super Admin hesaplarında MFA zorunludur.
+Creator hesaplarında MFA MVP'de zorunlu değildir.
+
 ## 26. E-posta
 
 Ürün ilk etapta bir **web application** olacaktır.
@@ -427,6 +532,11 @@ sıfırlama - Ödeme/paket işlemleri - Davetiye yayın işlemleri - Yayın
 süresinin bitmesine yaklaşılması - Kritik hesap/güvenlik bildirimleri
 
 Her RSVP/anı geldiğinde ayrı e-posta göndererek spam oluşturulmaz.
+
+Production transactional email provider **Resend**'dir. Provider
+abstraction korunur (`IEmailSender` veya eşdeğeri). Development
+ortamında fake/local sender kullanılabilir. Provider değişikliği domain
+ve application katmanlarını etkilemez.
 
 ## 27. Dil ve Para Birimi
 
@@ -447,8 +557,12 @@ Frontend i18n uyumlu, backend/veri modeli de genişletilebilir olmalıdır.
 -   **Database:** PostgreSQL
 -   **Version Control:** Git
 -   **Sunucu:** Hostinger VPS
--   **Medya:** Cloudflare tarafında uygun storage/video servisleri
+-   **Fotoğraf:** Cloudflare R2 + Cloudflare Images Transformations
+-   **Video:** Cloudflare Stream
+-   **Transactional e-posta:** Resend
+-   **Production ödeme:** iyzico
 -   **Deployment:** Git push sonrasında otomatik build/deploy hedefi
+-   **Hosting:** Hostinger VPS + Docker Compose + Nginx
 
 Authentication ve authorization backend tarafından güvenli şekilde
 uygulanır.
@@ -458,7 +572,41 @@ kullanılır. Auth credential'ları plain localStorage içinde tutulmaz.
 
 Public davetiye kodu hiçbir zaman Creator/Admin yetkisi sağlamaz.
 
-## 29. Temel Ürün Prensibi
+Ödeme katmanı provider abstraction üzerinden tasarlanır
+(`IPaymentGateway` veya eşdeğeri). Merchant hesabı ve credentials hazır
+olana kadar development ortamında `FakePaymentGateway` kullanılabilir.
+Production'da `IyzicoPaymentGateway` devreye alınır. Webhook signature,
+idempotency ve başarılı ödeme sonrasında entitlement activation
+altyapısı provider-bağımsız olur. Merchant secret/API key değerleri
+repository'ye yazılmaz.
+
+Production domain henüz belirlenmemiştir. İlk geliştirme ve deployment
+IP üzerinden çalışabilmelidir; domain application code içine hardcode
+edilmez. Domain satın alındığında Nginx, HTTPS ve public base URL
+configuration ile eklenir. Production Google login'in etkinleştirilmesi
+için doğrulanabilir domain ve HTTPS zorunlu deployment önkoşuludur.
+
+Production secret'ları Git repository'ye girmez. Başlangıçta günlük
+off-site PostgreSQL backup yeterlidir. Sistem büyüdüğünde ve RPO/RTO
+ihtiyacı gerektirdiğinde PITR ayrıca değerlendirilir.
+
+## 29. KVKK / Privacy
+
+Mimari baştan KVKK ve privacy gereksinimleri düşünülerek tasarlanır.
+
+-   Data minimization uygulanır; özellik için gerekmeyen kişisel veri
+    toplanmaz.
+-   Hizmetin çalışması için gerekli consent ile marketing consent ayrı
+    tutulur.
+-   Account/data deletion taleplerini destekleyecek veri sahipliği ve
+    silme altyapısı bulunur.
+-   Retention politikaları uygun alanlarda configurable olur.
+-   Gelecekte data export eklenebilmesine uygun veri sınırları korunur;
+    data export özelliğinin kendisi MVP kapsamına eklenmez.
+-   Legal metinler AI tarafından hukuken kesin kabul edilmez ve
+    production öncesinde yetkin kişilerce doğrulanır.
+
+## 30. Temel Ürün Prensibi
 
 > **Bu bir tasarım editörü değil, hızlı davetiye oluşturma
 > platformudur.**
@@ -470,7 +618,7 @@ Ana deneyim:
 Kullanıcı gereksiz seçeneklerle boğulmaz. Gelişmiş özellikler daha sonra
 Creator Panel'den eklenebilir.
 
-## 30. Backlog / MVP Dışı
+## 31. Backlog / MVP Dışı
 
 İlk sürümde özellikle kapsam dışında bırakılan özellikler:
 
@@ -494,7 +642,7 @@ değildir.
 ## Not
 
 Bu belge şu ana kadar yapılan ürün keşfi konuşmalarının kapsam özetidir.
-**Agent geliştirme promptu değildir.** Teknik mimari, ödeme sağlayıcısı,
-Cloudflare servis seçimi, e-posta sağlayıcısı, CI/CD, Docker/reverse
-proxy, HTTPS, yedekleme ve operasyon detayları agent promptu
-hazırlanırken ayrıca netleştirilecektir.
+**Agent geliştirme promptu değildir.** Kabul edilmiş teknik kararların
+özeti `docs/ARCHITECTURE.md`, VPS ve operasyon kuralları
+`docs/DEPLOYMENT.md` içinde tutulur. Bir uygulama kararı bu belgeyle
+çelişemez.

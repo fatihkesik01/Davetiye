@@ -43,6 +43,9 @@ temp/
 *.sqlite
 uploads/
 
+# ASP.NET Core Data Protection key ring (docs/THREAT_MODEL.md §5: keys stay repo-external)
+.dataprotection-keys/
+
 # Test artifacts
 TestResults/
 playwright-report/

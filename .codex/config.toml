@@ -1,6 +1,10 @@
 [agents]
 enabled = true
 
+[agents.orchestrator]
+description = "Delivery lead that plans phases, decomposes work into milestones, delegates to specialist agents, coordinates verification and prepares the next phase plan."
+config_file = "agents/orchestrator.toml"
+
 [agents.architect]
 description = "Plans architecture, technical boundaries, contracts, and implementation strategy before substantial development."
 config_file = "agents/architect.toml"
@@ -14,10 +18,10 @@ description = "Implements the React frontend, responsive screens, creator panel,
 config_file = "agents/frontend.toml"
 
 [agents.database]
-description = "Owns PostgreSQL schema design, migrations, constraints, indexes, data integrity, and query performance."
+description = "Owns PostgreSQL schema design, migrations, constraints, indexes, and data integrity."
 config_file = "agents/database.toml"
 
-[agents.ui_ux]
+[agents.ui-ux]
 description = "Reviews and guides UI/UX, responsive behavior, accessibility, visual consistency, and invitation creation usability."
 config_file = "agents/ui-ux.toml"
 

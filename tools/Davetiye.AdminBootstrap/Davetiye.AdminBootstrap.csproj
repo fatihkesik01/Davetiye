@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Davetiye.AdminBootstrap</RootNamespace>
+    <AssemblyName>Davetiye.AdminBootstrap</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/backend/Davetiye.Infrastructure/Davetiye.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/src/backend/">
+    <Project Path="src/backend/Davetiye.Api/Davetiye.Api.csproj" />
+    <Project Path="src/backend/Davetiye.Application/Davetiye.Application.csproj" />
+    <Project Path="src/backend/Davetiye.Domain/Davetiye.Domain.csproj" />
+    <Project Path="src/backend/Davetiye.Infrastructure/Davetiye.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/backend/">
+    <Project Path="tests/backend/Davetiye.ArchitectureTests/Davetiye.ArchitectureTests.csproj" />
+    <Project Path="tests/backend/Davetiye.IntegrationTests/Davetiye.IntegrationTests.csproj" />
+    <Project Path="tests/backend/Davetiye.UnitTests/Davetiye.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Davetiye.AdminBootstrap/Davetiye.AdminBootstrap.csproj" />
+    <Project Path="tools/Davetiye.DatabaseMigrator/Davetiye.DatabaseMigrator.csproj" />
+  </Folder>
+</Solution>

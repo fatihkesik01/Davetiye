@@ -1,0 +1,26 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY Directory.Build.props Directory.Packages.props Davetiye.slnx global.json ./
+COPY src/backend/Davetiye.Domain/Davetiye.Domain.csproj src/backend/Davetiye.Domain/
+COPY src/backend/Davetiye.Application/Davetiye.Application.csproj src/backend/Davetiye.Application/
+COPY src/backend/Davetiye.Infrastructure/Davetiye.Infrastructure.csproj src/backend/Davetiye.Infrastructure/
+COPY src/backend/Davetiye.Api/Davetiye.Api.csproj src/backend/Davetiye.Api/
+RUN dotnet restore src/backend/Davetiye.Api/Davetiye.Api.csproj
+
+COPY src/backend/ src/backend/
+RUN dotnet publish src/backend/Davetiye.Api/Davetiye.Api.csproj -c Release --no-restore -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends wget \
+    && rm -rf /var/lib/apt/lists/*
+ENV ASPNETCORE_URLS=http://+:8080 \
+    ASPNETCORE_ENVIRONMENT=Production
+COPY --from=build /app/publish ./
+COPY deploy/docker/api-entrypoint.sh /usr/local/bin/api-entrypoint
+RUN chmod 755 /usr/local/bin/api-entrypoint
+EXPOSE 8080
+ENTRYPOINT ["/usr/local/bin/api-entrypoint", "dotnet", "Davetiye.Api.dll"]

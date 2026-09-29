@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../../src/backend/Davetiye.Api/Davetiye.Api.csproj" />
+    <ProjectReference Include="../../../src/backend/Davetiye.Application/Davetiye.Application.csproj" />
+    <ProjectReference Include="../../../src/backend/Davetiye.Domain/Davetiye.Domain.csproj" />
+    <ProjectReference Include="../../../src/backend/Davetiye.Infrastructure/Davetiye.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

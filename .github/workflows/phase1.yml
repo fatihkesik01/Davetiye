@@ -1,0 +1,101 @@
+name: Phase 1 foundation gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+      - run: dotnet restore Davetiye.slnx
+      - run: dotnet build Davetiye.slnx --no-restore --configuration Release --nologo
+      - run: dotnet test tests/backend/Davetiye.ArchitectureTests/Davetiye.ArchitectureTests.csproj --no-restore --configuration Release --nologo
+      - run: dotnet test tests/backend/Davetiye.UnitTests/Davetiye.UnitTests.csproj --no-restore --configuration Release --nologo
+      - run: dotnet test tests/backend/Davetiye.IntegrationTests/Davetiye.IntegrationTests.csproj --no-restore --configuration Release --nologo
+      - run: dotnet list Davetiye.slnx package --include-transitive --vulnerable --format json
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.17.0
+          cache: npm
+          cache-dependency-path: src/web/package-lock.json
+      - run: npm ci
+      - run: npm run api:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test -- --run
+      - run: npm run build
+      - run: npm audit --audit-level=moderate
+
+  container-smoke:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create isolated CI configuration
+        run: |
+          cp .env.example .env
+          sed -i 's/replace-with-a-long-random-secret/ci-only-not-a-production-secret/' .env
+      - name: Build and start the isolated stack
+        run: docker compose -f docker-compose.prod.yml --env-file .env up --build -d
+      - name: Verify health endpoints
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:5052/health/live && curl --fail --silent --show-error http://127.0.0.1:5052/health/ready; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose -f docker-compose.prod.yml --env-file .env logs
+          exit 1
+      - name: Scan API image
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: davetiye-api:latest
+          format: table
+          exit-code: '1'
+          severity: HIGH,CRITICAL
+      - name: Scan migrator image
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: davetiye-migrator:latest
+          format: table
+          exit-code: '1'
+          severity: HIGH,CRITICAL
+      - name: Scan web image
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: davetiye-web:latest
+          format: table
+          exit-code: '1'
+      - name: Stop isolated stack
+        if: always()
+        run: docker compose -f docker-compose.prod.yml --env-file .env down -v
+
+  dependency-config-scan:
+    runs-on: ubuntu-latest
+    needs: container-smoke
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,config
+          exit-code: '1'
+          severity: HIGH,CRITICAL

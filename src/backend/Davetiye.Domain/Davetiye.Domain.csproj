@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Davetiye.Domain</RootNamespace>
+    <AssemblyName>Davetiye.Domain</AssemblyName>
+  </PropertyGroup>
+</Project>
