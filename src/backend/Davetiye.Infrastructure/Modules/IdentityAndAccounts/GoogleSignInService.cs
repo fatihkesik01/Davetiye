@@ -203,8 +203,7 @@ public sealed class GoogleSignInService(
             string.IsNullOrWhiteSpace(returnUrl) ||
             !returnUrl.StartsWith('/') ||
             returnUrl.StartsWith("//", StringComparison.Ordinal) ||
-            returnUrl.Contains('\\', StringComparison.Ordinal) ||
-            Uri.TryCreate(returnUrl, UriKind.Absolute, out _)
+            returnUrl.Contains('\\', StringComparison.Ordinal)
                 ? fallback
                 : returnUrl;
 

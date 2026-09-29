@@ -773,3 +773,53 @@ ADR-0001 ve bu contract'a göre doğrular.
 - PD-01–PD-13 açık durumuyla yeniden raporlanır ve scope sapması kontrol edilir.
 - Faz tamamlandıktan sonra yalnız Phase 2 readiness/plan hazırlanabilir;
   kullanıcı açıkça onaylamadan Phase 2 implementation otomatik başlamaz.
+
+## 9. 2026-09-29 Closure Reconciliation
+
+This section supersedes the earlier interrupted-session M7B–M11 status where
+it conflicts with the checked repository and command evidence.
+
+### M7B — Auth route guards
+
+- Added the PII-free, non-cacheable session projection and fail-closed
+  Creator/MFA-complete-Super-Admin classification.
+- Frontend never renders protected shells before the backend-derived access
+  classification permits them. Tests cover permitted Creator/Admin access,
+  anonymous denial, authenticated Creator/first-factor denial of Admin, and
+  a failed access probe.
+
+### M8 — Authorization and observability
+
+- A real-PostgreSQL test-only fixture proves foreign Creator internal-ID read
+  and mutation queries return no owned resource/affected row.
+- Dev email diagnostics now log only a notification kind and code-owned field
+  names; recipients, values, URLs and tokens are never emitted. Unhandled
+  exception logs retain type/method/correlation only. API and web response
+  headers set CSP, nosniff, frame/referrer policy; Production API adds HSTS.
+- Confirm-email, reset-password and antiforgery-token routes have separately
+  validated per-IP fixed-window policies, with integration coverage.
+
+### M9 — Compose, runtime and restore evidence
+
+- Local Compose rebuild on 2026-09-29: migrator completed successfully;
+  PostgreSQL, API and web were healthy; `/health/live`, `/health/ready` and
+  the web root each returned HTTP 200. PostgreSQL has no published host port;
+  API and web bind only to loopback.
+- Containers use `no-new-privileges`; web/migrator additionally use
+  read-only root filesystems, tmpfs and `cap_drop: ALL`. API starts only long
+  enough to own its named Data Protection volume and then runs as `app` with
+  no effective capabilities.
+- Restore rehearsal: a custom-format dump was created from the local named
+  Davetiye PostgreSQL service and restored into the isolated, disposable
+  `davetiye-restore-rehearsal` PostgreSQL 16 container. SHA-256:
+  `ADE6BB5E37B068DEF7B6142D7CA3DA154C9E3EF78D21777839613F58393D5550`.
+  `pg_restore --clean --if-exists --no-owner` succeeded; the restored
+  database contained the migration-history and accounts tables; the
+  disposable container was removed. No VPS or Lora resource was touched.
+
+### M10/M11 remaining remote gate
+
+The GitHub Actions workflow is committed and the local equivalents,
+dependency audits, image build and Compose smoke were verified. Its first
+remote run is the remaining M10 prerequisite; M11 must not be marked closed
+until that run succeeds. This is intentionally not inferred from local work.

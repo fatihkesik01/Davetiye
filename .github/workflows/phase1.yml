@@ -34,6 +34,8 @@ jobs:
           node-version: 22.17.0
           cache: npm
           cache-dependency-path: src/web/package-lock.json
+      - name: Use repository-supported npm
+        run: npm install --global npm@11.4.2
       - run: npm ci
       - run: npm run api:check
       - run: npm run lint
