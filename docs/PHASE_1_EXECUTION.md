@@ -1,6 +1,6 @@
 # Faz 1 — Execution Kaydı
 
-Durum: **Onaylandı; M0–M9 tamamlandı ve doğrulandı (15/17 milestone birimi, ≈88%). M10'un GitHub Actions kanıtı ve ardından M11 bağımsız kapanışı bekliyor. Phase 2 yalnız taslak olarak hazırdır; uygulanması onaylanmadı.**  
+Durum: **Tamamlandı ve doğrulandı (17/17 milestone birimi). Phase 2 yalnız taslak olarak hazırdır; uygulanması onaylanmadı.**  
 Başlangıç tarihi: **2026-09-28**
 
 Bu belge `docs/PHASE_1_PLAN.md` kapsamındaki uygulamanın izlenebilir çalışma
@@ -64,8 +64,8 @@ tahmin yürütülmez, **"Kayıt yok"** yazılır.
 | M7B — Auth route-guard acceptance | M6, M7A | **Tamamlandı, doğrulandı** (2026-09-29) | Public/Creator/Admin guard matrisi integration/E2E doğrulaması | Orchestrator | Frontend 13/13 ve targeted session/rate-limit integration; Reviewer/Security: Critical/High yok; 2 Low takip kaydı |
 | M8 — Authorization/architecture/observability verification | M4, M5A, M5B, M6 | **Tamamlandı, doğrulandı** (2026-09-29) | Test-only BOLA fixture, architecture ve redaction tests | Tester + Orchestrator | Real PostgreSQL foreign read/mutate fixture; PII-free DevEmail/exception log ve header testleri; Architecture 66/66, Unit 96/96 |
 | M9 — Container/Nginx/backup foundation | M3, M6, M7B | **Tamamlandı, doğrulandı** (2026-09-29) | Gerçek container runtime/CI Compose smoke ve restore rehearsal | Orchestrator | Migrator exit 0; Postgres/API/Web healthy; live/ready/web 200; isolated restore rehearsal başarılı |
-| M10 — CI release gate | M7B, M8, M9 | **Uygulandı, remote doğrulama bekliyor** (2026-09-29) | Clean-checkout pipeline yeşil | Orchestrator | Workflow source/Compose build+smoke yerelde doğrulandı; ilk GitHub Actions run push sonrası izlenecek |
-| M11 — Independent phase closure | M0–M10; M1U ve split M7 dahil | **Başlamadı** | Reviewer/Security/Tester/Architect onayı ve Phase 2 readiness | Orchestrator | Reviewer/Security/Tester/Architect bulguları ele alındı; M10 remote kanıtı olmadan final kapı verilmez |
+| M10 — CI release gate | M7B, M8, M9 | **Tamamlandı, doğrulandı** (2026-09-29) | Clean-checkout pipeline yeşil | Orchestrator | GitHub Actions [run 36534834602](https://github.com/fatihkesik01/Davetiye/actions/runs/36534834602): backend, frontend, Compose health/image scan ve dependency/config scan başarılı |
+| M11 — Independent phase closure | M0–M10; M1U ve split M7 dahil | **Tamamlandı, doğrulandı** (2026-09-29) | Reviewer/Security/Tester/Architect onayı ve Phase 2 readiness | Orchestrator | Tester, Security, Reviewer ve Architect kapıları; remote CI ve final repository reconciliation tamam |
 
 ### Takeover reconciliation (2026-09-28; historical snapshot, superseded where noted)
 
