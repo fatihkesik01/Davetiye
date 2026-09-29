@@ -23,4 +23,5 @@ COPY --from=build /app/publish ./
 COPY deploy/docker/api-entrypoint.sh /usr/local/bin/api-entrypoint
 RUN chmod 755 /usr/local/bin/api-entrypoint
 EXPOSE 8080
+USER app
 ENTRYPOINT ["/usr/local/bin/api-entrypoint", "dotnet", "Davetiye.Api.dll"]

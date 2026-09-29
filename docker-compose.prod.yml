@@ -64,6 +64,7 @@ services:
       - /tmp
     # The entrypoint starts as root only to claim ownership of the named key
     # volume, then drops to the image's app user before launching .NET.
+    user: "0"
     security_opt:
       - no-new-privileges:true
     ports:
