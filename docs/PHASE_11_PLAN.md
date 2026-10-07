@@ -72,9 +72,9 @@ Bir satır tamamlandığında agent durumu ve kısa notu burada günceller.
 | 3 | Davetiye'yi VPS'e IP üzerinden deploy et (özel smoke; gerçek kullanıcı trafiği yok) | 🤖 (Fatih "deploy et" onayı) | 1 | M7 | ⬜ |
 | 4 | Organization abonelik iptali için iyzico adapter/worker kodu | 🤖 | 1 | M4 | ⬜ |
 | 5 | Kalan Low teknik borçlar (trusted-proxy CIDR, session/draft rate-limit vb.) | 🤖 | 1 | M8 | ⬜ |
-| 6 | Domain adını seç ve satın al | 👤 | — | M2 | ⬜ |
-| 7 | Cloudflare hesabı aç, domain'i ekle, nameserver'ları Cloudflare'e yönlendir | 👤 | 6 | M2 | ⬜ |
-| 8 | DNS kayıtları (A → VPS IP, www) | 🤝 | 7 | M2 | ⬜ |
+| 6 | Domain adını seç ve satın al | 👤 | — | M2 | ✅ 2026-10-07 `kutlio.com` (Cloudflare Registrar, bitiş 2027-10-07) |
+| 7 | Cloudflare hesabı aç, domain'i ekle, nameserver'ları Cloudflare'e yönlendir | 👤 | 6 | M2 | ✅ 2026-10-07 zone Active, Cloudflare nameserver'ları |
+| 8 | DNS kayıtları (A → VPS IP, www) | 🤝 | 3, 7 | M2 | ⬜ deploy'dan sonra; önce girilirse domain Lora'nın nginx varsayılan sitesine düşebilir |
 | 9 | Nginx sitesi + HTTPS (Let's Encrypt), production URL/CORS/cookie ayarları | 🤖 | 3, 8 | M2 | ⬜ |
 | 10 | Destek/gönderici adreslerini belirle (`destek@`, `noreply@`) ve posta kutusu çözümü seç (ör. Cloudflare Email Routing veya Zoho/Google Workspace) | 👤 | 7 | M5 | ⬜ |
 | 11 | Resend hesabı aç, domain'i ekle | 👤 | 7 | M5 | ⬜ |
