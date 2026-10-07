@@ -10,9 +10,11 @@ checks before trusting it (`docs/AI_WORKFLOW.md` §1/§11).
 
 - **Phases 0–10: COMPLETED (11/12).** Milestone tables, attribution and
   per-phase evidence are in `docs/PHASE_N_PLAN.md`.
-- **Phase 11 — Production Readiness & Business Launch: NOT STARTED.** It
-  requires Fatih's separate explicit approval. Plan: `docs/PHASE_11_PLAN.md`.
-- No active implementation phase.
+- **Phase 11 — Production Readiness & Business Launch: IN PROGRESS** (Fatih
+  approved 2026-10-08). Ordered tracker: `docs/PHASE_11_PLAN.md`.
+- Deployed to the VPS and live (unannounced) at `https://kutlio.com`; see
+  `docs/DEPLOYMENT.md`. Email sending (Resend key), Google, media and payments
+  are not enabled yet.
 
 ## Latest Verification (2026-10-07, local)
 
@@ -49,10 +51,10 @@ checks before trusting it (`docs/AI_WORKFLOW.md` §1/§11).
   retention (no automatic audit deletion before this decision), refund/tax
   wording.
 
-## VPS (read-only check 2026-10-07)
+## VPS
 
-Davetiye is not deployed (`/opt/davetiye` absent; ports 5052/8082/15434
-free). Lora healthy. Host-level items reported to Fatih, not changed because
+Davetiye deployed 2026-10-08 (`/opt/davetiye`, ports 5052/8082). Lora healthy
+after every step. Host-level items reported to Fatih, not changed because
 the host is shared with Lora: reboot pending (newer kernel installed), 5
 pending security updates, sshd password authentication enabled and port 22
 open alongside 22222, stale ufw allow rules for 8080/5050.

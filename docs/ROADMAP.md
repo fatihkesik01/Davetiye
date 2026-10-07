@@ -68,7 +68,7 @@ Durum (2026-10-07 itibarıyla repository ve testlerle doğrulandı):
 | 8 | Commerce, Plans & Transactional Email | **COMPLETED** (7/7) |
 | 9 | Super Admin & Platform Governance | **COMPLETED** (7/7) |
 | 10 | Privacy, Retention & Integrated MVP Hardening | **COMPLETED** (7/7) |
-| 11 | Production Readiness & Business Launch | **NOT STARTED** |
+| 11 | Production Readiness & Business Launch | **IN PROGRESS** (Fatih onayı 2026-10-08) |
 
 **12 phase'in 11'i tamamlandı (Phase 0–10).** Phase 2–10 commit/push edildi ve
 clean-checkout GitHub Actions CI 2026-10-07'de yeşil geçti. Gerçek provider
@@ -465,7 +465,7 @@ kanıtı yalnız kendi plan dosyasında tutulur; burada tekrarlanmaz.
 
 ## 16. Phase 11 — Production Readiness & Business Launch
 
-**Durum:** NOT STARTED — ayrıca açık onay gerekir.
+**Durum:** IN PROGRESS — Fatih 2026-10-08'de onayladı; sıralı takip `docs/PHASE_11_PLAN.md`.
 **Amaç:** Release candidate'ı gerçek domain, provider hesapları, güvenli VPS
 operasyonları, hukuk/ticaret hazırlığı ve kontrollü production
 doğrulamasıyla satışa açık canlı ürüne dönüştürmek.

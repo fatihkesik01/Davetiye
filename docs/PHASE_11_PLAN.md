@@ -67,15 +67,15 @@ Bir satır tamamlandığında agent durumu ve kısa notu burada günceller.
 
 | Sıra | İş | Kim | Önce bitmesi gereken | Milestone | Durum |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | Phase 11'i açıkça onayla | 👤 | — | — | ⬜ |
+| 1 | Phase 11'i açıkça onayla | 👤 | — | — | ✅ 2026-10-08 Fatih Phase 11'i ve deploy'u onayladı |
 | 2 | VPS bakım kararı: reboot saati, SSH şifreli girişin kapatılması, bekleyen güvenlik güncellemeleri, kullanılmayan 8080/5050 ufw kuralları | 👤 karar → 🤖 | 1 | M7 | ⬜ |
-| 3 | Davetiye'yi VPS'e IP üzerinden deploy et (özel smoke; gerçek kullanıcı trafiği yok) | 🤖 (Fatih "deploy et" onayı) | 1 | M7 | ⬜ |
+| 3 | Davetiye'yi VPS'e IP üzerinden deploy et (özel smoke; gerçek kullanıcı trafiği yok) | 🤖 (Fatih "deploy et" onayı) | 1 | M7 | ✅ 2026-10-08 `/opt/davetiye`, commit `51af55f`; api/web/postgres healthy, migration'lar uygulandı; Lora etkilenmedi |
 | 4 | Organization abonelik iptali için iyzico adapter/worker kodu | 🤖 | 1 | M4 | ⬜ |
 | 5 | Kalan Low teknik borçlar (trusted-proxy CIDR, session/draft rate-limit vb.) | 🤖 | 1 | M8 | ⬜ |
 | 6 | Domain adını seç ve satın al | 👤 | — | M2 | ✅ 2026-10-07 `kutlio.com` (Cloudflare Registrar, bitiş 2027-10-07) |
 | 7 | Cloudflare hesabı aç, domain'i ekle, nameserver'ları Cloudflare'e yönlendir | 👤 | 6 | M2 | ✅ 2026-10-07 zone Active, Cloudflare nameserver'ları |
-| 8 | DNS kayıtları (A → VPS IP, www) | 🤝 | 3, 7 | M2 | ⬜ deploy'dan sonra; önce girilirse domain Lora'nın nginx varsayılan sitesine düşebilir |
-| 9 | Nginx sitesi + HTTPS (Let's Encrypt), production URL/CORS/cookie ayarları | 🤖 | 3, 8 | M2 | ⬜ |
+| 8 | DNS kayıtları (A → VPS IP, www) | 🤝 | 3, 7 | M2 | ✅ 2026-10-08 `kutlio.com` ve `www` A → 187.77.92.30 (DNS only) |
+| 9 | Nginx sitesi + HTTPS (Let's Encrypt), production URL/CORS/cookie ayarları | 🤖 | 3, 8 | M2 | ✅ 2026-10-08 nginx site `/etc/nginx/sites-available/kutlio.com`, Let's Encrypt (bitiş 2027-01-05, otomatik yenileme), HTTP→HTTPS 301, HSTS. Açık: `/` için ana sayfa ürün kararı bekliyor |
 | 10 | Destek/gönderici adreslerini belirle (`destek@`, `noreply@`) ve posta kutusu çözümü seç (ör. Cloudflare Email Routing veya Zoho/Google Workspace) | 👤 | 7 | M5 | ✅ 2026-10-07 Cloudflare Email Routing: `destek@` ve `noreply@kutlio.com` → 01fatihkesik@gmail.com; diğerleri Drop |
 | 11 | Resend hesabı aç, domain'i ekle | 👤 | 7 | M5 | ✅ 2026-10-07 Resend hesabı (01fatihkesik), `kutlio.com` eklendi, bölge Ireland (eu-west-1), tracking kapalı |
 | 12 | SPF/DKIM/DMARC kayıtları, Resend production anahtarı, teslim testi | 🤝 | 9, 10, 11 | M5 | 🔄 DKIM/SPF(`send`,`rsend` CNAME)/DMARC `p=none` Cloudflare'e girildi; Resend doğrulaması bekleniyor. Gönderme-yetkili API anahtarı deploy sırasında doğrudan sunucu `.env`'ine üretilecek |

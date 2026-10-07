@@ -17,12 +17,14 @@ ssh -p 22222 -i "C:\Users\fatih\.ssh\trackme_deploy" deploy@187.77.92.30
 ## What's on this VPS
 
 - **Lora** — `docker compose` project `lora`, containers `lora-api-prod` (127.0.0.1:5051→8080), `lora-frontend-prod` (127.0.0.1:8081→80), `lora-postgres-prod` (127.0.0.1:15433→5432). Volume `lora_postgres_data`, network `lora_lora-internal`. Domain `loracoffeecompany.com.tr`, nginx site `/etc/nginx/sites-available/loracoffeecompany.com.tr`. **Do not touch.**
-- **Davetiye** — as of 2026-09-28, nothing is deployed. `/opt/davetiye` does not exist. Project was fully reset (see below) to start over. Previously used ports **5052** (API), **8082** (web), **15434** (postgres) — free to reuse.
+- **Davetiye** — deployed 2026-10-08 at `/opt/davetiye` (Compose project `davetiye`; containers `davetiye-api-prod` 127.0.0.1:5052, `davetiye-web-prod` 127.0.0.1:8082, `davetiye-postgres-prod` internal only; volumes `davetiye_postgres_data`, `davetiye_dataprotection_keys`). Public at `https://kutlio.com` via nginx site `/etc/nginx/sites-available/kutlio.com` with a Certbot-managed Let's Encrypt certificate. `/opt/davetiye/RELEASE_COMMIT` records the deployed commit.
 - **Ports already taken by other projects, never reuse for Davetiye**: 5051, 8081, 15433 (Lora), 80/443 (nginx), 22/22222 (ssh).
 
 ## Deploying Davetiye
 
-The production domain has not been selected yet. The first deployment
+The production domain is `kutlio.com` (Cloudflare Registrar and DNS). Nginx has no
+`default_server`, so an unknown host falls through to Lora's site: never point a new
+hostname at the VPS before its own nginx site exists. The first deployment
 must work over the server IP and must not depend on a domain hardcoded in
 application code. Public base URL, allowed origins, cookie domain and
 similar host values must come from deployment configuration. When a
@@ -40,16 +42,16 @@ email/password authentication or authenticated user traffic over plain
 HTTP. Real user access requires trusted HTTPS, whether it is configured
 for an IP-based acceptance environment or the later production domain.
 
-The GitHub repo is private with no deploy key configured, so code reaches the VPS via `git archive`, not `git clone`:
+The GitHub repo is private with no deploy key configured, so code reaches the VPS via `git archive`, not `git clone`. On Windows always pass `-c core.autocrlf=false`; otherwise shell scripts arrive with CRLF line endings and the containers fail:
 
 ```
-git archive HEAD | ssh -p 22222 -i "C:\Users\fatih\.ssh\trackme_deploy" deploy@187.77.92.30 "mkdir -p /opt/davetiye && tar -x -C /opt/davetiye"
+git -c core.autocrlf=false archive HEAD | ssh -p 22222 -i "C:\Users\fatih\.ssh\trackme_deploy" deploy@187.77.92.30 "mkdir -p /opt/davetiye && tar -x -C /opt/davetiye"
 ```
 
 Then on the VPS: create `/opt/davetiye/.env` (secrets generated on-box via `openssl rand`, never stored in the repo or transferred from a local machine), and run:
 
 ```
-cd /opt/davetiye && docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+cd /opt/davetiye && docker compose -p davetiye -f docker-compose.prod.yml --env-file .env up -d --build
 ```
 
 Cloudflare media remains disabled until the Phase 11 account and provider gates
