@@ -1,0 +1,20 @@
+{
+  "supportedRenderers": [
+    { "templateKey": "zamansiz-dugun", "rendererVersion": 1 },
+    { "templateKey": "romantik-nisan", "rendererVersion": 1 },
+    { "templateKey": "gece-kina", "rendererVersion": 1 },
+    { "templateKey": "neseli-sunnet", "rendererVersion": 1 },
+    { "templateKey": "renkli-dogum-gunu", "rendererVersion": 1 },
+    { "templateKey": "pastel-baby-shower", "rendererVersion": 1 },
+    { "templateKey": "modern-mezuniyet", "rendererVersion": 1 },
+    { "templateKey": "minimal-acilis", "rendererVersion": 1 },
+    { "templateKey": "zamansiz-dugun", "rendererVersion": 2 },
+    { "templateKey": "romantik-nisan", "rendererVersion": 2 },
+    { "templateKey": "gece-kina", "rendererVersion": 2 },
+    { "templateKey": "neseli-sunnet", "rendererVersion": 2 },
+    { "templateKey": "renkli-dogum-gunu", "rendererVersion": 2 },
+    { "templateKey": "pastel-baby-shower", "rendererVersion": 2 },
+    { "templateKey": "modern-mezuniyet", "rendererVersion": 2 },
+    { "templateKey": "minimal-acilis", "rendererVersion": 2 }
+  ]
+}

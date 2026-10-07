@@ -3,6 +3,7 @@ using Davetiye.Api.Infrastructure.Security;
 using Davetiye.Application.Modules.IdentityAndAccounts.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 
 namespace Davetiye.Api.Endpoints.Auth;
 
@@ -67,9 +68,11 @@ public static class AuthEndpoints
         // This PII-free projection only decides which browser shell may render. It is not a
         // resource-authorization substitute: future endpoints retain ownership/policy checks.
         group.MapGet("/session", (HttpContext httpContext, IAuthSessionAccessService sessionAccessService,
+                IAccountConsentService accountConsentService,
                 CancellationToken cancellationToken) => GetSessionAsync(
-                httpContext, sessionAccessService, superAdminClaimType, superAdminClaimValue,
-                mfaClaimType, mfaClaimValue, cancellationToken));
+                httpContext, sessionAccessService, accountConsentService, superAdminClaimType, superAdminClaimValue,
+                mfaClaimType, mfaClaimValue, cancellationToken))
+            .Produces<SessionAccessSnapshot>();
 
         // The only endpoint in this group that acts on an already-authenticated cookie session, so
         // it is the only one that needs the antiforgery filter (docs/THREAT_MODEL.md §5: antiforgery
@@ -96,7 +99,8 @@ public static class AuthEndpoints
         // docs/THREAT_MODEL.md §9: the response is identical regardless of whether the email exists -
         // IAuthAccountService.RequestPasswordResetAsync has no outcome to branch on, by design.
         group.MapPost("/request-password-reset", RequestPasswordResetAsync)
-            .RequireRateLimiting(passwordResetRequestRateLimitPolicy);
+            .RequireRateLimiting(passwordResetRequestRateLimitPolicy)
+            .AddEndpointFilter<PasswordResetDestinationRateLimitFilter>();
 
         group.MapPost("/reset-password", ResetPasswordAsync)
             .RequireRateLimiting(passwordResetConfirmRateLimitPolicy);
@@ -124,7 +128,9 @@ public static class AuthEndpoints
                 detail: string.Join(" ", result.Errors)),
             _ => Results.Problem(
                 statusCode: StatusCodes.Status400BadRequest,
-                title: "Invalid registration request.",
+                title: result.Errors.Any(error => error.Contains("service notice", StringComparison.OrdinalIgnoreCase))
+                    ? "Required service notice acknowledgement is missing."
+                    : "Invalid registration request.",
                 detail: string.Join(" ", result.Errors)),
         };
     }
@@ -158,19 +164,9 @@ public static class AuthEndpoints
             LoginOutcome.InvalidCredentials => Results.Problem(
                 statusCode: StatusCodes.Status401Unauthorized,
                 title: "Invalid email or password."),
-            LoginOutcome.LockedOut => Results.Problem(
-                statusCode: StatusCodes.Status423Locked,
-                title: "Account temporarily locked due to repeated failed attempts."),
             LoginOutcome.Banned => Results.Problem(
                 statusCode: StatusCodes.Status403Forbidden,
                 title: "Account is banned."),
-            // 403, matching Banned: the account exists and the credential attempt reached the
-            // point of being evaluated against it, but a policy (not the credential itself) is
-            // what blocks access. See AuthAccountService.LoginAsync for why distinguishing this
-            // from InvalidCredentials is not an enumeration violation here.
-            LoginOutcome.EmailNotConfirmed => Results.Problem(
-                statusCode: StatusCodes.Status403Forbidden,
-                title: "Email confirmation required before logging in."),
             // The password check succeeded, but the account has two-factor enabled (M6b): sign-in
             // is not complete yet. The client must submit a TOTP/recovery code to
             // /api/v1/admin/mfa/login/complete before an "MfaComplete"-eligible session exists.
@@ -182,6 +178,7 @@ public static class AuthEndpoints
     private static async Task<IResult> GetSessionAsync(
         HttpContext httpContext,
         IAuthSessionAccessService sessionAccessService,
+        IAccountConsentService accountConsentService,
         string superAdminClaimType,
         string superAdminClaimValue,
         string mfaClaimType,
@@ -193,7 +190,7 @@ public static class AuthEndpoints
         var identityUserId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!(httpContext.User.Identity?.IsAuthenticated ?? false) || !Guid.TryParse(identityUserId, out var userId))
         {
-            return Results.Ok(new { authenticated = false, access = "none" });
+            return Results.Ok(new SessionAccessSnapshot(false, SessionAccessType.None, false));
         }
 
         var snapshot = await sessionAccessService.GetAccessAsync(
@@ -202,16 +199,16 @@ public static class AuthEndpoints
             httpContext.User.HasClaim(mfaClaimType, mfaClaimValue),
             cancellationToken);
 
-        return Results.Ok(new
+        var serviceNoticeRequired = snapshot.Access == SessionAccess.Creator &&
+            !await accountConsentService.IsServiceNoticeAcknowledgedAsync(userId, cancellationToken);
+
+        return Results.Ok(new SessionAccessSnapshot(true, snapshot.Access switch
         {
-            authenticated = true,
-            access = snapshot.Access switch
-            {
-                SessionAccess.Creator => "creator",
-                SessionAccess.MfaCompleteSuperAdmin => "mfa-complete-super-admin",
-                _ => "none",
-            },
-        });
+            SessionAccess.Creator => SessionAccessType.Creator,
+            SessionAccess.MfaSetupRequiredSuperAdmin => SessionAccessType.MfaSetupRequiredSuperAdmin,
+            SessionAccess.MfaCompleteSuperAdmin => SessionAccessType.MfaCompleteSuperAdmin,
+            _ => SessionAccessType.None,
+        }, serviceNoticeRequired));
     }
 
     private static async Task<IResult> LogoutAsync(
@@ -254,4 +251,19 @@ public static class AuthEndpoints
                 title: "Invalid or expired password reset request."),
         };
     }
+}
+
+public sealed record SessionAccessSnapshot(bool Authenticated, SessionAccessType Access, bool ServiceNoticeRequired);
+
+[JsonConverter(typeof(JsonStringEnumConverter<SessionAccessType>))]
+public enum SessionAccessType
+{
+    [JsonStringEnumMemberName("none")]
+    None,
+    [JsonStringEnumMemberName("creator")]
+    Creator,
+    [JsonStringEnumMemberName("mfa-setup-required-super-admin")]
+    MfaSetupRequiredSuperAdmin,
+    [JsonStringEnumMemberName("mfa-complete-super-admin")]
+    MfaCompleteSuperAdmin,
 }

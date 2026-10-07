@@ -11,4 +11,5 @@ public sealed class PublicWebOptions
     public const string SectionName = "PublicWeb";
 
     public string BaseUrl { get; init; } = "http://localhost:5173";
+    public string AppShellUrl { get; init; } = "http://localhost:5173/";
 }

@@ -4,7 +4,7 @@ namespace Davetiye.Application.Modules.IntegrationFoundation.Contracts;
 
 /// <summary>
 /// The generic claim/processing contract shared by inbox and outbox persistence
-/// (docs/PHASE_0_BASELINE.md §2: "Integration Foundation... Application'da generic inbox/outbox
+/// (docs/PHASE_0_PLAN.md §2: "Integration Foundation... Application'da generic inbox/outbox
 /// contract'larını... barındırır"). A worker primitive depends only on this shape — it does not
 /// need to know whether <typeparamref name="TMessage"/> is an <see cref="InboxMessage"/>, an
 /// <see cref="OutboxMessage"/>, or a future message kind this module has not seen yet.

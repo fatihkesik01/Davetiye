@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Davetiye.Application.Modules.IdentityAndAccounts.Contracts;
 using Davetiye.Infrastructure.Persistence;
 using Davetiye.Infrastructure.Security;
 using Microsoft.AspNetCore.Identity;
@@ -19,7 +20,7 @@ public enum AdminBootstrapOutcome
 
     /// <summary>
     /// Refused: the target Identity user already has a Domain <c>Account</c> (a Creator). Per
-    /// docs/adr/0002 and docs/PHASE_0_BASELINE.md §3, "Kontrollü bootstrap edilmiş Super Admin
+    /// docs/adr/0002 and docs/PHASE_0_PLAN.md §3, "Kontrollü bootstrap edilmiş Super Admin
     /// principal'ı Creator hesabı taşımaz" — a Super Admin principal must never carry a Creator
     /// Account. The Super Admin claim was NOT granted.
     /// </summary>
@@ -35,7 +36,7 @@ public enum AdminBootstrapOutcome
 /// in-process without spawning the executable as a subprocess.
 ///
 /// Never creates a Domain <c>Account</c> for the bootstrapped user (Super Admin has no Account, per
-/// docs/PHASE_0_BASELINE.md §3's "IdentityUser 0..1 Account") and is idempotent: re-running it for the
+/// docs/PHASE_0_PLAN.md §3's "IdentityUser 0..1 Account") and is idempotent: re-running it for the
 /// same email neither duplicates the Identity user nor errors — it reports
 /// <see cref="AdminBootstrapOutcome.AlreadySuperAdmin"/> and leaves everything else untouched.
 /// </summary>
@@ -101,7 +102,7 @@ public sealed class AdminBootstrapRunner(UserManager<ApplicationUser> userManage
             return AdminBootstrapOutcome.AlreadySuperAdmin;
         }
 
-        // ADR-0002 / docs/PHASE_0_BASELINE.md §3 invariant: a Super Admin principal must not carry a
+        // ADR-0002 / docs/PHASE_0_PLAN.md §3 invariant: a Super Admin principal must not carry a
         // Creator Account. A brand-new user created above can never already have one (its Account, if
         // any, would have to reference this same freshly generated Identity user id, which did not
         // exist until this call) — this only ever fires for a pre-existing Identity user who already

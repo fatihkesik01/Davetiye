@@ -2,7 +2,7 @@ namespace Davetiye.Application.Modules.IdentityAndAccounts.Contracts;
 
 /// <summary>
 /// TOTP-authenticator enrollment and two-factor login completion for the Super Admin principal
-/// (docs/PHASE_0_BASELINE.md §7, docs/adr/0002). Enroll/VerifyAndEnable are only ever reachable by a
+/// (docs/PHASE_0_PLAN.md §7, docs/adr/0002). Enroll/VerifyAndEnable are only ever reachable by a
 /// caller who already holds the Super Admin claim (enforced by the "SuperAdminOnly" authorization
 /// policy at the endpoint, not by this interface) — MFA is not a general Creator-facing feature.
 /// </summary>

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Davetiye.Application.Modules.IdentityAndAccounts.Contracts;
 using Davetiye.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;

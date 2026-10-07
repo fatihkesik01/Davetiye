@@ -18,12 +18,16 @@ public sealed class AuthSessionAccessService(DavetiyeDbContext dbContext) : IAut
     {
         var hasAccount = await dbContext.Accounts
             .AsNoTracking()
-            .AnyAsync(account => account.IdentityUserId == identityUserId, cancellationToken);
+            .AnyAsync(account => account.IdentityUserId == identityUserId && account.DeletionStartedAtUtc == null, cancellationToken);
 
         if (hasSuperAdminClaim)
         {
             return new SessionAccessSnapshot(
-                !hasAccount && hasMfaClaim ? SessionAccess.MfaCompleteSuperAdmin : SessionAccess.None);
+                hasAccount
+                    ? SessionAccess.None
+                    : hasMfaClaim
+                        ? SessionAccess.MfaCompleteSuperAdmin
+                        : SessionAccess.MfaSetupRequiredSuperAdmin);
         }
 
         return new SessionAccessSnapshot(hasAccount ? SessionAccess.Creator : SessionAccess.None);

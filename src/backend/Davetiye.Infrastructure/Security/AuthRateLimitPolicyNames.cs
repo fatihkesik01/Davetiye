@@ -24,4 +24,18 @@ public static class AuthRateLimitPolicyNames
     public const string TwoFactorLoginComplete = "auth-two-factor-login-complete";
 
     public const string AdminMfaVerify = "auth-admin-mfa-verify";
+    public const string PublicationRead = "creator-publication-read";
+    public const string PublicationAction = "creator-publication-action";
+    public const string PublicInvitationRead = "public-invitation-read";
+    public const string PublicRsvpSubmission = "public-rsvp-submission";
+    public const string CreatorMediaIntentIp = "creator-media-intent-ip";
+    public const string CreatorRsvpReadIp = "creator-rsvp-read-ip";
+    public const string CreatorRsvpWriteIp = "creator-rsvp-write-ip";
+    public const string PublicMemorySubmission = "public-memory-submission";
+    public const string PublicMemoryMediaDelivery = "public-memory-media-delivery";
+    public const string PublicMemoryUploadCreate = "public-memory-upload-create";
+    public const string PublicMemoryUploadIntent = "public-memory-upload-intent";
+    public const string PublicMemoryUploadFinalize = "public-memory-upload-finalize";
+    public const string CreatorMemoriesReadIp = "creator-memories-read-ip";
+    public const string CreatorMemoriesWriteIp = "creator-memories-write-ip";
 }

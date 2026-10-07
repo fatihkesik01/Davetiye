@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using Xunit;
 
 namespace Davetiye.IntegrationTests;
@@ -92,11 +93,96 @@ public sealed class ApiContractTests(PostgreSqlFixture postgreSql) : IAsyncLifet
         var response = await client.GetAsync(new Uri("/openapi/v1.json", UriKind.Relative));
         var body = await response.Content.ReadAsStringAsync();
         using var document = JsonDocument.Parse(body);
-
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.True(document.RootElement.TryGetProperty("openapi", out _));
         Assert.True(document.RootElement.TryGetProperty("paths", out var paths));
         Assert.True(paths.TryGetProperty("/api/v1/system/info", out _));
+        var sessionAccess = paths.GetProperty("/api/v1/auth/session").GetProperty("get")
+            .GetProperty("responses").GetProperty("200").GetProperty("content")
+            .GetProperty("application/json").GetProperty("schema");
+        Assert.Equal("#/components/schemas/SessionAccessSnapshot", sessionAccess.GetProperty("$ref").GetString());
+        var schemas = document.RootElement.GetProperty("components").GetProperty("schemas");
+        var sessionProperties = schemas.GetProperty("SessionAccessSnapshot").GetProperty("properties");
+        Assert.Equal("boolean", sessionProperties.GetProperty("authenticated").GetProperty("type").GetString());
+        Assert.Equal("#/components/schemas/SessionAccessType",
+            sessionProperties.GetProperty("access").GetProperty("$ref").GetString());
+        Assert.Contains("mfa-setup-required-super-admin",
+            schemas.GetProperty("SessionAccessType").GetProperty("enum").EnumerateArray().Select(value => value.GetString()));
+        Assert.Equal("#/components/schemas/AdminMfaEnrollment",
+            paths.GetProperty("/api/v1/admin/mfa/enroll").GetProperty("post")
+                .GetProperty("responses").GetProperty("200").GetProperty("content")
+                .GetProperty("application/json").GetProperty("schema").GetProperty("$ref").GetString());
+        Assert.Equal("#/components/schemas/AdminMfaVerification",
+            paths.GetProperty("/api/v1/admin/mfa/verify").GetProperty("post")
+                .GetProperty("responses").GetProperty("200").GetProperty("content")
+                .GetProperty("application/json").GetProperty("schema").GetProperty("$ref").GetString());
+        Assert.True(paths.TryGetProperty("/api/v1/admin/settings", out var adminSettings));
+        var adminSettingsGet = adminSettings.GetProperty("get");
+        Assert.Equal("#/components/schemas/AdminSystemSettingsResponse",
+            adminSettingsGet.GetProperty("responses").GetProperty("200").GetProperty("content")
+                .GetProperty("application/json").GetProperty("schema").GetProperty("$ref").GetString());
+        Assert.True(paths.TryGetProperty("/api/v1/admin/settings/{key}", out var adminSetting));
+        var adminSettingPut = adminSetting.GetProperty("put");
+        var requestSchema = adminSettingPut.GetProperty("requestBody").GetProperty("content")
+            .GetProperty("application/json").GetProperty("schema");
+        Assert.Equal("#/components/schemas/AdminSystemSettingUpdateRequest",
+            requestSchema.GetProperty("oneOf")[1].GetProperty("$ref").GetString());
+        Assert.Equal("#/components/schemas/AdminSystemSettingItem",
+            adminSettingPut.GetProperty("responses").GetProperty("200").GetProperty("content")
+                .GetProperty("application/json").GetProperty("schema").GetProperty("$ref").GetString());
+        var settingsSchemas = schemas;
+        var updateProperties = settingsSchemas.GetProperty("AdminSystemSettingUpdateRequest").GetProperty("properties");
+        Assert.Contains("integer", updateProperties.GetProperty("expectedRevision").GetProperty("type")
+            .EnumerateArray().Select(type => type.GetString()));
+        Assert.Equal("int64", updateProperties.GetProperty("expectedRevision").GetProperty("format").GetString());
+        Assert.Contains("integer", updateProperties.GetProperty("value").GetProperty("type")
+            .EnumerateArray().Select(type => type.GetString()));
+        Assert.Equal("int32", updateProperties.GetProperty("value").GetProperty("format").GetString());
+        Assert.True(paths.TryGetProperty("/api/v1/payments/organization-subscription", out var organizationSubscription));
+        Assert.True(organizationSubscription.TryGetProperty("get", out var organizationSubscriptionGet));
+        Assert.True(organizationSubscriptionGet.GetProperty("responses").TryGetProperty("200", out _));
+        Assert.True(paths.TryGetProperty("/api/v1/payments/organization-subscription/{subscriptionId}/cancel", out var organizationSubscriptionCancel));
+        Assert.True(organizationSubscriptionCancel.TryGetProperty("post", out var organizationSubscriptionCancelPost));
+        Assert.True(organizationSubscriptionCancelPost.GetProperty("responses").TryGetProperty("200", out _));
+        Assert.True(paths.TryGetProperty("/api/v1/public/invitations/{publicCode}/rsvp", out var publicRsvpRead));
+        Assert.True(publicRsvpRead.TryGetProperty("get", out _));
+        Assert.True(paths.TryGetProperty("/api/v1/public/invitations/{publicCode}/rsvp/submissions", out var publicRsvpSubmit));
+        Assert.True(publicRsvpSubmit.TryGetProperty("post", out _));
+        Assert.True(paths.TryGetProperty("/api/v1/public/invitations/{publicCode}/rsvp/submissions/{submissionId}", out var publicRsvpSubmission));
+        Assert.True(publicRsvpSubmission.TryGetProperty("get", out _));
+        Assert.True(publicRsvpSubmission.TryGetProperty("put", out _));
+        Assert.True(paths.TryGetProperty("/api/v1/invitations/{invitationId}/rsvp/submissions", out var creatorRsvpResults));
+        Assert.True(creatorRsvpResults.TryGetProperty("get", out _));
+        Assert.True(paths.TryGetProperty("/api/v1/invitations/{invitationId}/rsvp/submissions/{submissionId}", out var creatorRsvpSubmission));
+        Assert.True(creatorRsvpSubmission.TryGetProperty("get", out _));
+        Assert.True(creatorRsvpSubmission.TryGetProperty("delete", out _));
+        Assert.True(paths.TryGetProperty("/api/v1/invitations/{invitationId}/rsvp", out var creatorRsvpConfiguration));
+        AssertCreatorRsvpRateLimitDocumented(creatorRsvpConfiguration.GetProperty("get"));
+        AssertCreatorRsvpRateLimitDocumented(creatorRsvpConfiguration.GetProperty("put"));
+        Assert.True(paths.TryGetProperty("/api/v1/invitations/{invitationId}/rsvp/questions", out var creatorRsvpQuestions));
+        AssertCreatorRsvpRateLimitDocumented(creatorRsvpQuestions.GetProperty("post"));
+        Assert.True(paths.TryGetProperty("/api/v1/invitations/{invitationId}/rsvp/questions/{questionId}", out var creatorRsvpQuestion));
+        AssertCreatorRsvpRateLimitDocumented(creatorRsvpQuestion.GetProperty("put"));
+        AssertCreatorRsvpRateLimitDocumented(creatorRsvpQuestion.GetProperty("delete"));
+        Assert.True(paths.TryGetProperty("/api/v1/invitations/{invitationId}/rsvp/questions/order", out var creatorRsvpQuestionOrder));
+        AssertCreatorRsvpRateLimitDocumented(creatorRsvpQuestionOrder.GetProperty("put"));
+        AssertCreatorRsvpRateLimitDocumented(creatorRsvpResults.GetProperty("get"));
+        AssertCreatorRsvpRateLimitDocumented(creatorRsvpSubmission.GetProperty("get"));
+        AssertCreatorRsvpRateLimitDocumented(creatorRsvpSubmission.GetProperty("delete"));
+        Assert.True(paths.TryGetProperty("/api/v1/invitations/{invitationId}/memories", out var creatorMemories));
+        Assert.True(creatorMemories.TryGetProperty("get", out _));
+        Assert.True(paths.TryGetProperty("/api/v1/invitations/{invitationId}/memories/{memoryId}/hide", out var creatorMemoryHide));
+        Assert.True(creatorMemoryHide.TryGetProperty("put", out _));
+        Assert.True(paths.TryGetProperty("/api/v1/invitations/{invitationId}/memories/{memoryId}", out var creatorMemoryDelete));
+        Assert.True(creatorMemoryDelete.TryGetProperty("delete", out _));
+        Assert.True(paths.TryGetProperty("/api/v1/invitations/{invitationId}/memories/{memoryId}/media/{assetId}/delivery",
+            out var creatorMemoryDelivery));
+        Assert.True(creatorMemoryDelivery.TryGetProperty("post", out _));
+        Assert.True(paths.TryGetProperty("/api/v1/invitations/{invitationId}/checkout", out var paymentCheckout));
+        var checkoutPost = paymentCheckout.GetProperty("post");
+        var idempotencyHeader = checkoutPost.GetProperty("parameters").EnumerateArray()
+            .Single(parameter => parameter.GetProperty("name").GetString() == "Idempotency-Key");
+        Assert.True(idempotencyHeader.GetProperty("required").GetBoolean());
     }
 
     [Fact]
@@ -166,6 +252,10 @@ public sealed class ApiContractTests(PostgreSqlFixture postgreSql) : IAsyncLifet
     private ApiWebApplicationFactory CreateFactory(string environmentName, string? connectionStringOverride = null) =>
         new(environmentName, connectionStringOverride ?? connectionString);
 
+    private static void AssertCreatorRsvpRateLimitDocumented(JsonElement operation) =>
+        Assert.True(operation.GetProperty("responses").TryGetProperty("429", out _),
+            "Every Creator RSVP endpoint must document its rate-limit response.");
+
     private sealed class ApiWebApplicationFactory(string environmentName, string connectionString)
         : WebApplicationFactory<Program>
     {
@@ -179,6 +269,11 @@ public sealed class ApiContractTests(PostgreSqlFixture postgreSql) : IAsyncLifet
                 var config = new Dictionary<string, string?>
                 {
                     ["Database:ConnectionString"] = connectionString,
+                    // Keep the conditional Google OAuth paths in the canonical generated OpenAPI snapshot.
+                    ["GoogleAuth:Enabled"] = "true",
+                    ["GoogleAuth:ClientId"] = "openapi-test-client",
+                    ["GoogleAuth:ClientSecret"] = "openapi-test-secret",
+                    ["GoogleAuth:CallbackBaseUrl"] = "https://davetiye.example.test/api/v1/auth/google/oauth-callback",
                 };
 
                 // M6a's security foundation (Davetiye.Infrastructure.Security.SecurityServiceCollectionExtensions)

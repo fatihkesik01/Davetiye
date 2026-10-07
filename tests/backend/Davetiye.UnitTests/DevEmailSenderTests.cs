@@ -5,66 +5,54 @@ using Xunit;
 
 namespace Davetiye.UnitTests;
 
-public sealed class DevEmailSenderTests
+public sealed class DevEmailTransportTests
 {
     private const string RawToken = "super-secret-single-use-token-value";
 
     [Fact]
-    public async Task SendAsync_never_logs_the_raw_token_or_recipient_embedded_in_a_link_notification()
+    public async Task SendAsync_never_logs_recipient_or_message_content()
     {
-        var logger = new RecordingLogger<DevEmailSender>();
-        var sender = new DevEmailSender(logger);
+        var logger = new RecordingLogger<DevEmailTransport>();
+        var sender = new DevEmailTransport(logger);
         var confirmationLink =
             $"https://davetiye.example.test/auth/confirm-email?userId=11111111-1111-1111-1111-111111111111&token={RawToken}";
 
-        await sender.SendAsync(
-            "creator@example.test",
-            EmailNotificationKinds.EmailConfirmation,
-            new Dictionary<string, string> { ["confirmationLink"] = confirmationLink },
-            CancellationToken.None);
+        await sender.SendAsync(new EmailDeliveryMessage("creator@example.test", "verify", confirmationLink, confirmationLink), Guid.NewGuid(), CancellationToken.None);
 
         var allMessages = string.Join('\n', logger.Messages);
         Assert.DoesNotContain(RawToken, allMessages, StringComparison.Ordinal);
         Assert.DoesNotContain("creator@example.test", allMessages, StringComparison.Ordinal);
-        Assert.Contains("confirmationLink", allMessages, StringComparison.Ordinal);
+        Assert.DoesNotContain("verify", allMessages, StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task SendAsync_never_logs_non_token_field_values()
     {
-        var logger = new RecordingLogger<DevEmailSender>();
-        var sender = new DevEmailSender(logger);
+        var logger = new RecordingLogger<DevEmailTransport>();
+        var sender = new DevEmailTransport(logger);
 
-        await sender.SendAsync(
-            "creator@example.test",
-            EmailNotificationKinds.EmailConfirmation,
-            new Dictionary<string, string> { ["displayName"] = "Ada Lovelace" },
-            CancellationToken.None);
+        await sender.SendAsync(new EmailDeliveryMessage("creator@example.test", "Ada Lovelace", "Ada Lovelace", "Ada Lovelace"), Guid.NewGuid(), CancellationToken.None);
 
         var allMessages = string.Join('\n', logger.Messages);
         Assert.DoesNotContain("Ada Lovelace", allMessages, StringComparison.Ordinal);
-        Assert.Contains("displayName", allMessages, StringComparison.Ordinal);
+        Assert.Contains("MessageId", allMessages, StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task SendAsync_logs_only_code_owned_field_names_for_reset_notifications()
     {
-        var logger = new RecordingLogger<DevEmailSender>();
-        var sender = new DevEmailSender(logger);
+        var logger = new RecordingLogger<DevEmailTransport>();
+        var sender = new DevEmailTransport(logger);
         var resetLink =
             $"https://davetiye.example.test/auth/reset-password?userId=11111111-1111-1111-1111-111111111111&token={RawToken}&source=email";
 
-        await sender.SendAsync(
-            "creator@example.test",
-            EmailNotificationKinds.PasswordReset,
-            new Dictionary<string, string> { ["resetLink"] = resetLink },
-            CancellationToken.None);
+        await sender.SendAsync(new EmailDeliveryMessage("creator@example.test", "reset", resetLink, resetLink), Guid.NewGuid(), CancellationToken.None);
 
         var allMessages = string.Join('\n', logger.Messages);
         Assert.DoesNotContain(RawToken, allMessages, StringComparison.Ordinal);
         Assert.DoesNotContain("userId=11111111-1111-1111-1111-111111111111", allMessages, StringComparison.Ordinal);
         Assert.DoesNotContain("source=email", allMessages, StringComparison.Ordinal);
-        Assert.Contains("resetLink", allMessages, StringComparison.Ordinal);
+        Assert.Contains("MessageId", allMessages, StringComparison.Ordinal);
     }
 
     private sealed class RecordingLogger<T> : ILogger<T>

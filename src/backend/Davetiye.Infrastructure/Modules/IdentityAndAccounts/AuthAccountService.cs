@@ -1,4 +1,3 @@
-using System.Net;
 using Davetiye.Application.Modules.IdentityAndAccounts.Contracts;
 using Davetiye.Application.Modules.Notifications.Contracts;
 using Davetiye.Domain.Modules.IdentityAndAccounts;
@@ -7,6 +6,7 @@ using Davetiye.Infrastructure.Persistence;
 using Davetiye.Infrastructure.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Davetiye.Infrastructure.Modules.IdentityAndAccounts;
@@ -30,7 +30,9 @@ public sealed class AuthAccountService(
     DavetiyeDbContext dbContext,
     IEmailSender emailSender,
     IClock clock,
-    IOptions<PublicWebOptions> publicWebOptions) : IAuthAccountService
+    IOptions<PublicWebOptions> publicWebOptions,
+    IOptions<EmailTokenOptions> emailTokenOptions,
+    ILogger<AuthAccountService> logger) : IAuthAccountService
 {
     public async Task<RegisterAccountResult> RegisterAsync(
         RegisterAccountRequest request,
@@ -40,9 +42,31 @@ public sealed class AuthAccountService(
 
         if (string.IsNullOrWhiteSpace(request.Email) ||
             string.IsNullOrWhiteSpace(request.Password) ||
-            string.IsNullOrWhiteSpace(request.DisplayName))
+            string.IsNullOrWhiteSpace(request.DisplayName) ||
+            string.IsNullOrWhiteSpace(request.AccountType))
         {
-            return new RegisterAccountResult(RegisterAccountOutcome.InvalidRequest, ["Email, password and display name are required."]);
+            return new RegisterAccountResult(
+                RegisterAccountOutcome.InvalidRequest,
+                ["Email, password, display name and account type are required."]);
+        }
+
+        if (!request.ServiceNoticeAcknowledged)
+        {
+            return new RegisterAccountResult(
+                RegisterAccountOutcome.InvalidRequest,
+                ["The required service notice must be acknowledged."]);
+        }
+
+        // docs/ROADMAP.md §4a (2026-09-29): account type is an explicit registration-time choice, not
+        // inferred, and Account.Create below has no way to change it afterward. Enum.TryParse alone
+        // would accept a purely-numeric string for an out-of-range underlying value (e.g. "99"), so
+        // Enum.IsDefined is checked too.
+        if (!Enum.TryParse<AccountType>(request.AccountType, ignoreCase: true, out var accountType) ||
+            !Enum.IsDefined(accountType))
+        {
+            return new RegisterAccountResult(
+                RegisterAccountOutcome.InvalidRequest,
+                ["Account type must be 'Individual' or 'Organization'."]);
         }
 
         var user = new ApplicationUser
@@ -69,25 +93,29 @@ public sealed class AuthAccountService(
             return new RegisterAccountResult(outcome, errors);
         }
 
-        // AccountType is always Individual here: an Organization signup flow is unspecified product
-        // behavior and explicitly out of this milestone's scope (docs/PHASE_0_BASELINE.md §12 PD-*
-        // does not cover this, and no accepted product document describes an Organization signup
-        // UX). Only Individual accounts may be created through public registration.
+        // accountType is the caller's validated, explicit Individual/Organization choice (see the
+        // validation above) — docs/ROADMAP.md §4a: never inferred, never convertible afterward.
         var account = Account.Create(
             Guid.NewGuid(),
             user.Id,
-            AccountType.Individual,
+            accountType,
             request.DisplayName,
             clock.UtcNow);
 
         dbContext.Accounts.Add(account);
+        dbContext.AccountConsentRecords.Add(AccountConsentRecord.Create(
+            Guid.NewGuid(), account.Id, AccountConsentKind.ServiceNoticeAcknowledgement, true,
+            AccountConsentVersions.ServiceNotice, AccountConsentSource.EmailPasswordSignup, clock.UtcNow));
+        dbContext.AccountConsentRecords.Add(AccountConsentRecord.Create(
+            Guid.NewGuid(), account.Id, AccountConsentKind.MarketingPreference, request.MarketingOptIn,
+            AccountConsentVersions.MarketingPreference, AccountConsentSource.EmailPasswordSignup, clock.UtcNow));
         await dbContext.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
 
+        var tokenCreatedAt = clock.UtcNow;
         var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
         var confirmationLink = BuildLink("/auth/confirm-email", user.Id, token);
 
-        await emailSender.SendAsync(
+        await emailSender.SendShortLivedForAccountAsync(account.Id,
             request.Email,
             EmailNotificationKinds.EmailConfirmation,
             new Dictionary<string, string>
@@ -95,7 +123,10 @@ public sealed class AuthAccountService(
                 ["displayName"] = request.DisplayName,
                 ["confirmationLink"] = confirmationLink,
             },
+            tokenCreatedAt.AddMinutes(emailTokenOptions.Value.TokenLifetimeMinutes),
             cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
 
         return RegisterAccountResult.Succeeded();
     }
@@ -142,28 +173,18 @@ public sealed class AuthAccountService(
 
         if (passwordCheck.IsLockedOut)
         {
-            return new LoginResult(LoginOutcome.LockedOut);
+            // Identity maintains its lockout state internally, but exposing it as a distinct result
+            // reveals that the submitted address belongs to an account. Keep the public response
+            // identical to unknown, unconfirmed, and wrong-password attempts.
+            return new LoginResult(LoginOutcome.InvalidCredentials);
         }
 
         if (passwordCheck.IsNotAllowed)
         {
-            // With IdentityOptions.SignIn.RequireConfirmedAccount = true, Identity's own
-            // PreSignInCheck rejects an unconfirmed account with SignInResult.IsNotAllowed before it
-            // even looks at the password, so this branch is reached for both a correct and an
-            // incorrect password attempt against an unconfirmed account.
-            //
-            // Judgment call: unlike "email doesn't exist" (collapsed into InvalidCredentials above
-            // to avoid account enumeration), revealing "this account exists but is unconfirmed" as a
-            // distinct outcome is not a meaningful enumeration leak here. The caller already had to
-            // know/guess this exact email to reach this branch at all (FindByEmailAsync already
-            // found a real user), so a third party who does NOT know whether the email is registered
-            // learns nothing new from this response that they could not already learn by attempting
-            // /auth/register with the same address (which already answers "already registered" via
-            // RegisterAccountOutcome.EmailAlreadyRegistered). Meanwhile a legitimate user who forgot
-            // to confirm their own email gets an actionable response instead of an indistinguishable
-            // "wrong password", which is a real usability win. We therefore return a distinct
-            // outcome rather than collapsing it into InvalidCredentials.
-            return new LoginResult(LoginOutcome.EmailNotConfirmed);
+            // Identity's RequireConfirmedAccount rejects before password verification. Keep that
+            // state indistinguishable from an unknown address or wrong password to avoid account
+            // enumeration through the login endpoint.
+            return new LoginResult(LoginOutcome.InvalidCredentials);
         }
 
         if (!passwordCheck.Succeeded)
@@ -172,7 +193,7 @@ public sealed class AuthAccountService(
         }
 
         var isBanned = await dbContext.Accounts
-            .Where(account => account.IdentityUserId == user.Id)
+            .Where(account => account.IdentityUserId == user.Id && account.DeletionStartedAtUtc == null)
             .Join(dbContext.BanRecords, account => account.Id, ban => ban.AccountId, (account, ban) => ban)
             .AnyAsync(ban => ban.RevokedAt == null, cancellationToken);
 
@@ -214,14 +235,29 @@ public sealed class AuthAccountService(
             return;
         }
 
-        var token = await userManager.GeneratePasswordResetTokenAsync(user);
-        var resetLink = BuildLink("/auth/reset-password", user.Id, token);
+        try
+        {
+            var accountId = await dbContext.Accounts.AsNoTracking()
+                .Where(account => account.IdentityUserId == user.Id && account.DeletionStartedAtUtc == null)
+                .Select(account => (Guid?)account.Id).SingleOrDefaultAsync(cancellationToken);
+            if (accountId is null) return;
+            var tokenCreatedAt = clock.UtcNow;
+            var token = await userManager.GeneratePasswordResetTokenAsync(user);
+            var resetLink = BuildLink("/auth/reset-password", user.Id, token);
 
-        await emailSender.SendAsync(
-            request.Email,
-            EmailNotificationKinds.PasswordReset,
-            new Dictionary<string, string> { ["resetLink"] = resetLink },
-            cancellationToken);
+            await emailSender.SendShortLivedForAccountAsync(accountId.Value,
+                request.Email,
+                EmailNotificationKinds.PasswordReset,
+                new Dictionary<string, string> { ["resetLink"] = resetLink },
+                tokenCreatedAt.AddMinutes(emailTokenOptions.Value.TokenLifetimeMinutes),
+                cancellationToken);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            // Preserve the account-enumeration-safe response even when durable enqueue fails. Never
+            // log address, link, token, template data, or provider payload.
+            logger.LogWarning("Password-reset notification enqueue failed ({FailureType}).", exception.GetType().Name);
+        }
     }
 
     public async Task<ResetPasswordResult> ResetPasswordAsync(
@@ -268,8 +304,12 @@ public sealed class AuthAccountService(
     private string BuildLink(string relativePath, Guid userId, string token)
     {
         var baseUrl = publicWebOptions.Value.BaseUrl.TrimEnd('/');
-        var encodedToken = WebUtility.UrlEncode(token);
+        // Auth bearer material stays in the fragment: browsers never send it in the HTTP request,
+        // so reverse-proxy access logs cannot capture it. The SPA consumes and removes it before
+        // sending the existing JSON API request.
+        var encodedUserId = Uri.EscapeDataString(userId.ToString());
+        var encodedToken = Uri.EscapeDataString(token);
 
-        return $"{baseUrl}{relativePath}?userId={userId}&token={encodedToken}";
+        return $"{baseUrl}{relativePath}#userId={encodedUserId}&token={encodedToken}";
     }
 }

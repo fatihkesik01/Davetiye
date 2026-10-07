@@ -5,7 +5,23 @@ namespace Davetiye.Application.Modules.IdentityAndAccounts.Contracts;
 // package/framework references (Davetiye.ArchitectureTests enforces this), so every member here is
 // limited to plain BCL types.
 
-public sealed record RegisterAccountRequest(string Email, string Password, string DisplayName);
+/// <summary>
+/// <paramref name="AccountType"/> is the caller's explicit "Individual" or "Organization" choice
+/// (docs/PRODUCT.md §2-3, the 2026-09-29 product decision recorded in docs/ROADMAP.md §4a: chosen
+/// explicitly at registration, never inferred, and never convertible afterward — see
+/// <see cref="Davetiye.Domain.Modules.IdentityAndAccounts.Account"/>, whose <c>AccountType</c>
+/// property has no setter beyond <c>Create</c>). Kept as a plain string here (parsed and validated
+/// against <c>Davetiye.Domain.Modules.IdentityAndAccounts.AccountType</c> in
+/// <c>AuthAccountService.RegisterAsync</c>) rather than referencing the Domain enum type directly, so
+/// this contract file's shape stays obviously plain-BCL/self-describing for API consumers.
+/// </summary>
+public sealed record RegisterAccountRequest(
+    string Email,
+    string Password,
+    string DisplayName,
+    string AccountType,
+    bool ServiceNoticeAcknowledged,
+    bool MarketingOptIn = false);
 
 public enum RegisterAccountOutcome
 {
@@ -37,9 +53,7 @@ public enum LoginOutcome
 {
     Succeeded,
     InvalidCredentials,
-    LockedOut,
     Banned,
-    EmailNotConfirmed,
 
     /// <summary>
     /// The password check succeeded but the account has two-factor authentication enabled

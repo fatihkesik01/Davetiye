@@ -2,7 +2,7 @@ namespace Davetiye.Domain.Modules.IntegrationFoundation;
 
 /// <summary>
 /// A reliable side-effect awaiting dispatch (e.g. a future email send), per
-/// docs/PHASE_0_BASELINE.md §2. Deliberately provider- and business-neutral: <see cref="MessageType"/>
+/// docs/PHASE_0_PLAN.md §2. Deliberately provider- and business-neutral: <see cref="MessageType"/>
 /// is a plain string discriminator chosen by the owning business module (not modeled here), and
 /// <see cref="Payload"/> is an opaque string (e.g. JSON). This module does not send email, call any
 /// provider, or decide what a message means — it only provides a durable queue with retry-safe
@@ -26,9 +26,19 @@ public sealed class OutboxMessage
     /// <summary>Opaque payload (e.g. JSON) describing the side-effect to dispatch.</summary>
     public string Payload { get; private set; } = string.Empty;
 
+    /// <summary>Account owner for suppressible user-targeted work such as transactional email.</summary>
+    public Guid? OwnerAccountId { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; }
 
     public DateTimeOffset? ProcessedAt { get; private set; }
+
+    /// <summary>
+    /// First time an account-owned email passed the deletion gate under its account lock and was
+    /// authorized to enter external transport. Generic queue claim does not set this marker.
+    /// It remains durable across retries because transport may have accepted an earlier attempt.
+    /// </summary>
+    public DateTimeOffset? DispatchStartedAtUtc { get; private set; }
 
     /// <summary>Number of dispatch attempts that have failed so far.</summary>
     public int AttemptCount { get; private set; }
@@ -48,7 +58,8 @@ public sealed class OutboxMessage
         Guid id,
         string messageType,
         string payload,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        Guid? ownerAccountId = null)
     {
         if (id == Guid.Empty)
         {
@@ -67,6 +78,7 @@ public sealed class OutboxMessage
             Id = id,
             MessageType = messageType.Trim(),
             Payload = payload,
+            OwnerAccountId = ownerAccountId,
             CreatedAt = createdAt,
             NextAttemptAt = createdAt,
             AttemptCount = 0,

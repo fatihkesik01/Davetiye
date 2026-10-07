@@ -16,6 +16,8 @@ public sealed class GlobalExceptionHandler(
     ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
 {
     private const string ProblemTypeUri = "https://tools.ietf.org/html/rfc9110#section-15.6.1";
+    private const string BadRequestProblemTypeUri = "https://tools.ietf.org/html/rfc9110#section-15.5.1";
+    private const string PayloadTooLargeProblemTypeUri = "https://tools.ietf.org/html/rfc9110#section-15.5.14";
 
     private const string SanitizedDetail =
         "An unexpected error occurred. Please retry, and include the correlation ID if you contact support.";
@@ -28,18 +30,45 @@ public sealed class GlobalExceptionHandler(
         ArgumentNullException.ThrowIfNull(httpContext);
         ArgumentNullException.ThrowIfNull(exception);
 
-        logger.LogError(
-            "Unhandled exception. ExceptionType={ExceptionType} Method={Method} CorrelationId={CorrelationId}",
-            exception.GetType().Name,
-            httpContext.Request.Method,
-            httpContext.TraceIdentifier);
+        var malformedRequest = exception as BadHttpRequestException;
+        var isMalformedRequest = malformedRequest is not null;
+        if (isMalformedRequest)
+        {
+            logger.LogInformation(
+                "Rejected malformed request. Method={Method} CorrelationId={CorrelationId}",
+                httpContext.Request.Method,
+                httpContext.TraceIdentifier);
+        }
+        else
+        {
+            logger.LogError(
+                "Unhandled exception. ExceptionType={ExceptionType} Method={Method} CorrelationId={CorrelationId}",
+                exception.GetType().Name,
+                httpContext.Request.Method,
+                httpContext.TraceIdentifier);
+        }
+
+        var malformedStatusCode = malformedRequest?.StatusCode is >= 400 and < 500
+            ? malformedRequest.StatusCode
+            : StatusCodes.Status400BadRequest;
+        var statusCode = isMalformedRequest ? malformedStatusCode : StatusCodes.Status500InternalServerError;
+        var isBadRequest = statusCode == StatusCodes.Status400BadRequest;
+        var isPayloadTooLarge = statusCode == StatusCodes.Status413PayloadTooLarge;
 
         var problemDetails = new ProblemDetails
         {
-            Status = StatusCodes.Status500InternalServerError,
-            Title = "An unexpected error occurred.",
-            Type = ProblemTypeUri,
-            Detail = environment.IsDevelopment() ? exception.Message : SanitizedDetail,
+            Status = statusCode,
+            Title = isMalformedRequest
+                ? isPayloadTooLarge ? "The request body is too large." : isBadRequest ? "The request is invalid." : "The request was rejected."
+                : "An unexpected error occurred.",
+            Type = isMalformedRequest
+                ? isPayloadTooLarge ? PayloadTooLargeProblemTypeUri : isBadRequest ? BadRequestProblemTypeUri : "about:blank"
+                : ProblemTypeUri,
+            Detail = !isMalformedRequest
+                ? environment.IsDevelopment() ? exception.Message : SanitizedDetail
+                : isPayloadTooLarge ? "The request body exceeds the allowed size."
+                : isBadRequest ? "The request body could not be read."
+                : "The request was rejected.",
             Instance = httpContext.Request.Path,
         };
         problemDetails.Extensions["correlationId"] = httpContext.TraceIdentifier;

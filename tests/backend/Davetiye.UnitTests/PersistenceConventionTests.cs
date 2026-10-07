@@ -59,7 +59,34 @@ public sealed class PersistenceConventionTests
             [
                 "20260928153000_FoundationBaseline",
                 "20260928160000_M5A_IdentityAccountsPlansSettings",
-                "20260928170000_M5B_IntegrationFoundationInboxOutbox"
+                "20260928170000_M5B_IntegrationFoundationInboxOutbox",
+                "20260929200313_P2M2_InvitationsAndTemplates",
+                "20261001120058_P3M2_EntitlementsAndGrantReservations",
+                "20261001211718_P3M3_PublicationSnapshotAndWindow",
+                "20261002125108_P3M5_InvitationDeletionOverlay",
+                "20261002193444_P3M7_AggregateInvitationViews",
+                "20261002224848_P4M1_CreatorMediaContract",
+                "20261004141823_P4M2_CreatorMediaIntentReservation",
+                "20261004155857_P4M4_MediaVerification",
+                "20261004193329_P4M5PublishedMediaSnapshot",
+                "20261004230832_P5M1_RsvpSchema",
+                "20261005120754_P6M1_MemorySchema",
+                "20261005183806_P7M1_GiftRegistrySchema",
+                "20261005214945_P8M2PaymentAttempts",
+                "20261005234432_P8M4PaymentAttemptSettlementIdentity",
+                "20261006064820_P8M4PaymentAttemptReversalState",
+                "20261006065915_P8M4ChargebackResolution",
+                "20261006073739_P8M5OrganizationSubscriptions",
+                "20261006081856_P8M5OrganizationSubscriptionExpiryReminder",
+                "20261006101308_P9M2AdminBanAuditSchema",
+                "20261006104138_P9M5PaymentAttemptUpdatedAtPagingIndex",
+                "20261006115815_P9M4PlanTemplateDescriptions",
+                "20261006123301_P9M4PlanBillingKindSnapshot",
+                "20261006124446_P9M4PaymentAttemptBillingKindSnapshot",
+                "20261006132634_P9M4OrganizationSubscriptionPriceSnapshot",
+                "20261006192152_P10M4AccountConsentRecords",
+                "20261006195142_P10M3AccountDeletionLifecycle",
+                "20261006201318_P10M3EmailDispatchLinearization",
             ],
             context.Database.GetMigrations());
     }
@@ -80,6 +107,10 @@ public sealed class PersistenceConventionTests
 
         Assert.Contains("__EFMigrationsHistory", script, StringComparison.Ordinal);
         Assert.Contains("20260928153000_FoundationBaseline", script, StringComparison.Ordinal);
+        Assert.Contains(
+            "CREATE INDEX ix_payment_attempts_updated_at_id ON payment_attempts (updated_at DESC, id DESC)",
+            script,
+            StringComparison.Ordinal);
     }
 
     private static TContext CreateContext<TContext>()

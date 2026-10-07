@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Threading.RateLimiting;
+using Davetiye.Application.Modules.IdentityAndAccounts.Contracts;
 using Davetiye.Infrastructure.Modules.IdentityAndAccounts;
 using Davetiye.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -226,6 +228,56 @@ public static class SecurityServiceCollectionExtensions
                 // ClaimTypes.AuthenticationMethod/"amr" across an explicit refresh.
                 cookieOptions.Events.OnValidatePrincipal = async context =>
                 {
+                    var userId = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+                    if (Guid.TryParse(userId, out var identityUserId))
+                    {
+                        // SecurityStampValidator is intentionally interval-based. Bans are an
+                        // immediate access revocation, so check the authoritative ban overlay on
+                        // every authenticated request even when the configurable stamp interval is
+                        // nonzero. Login denial alone does not revoke an already-issued cookie.
+                        var dbContext = context.HttpContext.RequestServices.GetRequiredService<DavetiyeDbContext>();
+                        var banState = await dbContext.Accounts.AsNoTracking()
+                            .Where(account => account.IdentityUserId == identityUserId)
+                            .Select(account => new
+                            {
+                                account.DeletionStartedAtUtc,
+                                IsBanned = dbContext.BanRecords.Any(ban =>
+                                    ban.AccountId == account.Id && ban.RevokedAt == null),
+                                HasBanHistory = dbContext.BanRecords.Any(ban => ban.AccountId == account.Id)
+                            })
+                            .SingleOrDefaultAsync(context.HttpContext.RequestAborted);
+                        if (banState?.IsBanned == true)
+                        {
+                            context.RejectPrincipal();
+                            await context.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+                            return;
+                        }
+
+                        // Ban history marks this identity as having had an explicitly revoked
+                        // session. Super Admins also require immediate stamp checks: a trusted
+                        // lost-factor recovery must revoke every existing privileged cookie on its
+                        // next request even when the general stamp interval is configured > 0.
+                        var isSuperAdmin = context.Principal?.HasClaim(
+                            SuperAdminClaimNames.SuperAdmin, SuperAdminClaimNames.SuperAdminClaimValue) == true;
+                        if (!isSuperAdmin && banState?.DeletionStartedAtUtc is not null)
+                        {
+                            context.RejectPrincipal();
+                            await context.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+                            return;
+                        }
+                        if (banState?.HasBanHistory == true || isSuperAdmin)
+                        {
+                            var signInManager = context.HttpContext.RequestServices
+                                .GetRequiredService<SignInManager<ApplicationUser>>();
+                            if (await signInManager.ValidateSecurityStampAsync(context.Principal) is null)
+                            {
+                                context.RejectPrincipal();
+                                await context.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+                                return;
+                            }
+                        }
+                    }
+
                     var hadMfaClaim = context.Principal?.HasClaim(
                         SuperAdminClaimNames.AuthenticationMethodReference, SuperAdminClaimNames.MfaAmrValue) ?? false;
 
@@ -280,6 +332,12 @@ public static class SecurityServiceCollectionExtensions
                 cookieOptions.ExpireTimeSpan = TimeSpan.FromHours(authCookieOptions.Value.ExpirationHours);
             });
 
+        // These cookies contain only an intermediate Google identity or a pending second-factor
+        // identity. Keep them short-lived and non-sliding so browser activity cannot extend an
+        // incomplete authentication flow indefinitely.
+        ConfigureIntermediateCookie(services, IdentityConstants.ExternalScheme);
+        ConfigureIntermediateCookie(services, IdentityConstants.TwoFactorUserIdScheme);
+
         services.AddOptions<SecurityStampValidatorOptions>().Configure<IOptions<AuthCookieOptions>>(
             (stampOptions, authCookieOptions) =>
             {
@@ -287,6 +345,14 @@ public static class SecurityServiceCollectionExtensions
                     TimeSpan.FromSeconds(authCookieOptions.Value.SecurityStampValidationIntervalSeconds);
             });
     }
+
+    private static void ConfigureIntermediateCookie(IServiceCollection services, string scheme) =>
+        services.AddOptions<CookieAuthenticationOptions>(scheme)
+            .Configure(options =>
+            {
+                options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+                options.SlidingExpiration = false;
+            });
 
     /// <summary>
     /// Reads <see cref="GoogleAuthOptions"/> directly from raw configuration (bypassing the validated
@@ -388,6 +454,13 @@ public static class SecurityServiceCollectionExtensions
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.OnRejected = (context, _) =>
+            {
+                context.HttpContext.Response.Headers.CacheControl = "no-store";
+                context.HttpContext.Response.Headers.Pragma = "no-cache";
+                context.HttpContext.Response.Headers["Referrer-Policy"] = "no-referrer";
+                return ValueTask.CompletedTask;
+            };
 
             options.AddPolicy(AuthRateLimitPolicyNames.Register, httpContext =>
                 CreatePerIpFixedWindowPartition(httpContext, limits => limits.Register));
@@ -412,7 +485,46 @@ public static class SecurityServiceCollectionExtensions
 
             options.AddPolicy(AuthRateLimitPolicyNames.AdminMfaVerify, httpContext =>
                 CreatePerIpFixedWindowPartition(httpContext, limits => limits.AdminMfaVerify));
+            options.AddPolicy(AuthRateLimitPolicyNames.PublicationRead, httpContext =>
+                CreatePerIpFixedWindowPartition(httpContext, limits => limits.PublicationRead));
+            options.AddPolicy(AuthRateLimitPolicyNames.PublicationAction, httpContext =>
+                CreatePerIpFixedWindowPartition(httpContext, limits => limits.PublicationAction));
+            options.AddPolicy(AuthRateLimitPolicyNames.PublicInvitationRead, httpContext =>
+                CreatePerIpFixedWindowPartition(httpContext, limits => limits.PublicInvitationRead));
+            options.AddPolicy(AuthRateLimitPolicyNames.PublicRsvpSubmission, httpContext =>
+                CreatePerIpFixedWindowPartition(httpContext, limits => limits.PublicRsvpSubmission));
+            options.AddPolicy(AuthRateLimitPolicyNames.CreatorMediaIntentIp, httpContext =>
+                CreatePerIpFixedWindowPartition(httpContext, limits => limits.CreatorMediaIntentIp));
+            options.AddPolicy(AuthRateLimitPolicyNames.CreatorRsvpReadIp, httpContext =>
+                CreatePerIpFixedWindowPartition(httpContext, limits => limits.CreatorRsvpReadIp));
+            options.AddPolicy(AuthRateLimitPolicyNames.CreatorRsvpWriteIp, httpContext =>
+                CreatePerIpFixedWindowPartition(httpContext, limits => limits.CreatorRsvpWriteIp));
+            options.AddPolicy(AuthRateLimitPolicyNames.PublicMemorySubmission, httpContext =>
+                CreatePerIpFixedWindowPartition(httpContext, limits => limits.PublicMemorySubmission));
+            options.AddPolicy(AuthRateLimitPolicyNames.PublicMemoryMediaDelivery, httpContext =>
+                CreatePerIpFixedWindowPartition(httpContext, limits => limits.PublicMemoryMediaDelivery));
+            options.AddPolicy(AuthRateLimitPolicyNames.PublicMemoryUploadCreate, httpContext =>
+                CreatePerIpFixedWindowPartition(httpContext, limits => limits.PublicMemoryUploadCreate));
+            options.AddPolicy(AuthRateLimitPolicyNames.PublicMemoryUploadIntent, httpContext =>
+                CreatePerIpFixedWindowPartition(httpContext, limits => limits.PublicMemoryUploadIntent));
+            options.AddPolicy(AuthRateLimitPolicyNames.PublicMemoryUploadFinalize, httpContext =>
+                CreatePerIpFixedWindowPartition(httpContext, limits => limits.PublicMemoryUploadFinalize));
+            options.AddPolicy(AuthRateLimitPolicyNames.CreatorMemoriesReadIp, httpContext =>
+                CreatePerIpFixedWindowPartition(httpContext, limits => limits.CreatorMemoriesReadIp));
+            options.AddPolicy(AuthRateLimitPolicyNames.CreatorMemoriesWriteIp, httpContext =>
+                CreatePerIpFixedWindowPartition(httpContext, limits => limits.CreatorMemoriesWriteIp));
         });
+    }
+
+    /// <summary>IPv4 (and IPv4-mapped IPv6) keys stay exact; native IPv6 addresses collapse to their /64 so one host cannot rotate through a whole prefix.</summary>
+    public static string NormalizeClientKey(System.Net.IPAddress? address)
+    {
+        if (address is null) return "unknown";
+        if (address.IsIPv4MappedToIPv6) address = address.MapToIPv4();
+        if (address.AddressFamily != System.Net.Sockets.AddressFamily.InterNetworkV6) return address.ToString();
+        var bytes = address.GetAddressBytes();
+        Array.Clear(bytes, 8, 8);
+        return new System.Net.IPAddress(bytes).ToString() + "/64";
     }
 
     /// <summary>
@@ -427,7 +539,7 @@ public static class SecurityServiceCollectionExtensions
     {
         var routeLimit = selectRouteLimit(
             httpContext.RequestServices.GetRequiredService<IOptionsMonitor<AuthRateLimitOptions>>().CurrentValue);
-        var partitionKey = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var partitionKey = NormalizeClientKey(httpContext.Connection.RemoteIpAddress);
 
         return RateLimitPartition.GetFixedWindowLimiter(
             partitionKey,

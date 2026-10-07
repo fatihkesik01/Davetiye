@@ -44,9 +44,48 @@ jobs:
       - run: npm run build
       - run: npm audit --audit-level=moderate
 
+  # Browser acceptance specs (mocked API; desktop, 320px and 200% zoom). The *.visual.ts
+  # screenshot specs are excluded: their baselines are platform-specific (not Linux).
+  frontend-e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.17.0
+          cache: npm
+          cache-dependency-path: src/web/package-lock.json
+      - name: Use repository-supported npm
+        run: npm install --global npm@11.4.2
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test acceptance
+
+  media-ingress-worker:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/cloudflare/media-ingress
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.17.0
+          cache: npm
+          cache-dependency-path: src/cloudflare/media-ingress/package-lock.json
+      - name: Use repository-supported npm
+        run: npm install --global npm@11.4.2
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm audit --omit=dev --audit-level=moderate
+
   container-smoke:
     runs-on: ubuntu-latest
-    needs: [backend, frontend]
+    needs: [backend, frontend, frontend-e2e, media-ingress-worker]
     steps:
       - uses: actions/checkout@v4
       - name: Create isolated CI configuration

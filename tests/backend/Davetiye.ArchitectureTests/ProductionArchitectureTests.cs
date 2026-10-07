@@ -1,6 +1,7 @@
 using Davetiye.Api;
 using Davetiye.Application;
 using Davetiye.Domain;
+using Davetiye.Domain.Modules.Media;
 using Davetiye.Infrastructure;
 using Xunit;
 
@@ -23,13 +24,70 @@ public sealed class ProductionArchitectureTests
             type.Namespace?.Contains(".Modules.", StringComparison.Ordinal) == true);
 
         Assert.True(moduleTypeCount > 0, "Architecture gate must inspect at least one production module type.");
-        Assert.Empty(ArchitectureRuleEvaluator.FindCrossModuleReferenceViolations(ProductionTypes));
+        var violations = ArchitectureRuleEvaluator.FindCrossModuleReferenceViolations(ProductionTypes);
+        Assert.True(violations.Count == 0, string.Join(Environment.NewLine, violations));
     }
 
     [Fact]
     public void Production_contract_tree_contains_only_public_narrow_contracts()
     {
         Assert.Empty(ArchitectureRuleEvaluator.FindContractSurfaceViolations(ProductionTypes));
+    }
+
+    [Fact]
+    public void Application_contracts_do_not_expose_mutable_media_placement_rows()
+    {
+        var placementReferences = ProductionTypes
+            .Where(type => type.Namespace?.StartsWith(
+                "Davetiye.Application.Modules.", StringComparison.Ordinal) == true &&
+                type.Namespace.Split('.').Contains("Contracts", StringComparer.Ordinal))
+            .SelectMany(GetContractMemberTypes)
+            .SelectMany(FlattenType)
+            .Where(type => type == typeof(MediaPlacement))
+            .ToArray();
+
+        Assert.Empty(placementReferences);
+    }
+
+    private static IEnumerable<Type> GetContractMemberTypes(Type contractType)
+    {
+        const System.Reflection.BindingFlags flags =
+            System.Reflection.BindingFlags.Public |
+            System.Reflection.BindingFlags.Instance |
+            System.Reflection.BindingFlags.Static |
+            System.Reflection.BindingFlags.DeclaredOnly;
+
+        return contractType.GetProperties(flags).Select(property => property.PropertyType)
+            .Concat(contractType.GetMethods(flags).Select(method => method.ReturnType))
+            .Concat(contractType.GetMethods(flags)
+                .SelectMany(method => method.GetParameters())
+                .Select(parameter => parameter.ParameterType));
+    }
+
+    private static IEnumerable<Type> FlattenType(Type type)
+    {
+        yield return type;
+
+        if (type.HasElementType && type.GetElementType() is { } elementType)
+        {
+            foreach (var nestedType in FlattenType(elementType))
+            {
+                yield return nestedType;
+            }
+        }
+
+        if (!type.IsGenericType)
+        {
+            yield break;
+        }
+
+        foreach (var argument in type.GetGenericArguments())
+        {
+            foreach (var nestedType in FlattenType(argument))
+            {
+                yield return nestedType;
+            }
+        }
     }
 
     [Fact]

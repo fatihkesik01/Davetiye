@@ -55,8 +55,20 @@ services:
       DataProtection__KeyRingDirectory: /var/davetiye/dp-keys
       PublicWeb__BaseUrl: ${PUBLIC_WEB_BASE_URL:?set in .env}
       Cors__AllowedOrigins__0: ${PUBLIC_WEB_ORIGIN:?set in .env}
+      Resend__ApiKey: ${RESEND_API_KEY:-}
+      Resend__FromAddress: ${RESEND_FROM_ADDRESS:-}
+      Resend__FromName: ${RESEND_FROM_NAME:-Davetiye}
       TrustedProxies__Networks__0: 172.16.0.0/12
       GoogleAuth__Enabled: "false"
+      PublicWeb__AppShellUrl: http://web:8080/
+      CloudflareMedia__Enabled: ${CLOUDFLARE_MEDIA_ENABLED:-false}
+      CloudflareMedia__WorkerBaseUrl: ${CLOUDFLARE_MEDIA_WORKER_BASE_URL:-}
+      CloudflareMedia__ImageCapabilitySigningKeyBase64Url: ${CLOUDFLARE_MEDIA_IMAGE_CAPABILITY_SIGNING_KEY_BASE64URL:-}
+      CloudflareMedia__WorkerBrokerAuthorizationKey: ${CLOUDFLARE_MEDIA_WORKER_BROKER_AUTHORIZATION_KEY:-}
+      CloudflareMedia__StreamWebhookSecret: ${CLOUDFLARE_MEDIA_STREAM_WEBHOOK_SECRET:-}
+      CloudflareMedia__WebhookMaxAgeSeconds: ${CLOUDFLARE_MEDIA_WEBHOOK_MAX_AGE_SECONDS:-300}
+      CloudflareMedia__MaximumVideoPlaybackSessionSeconds: ${CLOUDFLARE_MEDIA_MAXIMUM_VIDEO_PLAYBACK_SESSION_SECONDS:-1800}
+      CloudflareMedia__StreamCustomerHostname: ${CLOUDFLARE_MEDIA_STREAM_CUSTOMER_HOSTNAME:-}
     volumes:
       - davetiye_dataprotection_keys:/var/davetiye/dp-keys
     read_only: true
@@ -86,6 +98,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.web
+      args:
+        CSP_MEDIA_WORKER_ORIGIN: ${CSP_MEDIA_WORKER_ORIGIN:-}
+        CSP_STREAM_CUSTOMER_ORIGIN: ${CSP_STREAM_CUSTOMER_ORIGIN:-}
     image: davetiye-web:latest
     container_name: davetiye-web-prod
     ports:

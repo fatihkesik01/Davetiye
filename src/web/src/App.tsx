@@ -8,6 +8,7 @@ import { ProtectedRoute } from './routes/ProtectedRoute'
 const PublicRoutes = lazy(() => import('./routes/PublicRoutes'))
 const CreatorRoutes = lazy(() => import('./routes/CreatorRoutes'))
 const AdminRoutes = lazy(() => import('./routes/AdminRoutes'))
+const AdminMfaSetupPage = lazy(() => import('./features/auth/AdminMfaSetupPage').then(module => ({ default: module.AdminMfaSetupPage })))
 
 function usePathname(): string {
   const [pathname, setPathname] = useState(() => window.location.pathname)
@@ -36,7 +37,12 @@ export function App() {
     <Suspense fallback={<LoadingState />}>
       {route.zone === 'public' ? <PublicRoutes /> : null}
       {route.zone === 'creator' ? <ProtectedRoute key="creator" requiredAccess="creator"><CreatorRoutes /></ProtectedRoute> : null}
-      {route.zone === 'admin' ? <ProtectedRoute key="admin" requiredAccess="mfa-complete-super-admin"><AdminRoutes /></ProtectedRoute> : null}
+      {route.zone === 'admin' && window.location.pathname === '/admin/mfa/setup'
+        ? <ProtectedRoute key="admin-mfa-setup" requiredAccess="mfa-setup-required-super-admin"><AdminMfaSetupPage /></ProtectedRoute>
+        : null}
+      {route.zone === 'admin' && window.location.pathname !== '/admin/mfa/setup'
+        ? <ProtectedRoute key="admin" requiredAccess="mfa-complete-super-admin"><AdminRoutes /></ProtectedRoute>
+        : null}
     </Suspense>
   )
 }

@@ -102,7 +102,7 @@ internal static class ArchitectureRuleEvaluator
 
     /// <summary>
     /// SharedKernel exists precisely to be referenced across module boundaries for its allowlisted
-    /// primitives (docs/PHASE_0_BASELINE.md §2: "id, clock, money ve result gibi küçük
+    /// primitives (docs/PHASE_0_PLAN.md §2: "id, clock, money ve result gibi küçük
     /// primitive'lerle sınırlıdır"), so a foreign module using e.g. <c>IClock</c> is not itself a
     /// cross-module violation - only referencing a non-allowlisted SharedKernel type from another
     /// module is (still caught by the general check below, and separately by

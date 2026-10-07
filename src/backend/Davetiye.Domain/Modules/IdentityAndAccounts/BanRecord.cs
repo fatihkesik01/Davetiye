@@ -2,17 +2,18 @@ namespace Davetiye.Domain.Modules.IdentityAndAccounts;
 
 /// <summary>
 /// Schema for a Super Admin ban action against an Account, per docs/PRODUCT.md §25 ("Ban Sistemi")
-/// and docs/PHASE_0_BASELINE.md §3 ("Account 1..* BanRecord"). This is schema only: session
-/// invalidation, login blocking and the public-gate PII-free-unavailable response are M6's
-/// enforcement job, not modeled here.
+/// and docs/PHASE_0_PLAN.md §3 ("Account 1..* BanRecord"). P9-M2 application services and
+/// request-time gates enforce login/session invalidation and PII-free public unavailability;
+/// this entity stores the durable ban/revocation record.
 ///
-/// <see cref="RevokedAt"/> is nullable so a ban can structurally be lifted. Whether admin unban is
-/// an enabled *feature* in the MVP product is PD-11, which is unresolved
-/// (docs/PHASE_0_BASELINE.md §12) — this schema does not decide that; it only avoids foreclosing
-/// either answer.
+/// <see cref="RevokedAt"/> is nullable so a ban can be lifted while preserving its history.
+/// MVP unban authorization is accepted in PD-11 (docs/PHASE_0_PLAN.md §12); application services
+/// and request-time gates enforce the accepted access/session behavior.
 /// </summary>
 public sealed class BanRecord
 {
+    public const int MaxInternalNoteLength = 2000;
+
     private BanRecord()
     {
     }
@@ -22,6 +23,9 @@ public sealed class BanRecord
     public Guid AccountId { get; private set; }
 
     public string Reason { get; private set; } = string.Empty;
+
+    /// <summary>Optional private operational note; never copy this value to audit records.</summary>
+    public string? InternalNote { get; private set; }
 
     public DateTimeOffset BannedAt { get; private set; }
 
@@ -40,7 +44,8 @@ public sealed class BanRecord
         Guid accountId,
         string reason,
         DateTimeOffset bannedAt,
-        Guid bannedByActorId)
+        Guid bannedByActorId,
+        string? internalNote = null)
     {
         if (id == Guid.Empty)
         {
@@ -62,11 +67,19 @@ public sealed class BanRecord
             throw new ArgumentException("Ban record must reference the actor who issued it.", nameof(bannedByActorId));
         }
 
+        var normalizedNote = string.IsNullOrWhiteSpace(internalNote) ? null : internalNote.Trim();
+        if (normalizedNote?.Length > MaxInternalNoteLength)
+        {
+            throw new ArgumentException(
+                $"Internal note cannot exceed {MaxInternalNoteLength} characters.", nameof(internalNote));
+        }
+
         return new BanRecord
         {
             Id = id,
             AccountId = accountId,
             Reason = reason.Trim(),
+            InternalNote = normalizedNote,
             BannedAt = bannedAt,
             BannedByActorId = bannedByActorId
         };
@@ -80,5 +93,15 @@ public sealed class BanRecord
         }
 
         RevokedAt = revokedAt;
+    }
+
+    /// <summary>Removes free-text PII while preserving the immutable ban/audit event.</summary>
+    public void RedactForAccountDeletion()
+    {
+        const string redactedReason = "Account deleted";
+        if (Reason == redactedReason && InternalNote is null) return;
+        Reason = redactedReason;
+        InternalNote = null;
+        Revision++;
     }
 }

@@ -1,0 +1,6 @@
+# Configure locally with `wrangler secret put`; never commit actual values.
+CAPABILITY_SIGNING_KEY_B64=
+BROKER_AUTH_KEY=
+TUS_LOCATION_ENCRYPTION_KEY_B64=
+CLOUDFLARE_ACCOUNT_ID=
+CLOUDFLARE_STREAM_API_TOKEN=

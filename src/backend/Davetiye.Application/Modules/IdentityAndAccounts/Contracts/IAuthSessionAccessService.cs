@@ -17,6 +17,7 @@ public enum SessionAccess
 {
     None,
     Creator,
+    MfaSetupRequiredSuperAdmin,
     MfaCompleteSuperAdmin,
 }
 

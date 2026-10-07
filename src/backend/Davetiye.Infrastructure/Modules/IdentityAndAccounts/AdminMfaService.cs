@@ -23,6 +23,11 @@ public sealed class AdminMfaService(
     {
         var user = await FindUserOrThrowAsync(identityUserId);
 
+        if (await userManager.GetTwoFactorEnabledAsync(user))
+        {
+            return new EnrollMfaResult(AlreadyEnabled: true, SharedKey: null, AuthenticatorUri: null);
+        }
+
         // Always issues a fresh, unconfirmed key. Re-enrolling before VerifyAndEnableAsync succeeds
         // is safe and simply replaces the pending key — 2FA is not actually turned on until
         // VerifyAndEnableAsync confirms a code generated from it.
@@ -38,7 +43,7 @@ public sealed class AdminMfaService(
 
         var authenticatorUri = BuildAuthenticatorUri(user.Email ?? user.Id.ToString(), unformattedKey);
 
-        return new EnrollMfaResult(unformattedKey, authenticatorUri);
+        return new EnrollMfaResult(AlreadyEnabled: false, unformattedKey, authenticatorUri);
     }
 
     public async Task<VerifyMfaResult> VerifyAndEnableAsync(

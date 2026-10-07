@@ -1,0 +1,86 @@
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
+
+import { DavetiyeApiClient } from '../../api/generated/client'
+import { InternalLink } from '../../components/ui/InternalLink'
+import { AccountDeletionRequest } from './AccountDeletion'
+
+type PageState = 'loading' | 'ready' | 'saving' | 'error'
+
+export function AccountConsentSettingsPage() {
+  const api = useMemo(() => new DavetiyeApiClient(), [])
+  const [state, setState] = useState<PageState>('loading')
+  const [loaded, setLoaded] = useState(false)
+  const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+  const [marketingOptIn, setMarketingOptIn] = useState(false)
+  const [serviceNotice, setServiceNotice] = useState<{ acknowledged: boolean; acknowledgedAt: string | null; noticeVersion: string; textStatus: string } | null>(null)
+  const [marketingPreference, setMarketingPreference] = useState<{ updatedAt: string | null; version: string } | null>(null)
+  const [history, setHistory] = useState<Array<{ kind: string; granted: boolean; version: string; recordedAt: string }>>([])
+
+  useEffect(() => {
+    let active = true
+    void api.getAccountConsents().then((snapshot) => {
+      if (!active) return
+      setMarketingOptIn(snapshot.marketing.optedIn)
+      setServiceNotice(snapshot.serviceNotice)
+      setMarketingPreference(snapshot.marketing)
+      setHistory(snapshot.history)
+      setLoaded(true)
+      setState('ready')
+    }).catch(() => {
+      if (!active) return
+      setError('Tercihleriniz şu anda yüklenemedi. Biraz sonra yeniden deneyin.')
+      setState('error')
+    })
+    return () => { active = false }
+  }, [api])
+
+  const save = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!loaded || state === 'saving') return
+    setState('saving')
+    setError('')
+    try {
+      const csrfToken = await api.getAntiforgeryToken()
+      const result = await api.updateMarketingConsent({ optedIn: marketingOptIn }, csrfToken)
+      setMarketingOptIn(result.marketing.optedIn)
+      setMarketingPreference(result.marketing)
+      setHistory(result.history)
+      setState('ready')
+      setMessage('Tercihiniz kaydedildi.')
+    } catch {
+      setError('Tercihiniz kaydedilemedi. Bağlantınızı kontrol edip yeniden deneyin.')
+      setState('error')
+    }
+  }
+
+  return <section className="account-consent-settings" aria-labelledby="account-consent-heading">
+    <h2 id="account-consent-heading">Gizlilik ve iletişim tercihleri</h2>
+    <p>Hizmet bildirimi ve ürün iletileri birbirinden ayrıdır. Pazarlama tercihinizi dilediğiniz zaman değiştirebilirsiniz.</p>
+    {state === 'loading' ? <p role="status">Tercihler yükleniyor…</p> : null}
+    {serviceNotice ? <div className="account-consent-settings__record">
+      <h3>Hizmet bildirimi</h3>
+      <p>{serviceNotice.acknowledged ? 'Hesap ve davetiye hizmeti için gerekli bildirim onaylandı.' : 'Bu hesap için hizmet bildirimi kaydı bulunmuyor.'}</p>
+      <p>Metin durumu: taslak; Phase 11 hukuk incelemesi bekliyor.</p>
+      <p>Bildirim sürümü: <code>{serviceNotice.noticeVersion}</code></p>
+      {serviceNotice.acknowledgedAt ? <p>Onay zamanı: <time dateTime={serviceNotice.acknowledgedAt}>{new Date(serviceNotice.acknowledgedAt).toLocaleString('tr-TR')}</time></p> : null}
+    </div> : null}
+    <form className="account-consent-settings__form" onSubmit={(event) => void save(event)}>
+      <label htmlFor="account-marketing-opt-in">
+        <input id="account-marketing-opt-in" type="checkbox" checked={marketingOptIn} disabled={!loaded || state === 'saving'} onChange={(event) => setMarketingOptIn(event.target.checked)} />
+        <span><strong>Ürün haberleri ve kampanyalar hakkında e-posta almak istiyorum.</strong><br />Bu tercih isteğe bağlıdır; kapalı tutmanız hizmeti kullanmanızı engellemez.</span>
+      </label>
+      {marketingPreference ? <p>Tercih sürümü: <code>{marketingPreference.version}</code>{marketingPreference.updatedAt ? <> · Son güncelleme: <time dateTime={marketingPreference.updatedAt}>{new Date(marketingPreference.updatedAt).toLocaleString('tr-TR')}</time></> : null}</p> : null}
+      <button className="button button--primary" type="submit" disabled={!loaded || state === 'saving'}>{state === 'saving' ? 'Kaydediliyor…' : 'Tercihi kaydet'}</button>
+    </form>
+    {history.length > 0 ? <details className="account-consent-settings__history">
+      <summary>Tercih geçmişi ({history.length})</summary>
+      <ul>{history.map((record, index) => <li key={`${record.kind}-${record.recordedAt}-${index}`}>
+        <time dateTime={record.recordedAt}>{new Date(record.recordedAt).toLocaleString('tr-TR')}</time> — {record.kind === 'serviceNoticeAcknowledgement' ? 'Hizmet bildirimi' : 'Pazarlama tercihi'}: {record.granted ? 'onaylandı' : 'kapatıldı'} (<code>{record.version}</code>)
+      </li>)}</ul>
+    </details> : null}
+    <p><InternalLink to="/gizlilik">Hizmet bildirimi ve gizlilik bilgisi</InternalLink> · <InternalLink to="/kullanim-kosullari">Kullanım koşulları</InternalLink></p>
+    <AccountDeletionRequest />
+    {error ? <p role="alert">{error}</p> : message ? <p role="status">{message}</p> : state === 'ready' ? <p role="status">Tercihler yüklendi.</p> : null}
+  </section>
+}

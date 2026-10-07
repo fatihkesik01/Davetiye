@@ -1,14 +1,20 @@
 FROM node:22.17.0-alpine AS build
+ARG CSP_MEDIA_WORKER_ORIGIN=""
+ARG CSP_STREAM_CUSTOMER_ORIGIN=""
 WORKDIR /app
+RUN npm install --global npm@11.20.0
 COPY src/web/package.json src/web/package-lock.json ./
 RUN npm ci
 COPY src/web/ ./
 RUN npm run api:check && npm run build
+COPY deploy/nginx/web-container.conf /app/web-container.conf.template
+COPY scripts/render-web-csp.mjs /app/scripts/render-web-csp.mjs
+RUN node /app/scripts/render-web-csp.mjs /app/web-container.conf.template /app/web-container.conf
 
-FROM nginxinc/nginx-unprivileged:1.30.1-alpine AS runtime
+FROM nginxinc/nginx-unprivileged:1.30.4-alpine3.24 AS runtime
 USER root
 RUN apk upgrade --no-cache
 USER 101
-COPY deploy/nginx/web-container.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/web-container.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 8080

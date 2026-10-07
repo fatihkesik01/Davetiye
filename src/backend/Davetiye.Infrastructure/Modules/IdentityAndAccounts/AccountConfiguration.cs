@@ -24,6 +24,10 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
             .HasMaxLength(32)
             .IsRequired();
 
+        builder.HasIndex(account => account.DeletionStartedAtUtc)
+            .HasDatabaseName("ix_accounts_deletion_started_at_utc")
+            .HasFilter("deletion_started_at_utc IS NOT NULL");
+
         builder.HasIndex(account => account.IdentityUserId)
             .IsUnique();
 
@@ -34,5 +38,10 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
             .HasForeignKey<Account>(account => account.IdentityUserId)
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired();
+
+        builder.ToTable(table => table.HasCheckConstraint(
+            "ck_accounts_deletion_timestamps",
+            "deletion_completed_at_utc IS NULL OR " +
+            "(deletion_started_at_utc IS NOT NULL AND deletion_completed_at_utc >= deletion_started_at_utc)"));
     }
 }

@@ -3,7 +3,7 @@ namespace Davetiye.Application.Modules.IdentityAndAccounts.Contracts;
 // Request/result DTOs for IAdminMfaService, grouped in one file following the same convention as
 // AuthAccountContracts.cs.
 
-public sealed record EnrollMfaResult(string SharedKey, string AuthenticatorUri);
+public sealed record EnrollMfaResult(bool AlreadyEnabled, string? SharedKey, string? AuthenticatorUri);
 
 public enum VerifyMfaOutcome
 {

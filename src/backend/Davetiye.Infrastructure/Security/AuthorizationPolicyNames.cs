@@ -1,5 +1,7 @@
 namespace Davetiye.Infrastructure.Security;
 
+using Davetiye.Application.Modules.IdentityAndAccounts.Contracts;
+
 /// <summary>
 /// Named authorization policy identifiers registered by <c>AddAuthSecurity</c>. Davetiye.Api's
 /// composition root (<c>Program.cs</c>) reads these constants and passes the plain string values down

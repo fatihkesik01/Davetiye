@@ -38,7 +38,8 @@ internal static class RepositoryProjectPolicy
     public static readonly string[] ApprovedOperationalToolProjects =
     [
         "tools/Davetiye.AdminBootstrap/Davetiye.AdminBootstrap.csproj",
-        "tools/Davetiye.DatabaseMigrator/Davetiye.DatabaseMigrator.csproj"
+        "tools/Davetiye.DatabaseMigrator/Davetiye.DatabaseMigrator.csproj",
+        "tools/Davetiye.MediaDeletionRetry/Davetiye.MediaDeletionRetry.csproj"
     ];
 
     public static string[] ApprovedRepositoryProjects =>

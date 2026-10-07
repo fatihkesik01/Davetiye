@@ -1,4 +1,8 @@
 using Davetiye.Infrastructure;
+using Davetiye.Infrastructure.Modules.Administration;
+using Davetiye.Infrastructure.Modules.PlansAndEntitlements;
+using Davetiye.Infrastructure.Modules.Memories;
+using Davetiye.Infrastructure.Modules.Templates;
 using Davetiye.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -15,6 +19,24 @@ await host.StartAsync();
 await using var scope = host.Services.CreateAsyncScope();
 var runner = scope.ServiceProvider.GetRequiredService<DatabaseMigrationRunner>();
 await runner.MigrateAsync(targetMigration);
+
+// Reconcile code-owned starter catalogs only after a forward migration to the current schema.
+// Explicit --target runs are used for upgrade/downgrade verification and may intentionally target a
+// schema that predates template_definitions, so they must remain migration-only.
+if (targetMigration is null)
+{
+    var planCatalogInitializer = scope.ServiceProvider.GetRequiredService<PlanCatalogInitializer>();
+    await planCatalogInitializer.InitializeAsync(CancellationToken.None);
+
+    var retentionInitializer = scope.ServiceProvider.GetRequiredService<InvitationRetentionSettingsInitializer>();
+    await retentionInitializer.InitializeAsync(CancellationToken.None);
+
+    var abandonedMemoryRetentionInitializer = scope.ServiceProvider.GetRequiredService<AbandonedMemoryRetentionSettingsInitializer>();
+    await abandonedMemoryRetentionInitializer.InitializeAsync(CancellationToken.None);
+
+    var templateCatalogInitializer = scope.ServiceProvider.GetRequiredService<TemplateCatalogInitializer>();
+    await templateCatalogInitializer.InitializeAsync(CancellationToken.None);
+}
 
 await host.StopAsync();
 

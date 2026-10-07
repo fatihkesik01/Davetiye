@@ -1,4 +1,4 @@
-using Davetiye.Domain.Modules.PlansAndEntitlements;
+using Davetiye.Domain.Modules.Administration;
 using Xunit;
 
 namespace Davetiye.UnitTests;

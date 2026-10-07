@@ -1,15 +1,16 @@
 namespace Davetiye.Domain.Modules.IntegrationFoundation;
 
 /// <summary>
-/// A single inbound provider event awaiting processing, per docs/PHASE_0_BASELINE.md §2
+/// A single inbound provider event awaiting processing, per docs/PHASE_0_PLAN.md §2
 /// ("Integration Foundation, Application'da generic inbox/outbox contract'larını, Infrastructure'da
 /// persistence/claim/worker primitive'lerini barındırır; provider-specific handler veya business
 /// state transition sahiplenmez").
 ///
 /// This entity is deliberately provider-neutral: <see cref="ProviderName"/> is a plain string
 /// discriminator, not an enum of known providers (Payments/Media add their own typed handler on top
-/// of this module later), and <see cref="Payload"/> is stored as an opaque string (raw JSON) rather
-/// than a typed provider-specific shape. This module never decodes the payload or decides what an
+/// of this module later), and <see cref="Payload"/> is stored as an opaque, minimized normalized
+/// envelope rather than a typed provider-specific shape. Raw signed webhook bodies, secrets, and
+/// provider tokens must not be stored here. This module never decodes the payload or decides what an
 /// event means; it only guarantees at-most-once acceptance and retry-safe claim/processing state.
 ///
 /// Idempotency/replay-protection (ADR-0006, applied generically here rather than for payments
@@ -35,7 +36,10 @@ public sealed class InboxMessage
     /// <summary>The provider's own idempotency key for this event.</summary>
     public string ProviderEventId { get; private set; } = string.Empty;
 
-    /// <summary>Raw provider payload (e.g. JSON), stored opaque. Not decoded by this module.</summary>
+    /// <summary>
+    /// Opaque provider-neutral payload (e.g. minimized normalized JSON), not decoded by this module.
+    /// Do not store an untrusted raw request body when it contains secrets or provider tokens.
+    /// </summary>
     public string Payload { get; private set; } = string.Empty;
 
     public DateTimeOffset ReceivedAt { get; private set; }

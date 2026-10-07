@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "davetiye-media-ingress",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-04",
+  "observability": { "enabled": true },
+  "vars": {
+    "MAX_IMAGE_BYTES": "10485760",
+    "MAX_VIDEO_BYTES": "1048576000",
+    "MAX_VIDEO_DURATION_SECONDS": "900",
+    "MAX_VIDEO_PLAYBACK_SESSION_SECONDS": "1800",
+    "IMAGE_OUTPUT_FORMAT": "image/webp",
+    "STREAM_API_BASE": "https://api.cloudflare.com",
+    "ALLOWED_UPLOAD_ORIGINS": "https://localhost:5173"
+  },
+  "images": { "binding": "IMAGES" },
+  "r2_buckets": [
+    { "binding": "MEDIA_BUCKET", "bucket_name": "davetiye-private-media" }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "STREAM_BROKER", "class_name": "StreamUploadBroker" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["StreamUploadBroker"] }]
+}

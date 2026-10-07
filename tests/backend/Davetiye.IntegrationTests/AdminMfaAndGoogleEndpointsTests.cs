@@ -12,6 +12,8 @@ using Davetiye.Infrastructure.Modules.IdentityAndAccounts;
 using Davetiye.Infrastructure.Persistence;
 using Davetiye.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -86,14 +88,15 @@ public sealed class AdminMfaAndGoogleEndpointsTests(PostgreSqlFixture postgreSql
         var sub = Guid.NewGuid().ToString();
 
         var simulateResponse = await client.GetAsync(new Uri(
-            $"{GoogleLoginSimulationStartupFilter.Path}?sub={sub}&email={Uri.EscapeDataString(email)}&name=Test+User",
+            $"{GoogleLoginSimulationStartupFilter.Path}?sub={sub}&email={Uri.EscapeDataString(email)}" +
+            "&name=Test+User&returnUrl=%2Fcreator%2Fdashboard&marketingOptIn=true",
             UriKind.Relative));
         Assert.Equal(HttpStatusCode.OK, simulateResponse.StatusCode);
 
-        var completeResponse = await client.GetAsync(new Uri(
-            "/api/v1/auth/google/complete?returnUrl=%2Fcreator%2Fdashboard", UriKind.Relative));
+        var completeResponse = await client.GetAsync(new Uri("/api/v1/auth/google/complete", UriKind.Relative));
 
         Assert.Equal(HttpStatusCode.Redirect, completeResponse.StatusCode);
+        AssertExternalCookieCleared(completeResponse);
         Assert.Equal(
             "https://davetiye.example.test/creator/dashboard",
             completeResponse.Headers.Location?.OriginalString);
@@ -103,6 +106,204 @@ public sealed class AdminMfaAndGoogleEndpointsTests(PostgreSqlFixture postgreSql
         Assert.True(user.EmailConfirmed);
         var account = await context.Accounts.SingleAsync(a => a.IdentityUserId == user.Id);
         Assert.Equal(AccountType.Individual, account.AccountType);
+        var consentRecords = await context.AccountConsentRecords.Where(record => record.AccountId == account.Id).ToListAsync();
+        Assert.Contains(consentRecords, record => record.Kind == AccountConsentKind.ServiceNoticeAcknowledgement && record.Granted);
+        Assert.Contains(consentRecords, record => record.Kind == AccountConsentKind.MarketingPreference && record.Granted);
+    }
+
+    [Fact]
+    public async Task Google_new_account_creation_requires_acknowledgement_from_protected_external_state()
+    {
+        var loginSimulation = new GoogleLoginSimulationStartupFilter();
+        await using var factory = CreateFactory(extraConfig: GoogleEnabledConfig(), extraStartupFilter: loginSimulation);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        var email = UniqueEmail();
+
+        await client.GetAsync(new Uri(
+            $"{GoogleLoginSimulationStartupFilter.Path}?sub={Guid.NewGuid()}&email={Uri.EscapeDataString(email)}&serviceNoticeAcknowledged=false",
+            UriKind.Relative));
+        var response = await client.GetAsync(new Uri("/api/v1/auth/google/complete", UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        await using var context = CreateDbContext(connectionString);
+        Assert.False(await context.Users.AnyAsync(user => user.Email == email));
+        Assert.Empty(await context.AccountConsentRecords.ToListAsync());
+    }
+
+    [Fact]
+    public async Task Intermediate_authentication_cookies_are_short_non_sliding_and_google_complete_clears_external_cookie()
+    {
+        await using var factory = CreateFactory(extraConfig: GoogleEnabledConfig());
+        using (var scope = factory.Services.CreateScope())
+        {
+            var options = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptionsMonitor<CookieAuthenticationOptions>>();
+            foreach (var scheme in new[] { IdentityConstants.ExternalScheme, IdentityConstants.TwoFactorUserIdScheme })
+            {
+                var cookie = options.Get(scheme);
+                Assert.Equal(TimeSpan.FromMinutes(5), cookie.ExpireTimeSpan);
+                Assert.False(cookie.SlidingExpiration);
+            }
+        }
+
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using var response = await client.GetAsync(new Uri("/api/v1/auth/google/complete", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        AssertExternalCookieCleared(response);
+    }
+
+    [Fact]
+    public async Task Google_first_time_sign_in_uses_the_protected_organization_account_type()
+    {
+        var loginSimulation = new GoogleLoginSimulationStartupFilter();
+        await using var factory = CreateFactory(extraConfig: GoogleEnabledConfig(), extraStartupFilter: loginSimulation);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var email = UniqueEmail();
+        var simulateResponse = await client.GetAsync(new Uri(
+            $"{GoogleLoginSimulationStartupFilter.Path}?sub={Guid.NewGuid()}&email={Uri.EscapeDataString(email)}" +
+            "&accountType=Organization",
+            UriKind.Relative));
+        Assert.Equal(HttpStatusCode.OK, simulateResponse.StatusCode);
+
+        var completeResponse = await client.GetAsync(new Uri("/api/v1/auth/google/complete", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.Redirect, completeResponse.StatusCode);
+
+        await using var context = CreateDbContext(connectionString);
+        var user = await context.Users.SingleAsync(u => u.Email == email);
+        var account = await context.Accounts.SingleAsync(a => a.IdentityUserId == user.Id);
+        Assert.Equal(AccountType.Organization, account.AccountType);
+    }
+
+    [Fact]
+    public async Task Google_challenge_get_is_unavailable_even_when_query_contains_account_and_consent()
+    {
+        await using var factory = CreateFactory(extraConfig: GoogleEnabledConfig());
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var response = await client.GetAsync(new Uri(
+            "/api/v1/auth/google/challenge?accountType=Individual&serviceNoticeAcknowledged=true&marketingOptIn=true",
+            UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Google_challenge_rejects_an_invalid_account_type_after_antiforgery_validation()
+    {
+        await using var factory = CreateFactory(extraConfig: GoogleEnabledConfig());
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        var (csrfCookie, csrfToken) = await GetFormCsrfAsync(client);
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/google/challenge")
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["accountType"] = "Administrator",
+                ["serviceNoticeAcknowledged"] = "true",
+                ["__RequestVerificationToken"] = csrfToken,
+            }),
+        };
+        request.Headers.Add("Cookie", csrfCookie);
+        request.Headers.Add("Origin", client.BaseAddress!.GetLeftPart(UriPartial.Authority));
+
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.False(response.Headers.Contains("Set-Cookie"));
+    }
+
+    [Fact]
+    public async Task Google_challenge_rejects_missing_antiforgery_token_and_cross_site_origin_without_side_effects()
+    {
+        await using var factory = CreateFactory(extraConfig: GoogleEnabledConfig());
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/google/challenge")
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["accountType"] = "Individual",
+                ["returnUrl"] = "/panel",
+                ["serviceNoticeAcknowledged"] = "true",
+                ["marketingOptIn"] = "true",
+            }),
+        };
+        request.Headers.Add("Origin", "https://evil.example.test");
+
+        var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.False(response.Headers.Contains("Set-Cookie"));
+
+        using var sameOriginWithoutToken = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/google/challenge")
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["accountType"] = "Individual",
+                ["returnUrl"] = "/panel",
+                ["serviceNoticeAcknowledged"] = "true",
+                ["marketingOptIn"] = "true",
+            }),
+        };
+        sameOriginWithoutToken.Headers.Add("Origin", client.BaseAddress!.GetLeftPart(UriPartial.Authority));
+        var sameOriginResponse = await client.SendAsync(sameOriginWithoutToken);
+        Assert.Equal(HttpStatusCode.BadRequest, sameOriginResponse.StatusCode);
+        Assert.False(sameOriginResponse.Headers.Contains("Set-Cookie"));
+
+        await using var context = CreateDbContext(connectionString);
+        Assert.Empty(await context.Users.ToListAsync());
+        Assert.Empty(await context.Accounts.ToListAsync());
+        Assert.Empty(await context.AccountConsentRecords.ToListAsync());
+    }
+
+    [Fact]
+    public async Task Google_challenge_accepts_a_valid_antiforgery_form_and_starts_oauth_redirect()
+    {
+        await using var factory = CreateFactory(extraConfig: GoogleEnabledConfig(), registerGoogleHandlerForChallenge: true);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        var (csrfCookie, csrfToken) = await GetFormCsrfAsync(client);
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/google/challenge")
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["accountType"] = "Organization",
+                ["returnUrl"] = "/panel",
+                ["serviceNoticeAcknowledged"] = "true",
+                ["marketingOptIn"] = "false",
+                ["__RequestVerificationToken"] = csrfToken,
+            }),
+        };
+        request.Headers.Add("Cookie", csrfCookie);
+        request.Headers.Add("Origin", client.BaseAddress!.GetLeftPart(UriPartial.Authority));
+
+        var response = await client.SendAsync(request);
+
+        var responseBody = await response.Content.ReadAsStringAsync();
+        Assert.True(response.StatusCode == HttpStatusCode.Redirect, $"Status {response.StatusCode}: {responseBody}");
+        Assert.Contains("accounts.google.com", response.Headers.Location!.OriginalString, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("state=", response.Headers.Location!.OriginalString, StringComparison.Ordinal);
+        Assert.True(response.Headers.TryGetValues("Set-Cookie", out var setCookies));
+        Assert.Contains(setCookies!, cookie => cookie.Contains(".AspNetCore.Correlation.", StringComparison.Ordinal));
+        await using var context = CreateDbContext(connectionString);
+        Assert.Empty(await context.Users.ToListAsync());
+        Assert.Empty(await context.AccountConsentRecords.ToListAsync());
+    }
+
+    [Fact]
+    public async Task Google_completion_rejects_an_invalid_account_type_even_if_external_state_is_malformed()
+    {
+        var loginSimulation = new GoogleLoginSimulationStartupFilter();
+        await using var factory = CreateFactory(extraConfig: GoogleEnabledConfig(), extraStartupFilter: loginSimulation);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var email = UniqueEmail();
+        await client.GetAsync(new Uri(
+            $"{GoogleLoginSimulationStartupFilter.Path}?sub={Guid.NewGuid()}&email={Uri.EscapeDataString(email)}" +
+            "&accountType=Administrator",
+            UriKind.Relative));
+
+        var response = await client.GetAsync(new Uri("/api/v1/auth/google/complete", UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        await using var context = CreateDbContext(connectionString);
+        Assert.False(await context.Users.AnyAsync(u => u.Email == email));
     }
 
     [Fact]
@@ -180,12 +381,392 @@ public sealed class AdminMfaAndGoogleEndpointsTests(PostgreSqlFixture postgreSql
 
         var completeResponse = await client.GetAsync(new Uri("/api/v1/auth/google/complete", UriKind.Relative));
 
-        Assert.Equal(HttpStatusCode.Conflict, completeResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, completeResponse.StatusCode);
+        Assert.Equal(
+            "https://davetiye.example.test/giris/google-baglanti?returnUrl=%2F",
+            completeResponse.Headers.Location?.OriginalString);
+        AssertExternalCookieRetainedForConfirmation(completeResponse);
 
         // No silent merge: the account still has no Google login attached.
         await using var context = CreateDbContext(connectionString);
         var user = await context.Users.SingleAsync(u => u.Email == email);
         Assert.False(await context.UserLogins.AnyAsync(login => login.UserId == user.Id));
+    }
+
+    [Fact]
+    public async Task Google_account_linking_end_to_end_links_after_password_login_confirmation()
+    {
+        var emailSender = new CapturingEmailSender();
+        var loginSimulation = new GoogleLoginSimulationStartupFilter();
+        await using var factory = CreateFactory(
+            extraConfig: GoogleEnabledConfig(), extraStartupFilter: loginSimulation, emailSender: emailSender);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var email = UniqueEmail();
+        await RegisterAndConfirmAsync(client, emailSender, email, ValidPassword);
+
+        var sub = Guid.NewGuid().ToString();
+        var simulateResponse = await client.GetAsync(new Uri(
+            $"{GoogleLoginSimulationStartupFilter.Path}?sub={sub}&email={Uri.EscapeDataString(email)}",
+            UriKind.Relative));
+        Assert.Equal(HttpStatusCode.OK, simulateResponse.StatusCode);
+
+        var completeResponse = await client.GetAsync(new Uri("/api/v1/auth/google/complete", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.Redirect, completeResponse.StatusCode);
+        Assert.Equal(
+            "https://davetiye.example.test/giris/google-baglanti?returnUrl=%2F",
+            completeResponse.Headers.Location?.OriginalString);
+
+        // Proves ownership of the existing account by logging in with its password - the External-
+        // scheme cookie from the simulated Google attempt above is still present in the same client's
+        // cookie jar alongside the fresh Application-scheme cookie this establishes.
+        var loginResponse = await client.PostAsJsonAsync(
+            new Uri("/api/v1/auth/login", UriKind.Relative), new { email, password = ValidPassword });
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+
+        var csrf = await GetCsrfTokenAsync(client);
+        var confirmResponse = await PostWithCsrfAsync(
+            client, "/api/v1/auth/google/link/confirm", new { password = ValidPassword }, csrf);
+        Assert.Equal(HttpStatusCode.OK, confirmResponse.StatusCode);
+        AssertExternalCookieCleared(confirmResponse);
+
+        await using var context = CreateDbContext(connectionString);
+        var user = await context.Users.SingleAsync(u => u.Email == email);
+        Assert.True(await context.UserLogins.AnyAsync(login => login.UserId == user.Id && login.ProviderKey == sub));
+
+        // A fresh, unrelated client now signs in through the already-linked fast path using the same
+        // Google identity, proving the link is real (not just a 200 that changed nothing).
+        using var secondClient = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        var secondSimulateResponse = await secondClient.GetAsync(new Uri(
+            $"{GoogleLoginSimulationStartupFilter.Path}?sub={sub}&email={Uri.EscapeDataString(email)}",
+            UriKind.Relative));
+        Assert.Equal(HttpStatusCode.OK, secondSimulateResponse.StatusCode);
+        var secondCompleteResponse = await secondClient.GetAsync(new Uri("/api/v1/auth/google/complete", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.Redirect, secondCompleteResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Google_account_link_confirm_rejects_a_wrong_current_password_without_linking()
+    {
+        var emailSender = new CapturingEmailSender();
+        var loginSimulation = new GoogleLoginSimulationStartupFilter();
+        await using var factory = CreateFactory(
+            extraConfig: GoogleEnabledConfig(), extraStartupFilter: loginSimulation, emailSender: emailSender);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var email = UniqueEmail();
+        await RegisterAndConfirmAsync(client, emailSender, email, ValidPassword);
+        await client.PostAsJsonAsync(
+            new Uri("/api/v1/auth/login", UriKind.Relative), new { email, password = ValidPassword });
+
+        var sub = Guid.NewGuid().ToString();
+        await client.GetAsync(new Uri(
+            $"{GoogleLoginSimulationStartupFilter.Path}?sub={sub}&email={Uri.EscapeDataString(email)}",
+            UriKind.Relative));
+
+        var csrf = await GetCsrfTokenAsync(client);
+        var response = await PostWithCsrfAsync(
+            client, "/api/v1/auth/google/link/confirm", new { password = "WrongPassw0rd1" }, csrf);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        AssertExternalCookieCleared(response);
+        await using var context = CreateDbContext(connectionString);
+        var user = await context.Users.SingleAsync(u => u.Email == email);
+        Assert.False(await context.UserLogins.AnyAsync(login => login.UserId == user.Id));
+    }
+
+    [Fact]
+    public async Task Google_account_link_confirm_without_a_pending_external_login_returns_bad_request()
+    {
+        var emailSender = new CapturingEmailSender();
+        await using var factory = CreateFactory(extraConfig: GoogleEnabledConfig(), emailSender: emailSender);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var email = UniqueEmail();
+        await RegisterAndConfirmAsync(client, emailSender, email, ValidPassword);
+        await client.PostAsJsonAsync(
+            new Uri("/api/v1/auth/login", UriKind.Relative), new { email, password = ValidPassword });
+
+        var csrf = await GetCsrfTokenAsync(client);
+        var response = await PostWithCsrfAsync(
+            client, "/api/v1/auth/google/link/confirm", new { password = ValidPassword }, csrf);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Google_account_link_confirm_without_antiforgery_is_rejected_without_linking()
+    {
+        var emailSender = new CapturingEmailSender();
+        var loginSimulation = new GoogleLoginSimulationStartupFilter();
+        await using var factory = CreateFactory(
+            extraConfig: GoogleEnabledConfig(), extraStartupFilter: loginSimulation, emailSender: emailSender);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var email = UniqueEmail();
+        await RegisterAndConfirmAsync(client, emailSender, email, ValidPassword);
+        await client.PostAsJsonAsync(
+            new Uri("/api/v1/auth/login", UriKind.Relative), new { email, password = ValidPassword });
+
+        var sub = Guid.NewGuid().ToString();
+        await client.GetAsync(new Uri(
+            $"{GoogleLoginSimulationStartupFilter.Path}?sub={sub}&email={Uri.EscapeDataString(email)}",
+            UriKind.Relative));
+
+        var response = await client.PostAsJsonAsync(
+            new Uri("/api/v1/auth/google/link/confirm", UriKind.Relative),
+            new { password = ValidPassword });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        await using var context = CreateDbContext(connectionString);
+        var user = await context.Users.SingleAsync(u => u.Email == email);
+        Assert.False(await context.UserLogins.AnyAsync(login => login.UserId == user.Id));
+    }
+
+    [Fact]
+    public async Task Concurrent_google_account_link_confirmations_do_not_create_duplicates_or_return_server_errors()
+    {
+        var emailSender = new CapturingEmailSender();
+        var loginSimulation = new GoogleLoginSimulationStartupFilter();
+        await using var factory = CreateFactory(
+            extraConfig: GoogleEnabledConfig(), extraStartupFilter: loginSimulation, emailSender: emailSender);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var email = UniqueEmail();
+        await RegisterAndConfirmAsync(client, emailSender, email, ValidPassword);
+        await client.PostAsJsonAsync(
+            new Uri("/api/v1/auth/login", UriKind.Relative), new { email, password = ValidPassword });
+
+        var sub = Guid.NewGuid().ToString();
+        await client.GetAsync(new Uri(
+            $"{GoogleLoginSimulationStartupFilter.Path}?sub={sub}&email={Uri.EscapeDataString(email)}",
+            UriKind.Relative));
+        var csrf = await GetCsrfTokenAsync(client);
+
+        using var firstRequest = CreatePostWithCsrfRequest(
+            "/api/v1/auth/google/link/confirm", new { password = ValidPassword }, csrf);
+        using var secondRequest = CreatePostWithCsrfRequest(
+            "/api/v1/auth/google/link/confirm", new { password = ValidPassword }, csrf);
+
+        var responses = await Task.WhenAll(client.SendAsync(firstRequest), client.SendAsync(secondRequest));
+
+        Assert.Contains(responses, response => response.StatusCode == HttpStatusCode.OK);
+        Assert.DoesNotContain(responses, response => response.StatusCode == HttpStatusCode.InternalServerError);
+        Assert.All(
+            responses,
+            response => Assert.Contains(
+                response.StatusCode,
+                new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Conflict }));
+
+        await using var context = CreateDbContext(connectionString);
+        var user = await context.Users.SingleAsync(u => u.Email == email);
+        Assert.Equal(
+            1,
+            await context.UserLogins.CountAsync(login =>
+                login.UserId == user.Id && login.ProviderKey == sub));
+    }
+
+    [Fact]
+    public async Task Google_account_link_redirect_uses_only_the_protected_sanitized_local_return_path()
+    {
+        var emailSender = new CapturingEmailSender();
+        var loginSimulation = new GoogleLoginSimulationStartupFilter();
+        await using var factory = CreateFactory(
+            extraConfig: GoogleEnabledConfig(), extraStartupFilter: loginSimulation, emailSender: emailSender);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var email = UniqueEmail();
+        await RegisterAndConfirmAsync(client, emailSender, email, ValidPassword);
+        await client.GetAsync(new Uri(
+            $"{GoogleLoginSimulationStartupFilter.Path}?sub={Guid.NewGuid()}&email={Uri.EscapeDataString(email)}" +
+            "&returnUrl=%2Fpanel%3Ftab%3Ddrafts",
+            UriKind.Relative));
+
+        var response = await client.GetAsync(new Uri(
+            "/api/v1/auth/google/complete?returnUrl=https%3A%2F%2Fevil.example%2Fsteal",
+            UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal(
+            "https://davetiye.example.test/giris/google-baglanti?returnUrl=%2Fpanel%3Ftab%3Ddrafts",
+            response.Headers.Location?.OriginalString);
+        Assert.DoesNotContain(email, response.Headers.Location?.OriginalString, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("evil.example", response.Headers.Location?.OriginalString, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Google_account_link_confirm_rejects_an_email_mismatch_between_pending_login_and_authenticated_account()
+    {
+        var emailSender = new CapturingEmailSender();
+        var loginSimulation = new GoogleLoginSimulationStartupFilter();
+        await using var factory = CreateFactory(
+            extraConfig: GoogleEnabledConfig(), extraStartupFilter: loginSimulation, emailSender: emailSender);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var email = UniqueEmail();
+        await RegisterAndConfirmAsync(client, emailSender, email, ValidPassword);
+        var loginResponse = await client.PostAsJsonAsync(
+            new Uri("/api/v1/auth/login", UriKind.Relative), new { email, password = ValidPassword });
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+
+        // A pending Google identity for a DIFFERENT email than the authenticated account. This scopes
+        // linking to exactly the same-email collision the feature exists to resolve.
+        var otherEmail = UniqueEmail();
+        await client.GetAsync(new Uri(
+            $"{GoogleLoginSimulationStartupFilter.Path}?sub={Guid.NewGuid()}&email={Uri.EscapeDataString(otherEmail)}",
+            UriKind.Relative));
+
+        var csrf = await GetCsrfTokenAsync(client);
+        var confirmResponse = await PostWithCsrfAsync(
+            client, "/api/v1/auth/google/link/confirm", new { password = ValidPassword }, csrf);
+
+        Assert.Equal(HttpStatusCode.Conflict, confirmResponse.StatusCode);
+
+        await using var context = CreateDbContext(connectionString);
+        var user = await context.Users.SingleAsync(u => u.Email == email);
+        Assert.False(await context.UserLogins.AnyAsync(login => login.UserId == user.Id));
+    }
+
+    [Fact]
+    public async Task Google_account_link_confirm_rejects_a_google_identity_already_linked_to_another_account()
+    {
+        var emailSender = new CapturingEmailSender();
+        var loginSimulation = new GoogleLoginSimulationStartupFilter();
+        await using var factory = CreateFactory(
+            extraConfig: GoogleEnabledConfig(), extraStartupFilter: loginSimulation, emailSender: emailSender);
+
+        // Account A signs up via Google directly (first-time sign-in), linking Google sub S to A.
+        using var firstClient = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        var emailA = UniqueEmail();
+        var sub = Guid.NewGuid().ToString();
+        await firstClient.GetAsync(new Uri(
+            $"{GoogleLoginSimulationStartupFilter.Path}?sub={sub}&email={Uri.EscapeDataString(emailA)}&name=Account+A",
+            UriKind.Relative));
+        var firstCompleteResponse = await firstClient.GetAsync(new Uri("/api/v1/auth/google/complete", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.Redirect, firstCompleteResponse.StatusCode);
+
+        // Account B is a separate password account that attempts to link the SAME Google identity
+        // (sub S) - the simulated external cookie uses B's own email so the email-match check
+        // passes, but AddLoginAsync itself must still refuse it because sub S is already associated
+        // with A.
+        using var secondClient = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        var emailB = UniqueEmail();
+        await RegisterAndConfirmAsync(secondClient, emailSender, emailB, ValidPassword);
+        var loginBResponse = await secondClient.PostAsJsonAsync(
+            new Uri("/api/v1/auth/login", UriKind.Relative), new { email = emailB, password = ValidPassword });
+        Assert.Equal(HttpStatusCode.OK, loginBResponse.StatusCode);
+
+        await secondClient.GetAsync(new Uri(
+            $"{GoogleLoginSimulationStartupFilter.Path}?sub={sub}&email={Uri.EscapeDataString(emailB)}",
+            UriKind.Relative));
+
+        var csrf = await GetCsrfTokenAsync(secondClient);
+        var confirmResponse = await PostWithCsrfAsync(
+            secondClient, "/api/v1/auth/google/link/confirm", new { password = ValidPassword }, csrf);
+
+        Assert.Equal(HttpStatusCode.Conflict, confirmResponse.StatusCode);
+
+        await using var context = CreateDbContext(connectionString);
+        var userB = await context.Users.SingleAsync(u => u.Email == emailB);
+        Assert.False(await context.UserLogins.AnyAsync(login => login.UserId == userB.Id));
+    }
+
+    [Fact]
+    public async Task Google_account_link_confirm_refuses_to_link_a_super_admin_account()
+    {
+        var loginSimulation = new GoogleLoginSimulationStartupFilter();
+        await using var factory = CreateFactory(extraConfig: GoogleEnabledConfig(), extraStartupFilter: loginSimulation);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var adminEmail = UniqueEmail();
+        await BootstrapSuperAdminAsync(factory, adminEmail, ValidPassword);
+
+        var loginResponse = await client.PostAsJsonAsync(
+            new Uri("/api/v1/auth/login", UriKind.Relative), new { email = adminEmail, password = ValidPassword });
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+
+        await client.GetAsync(new Uri(
+            $"{GoogleLoginSimulationStartupFilter.Path}?sub={Guid.NewGuid()}&email={Uri.EscapeDataString(adminEmail)}",
+            UriKind.Relative));
+
+        var csrf = await GetCsrfTokenAsync(client);
+        var confirmResponse = await PostWithCsrfAsync(
+            client, "/api/v1/auth/google/link/confirm", new { password = ValidPassword }, csrf);
+
+        Assert.Equal(HttpStatusCode.Forbidden, confirmResponse.StatusCode);
+
+        await using var context = CreateDbContext(connectionString);
+        var admin = await context.Users.SingleAsync(u => u.Email == adminEmail);
+        Assert.False(await context.UserLogins.AnyAsync(login => login.UserId == admin.Id));
+    }
+
+    [Fact]
+    public async Task Google_sign_in_never_offers_linking_for_a_super_admin_email_collision()
+    {
+        var loginSimulation = new GoogleLoginSimulationStartupFilter();
+        await using var factory = CreateFactory(extraConfig: GoogleEnabledConfig(), extraStartupFilter: loginSimulation);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var adminEmail = UniqueEmail();
+        await BootstrapSuperAdminAsync(factory, adminEmail, ValidPassword);
+
+        await client.GetAsync(new Uri(
+            $"{GoogleLoginSimulationStartupFilter.Path}?sub={Guid.NewGuid()}&email={Uri.EscapeDataString(adminEmail)}",
+            UriKind.Relative));
+
+        var completeResponse = await client.GetAsync(new Uri("/api/v1/auth/google/complete", UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.Forbidden, completeResponse.StatusCode);
+    }
+
+    /// <summary>
+    /// This is the M1-required, code-enforced proof for the invariant
+    /// <c>GoogleSignInService.CompleteSignInAsync</c>'s doc comment describes: before this
+    /// milestone's linking feature existed, "a Google-linked identity can never belong to a Super
+    /// Admin" was a code-UNENFORCED assumption, safe only because no code path could ever attach a
+    /// Google login to a Super Admin identity. This test proves the fast path itself now refuses such
+    /// an identity independently of how it came to exist - it directly attaches a Google login to a
+    /// bootstrapped Super Admin (bypassing <c>ConfirmLinkAsync</c> entirely, which would itself
+    /// refuse this - see <see cref="Google_account_link_confirm_refuses_to_link_a_super_admin_account"/>)
+    /// to simulate a state that must never be reachable through any real endpoint, then proves
+    /// <c>CompleteSignInAsync</c> still fails closed rather than bypassing two-factor and signing in.
+    /// </summary>
+    [Fact]
+    public async Task Google_sign_in_fast_path_refuses_a_super_admin_identity_even_if_a_google_login_is_already_attached()
+    {
+        var loginSimulation = new GoogleLoginSimulationStartupFilter();
+        await using var factory = CreateFactory(extraConfig: GoogleEnabledConfig(), extraStartupFilter: loginSimulation);
+
+        var adminEmail = UniqueEmail();
+        await BootstrapSuperAdminAsync(factory, adminEmail, ValidPassword);
+
+        var sub = Guid.NewGuid().ToString();
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var admin = await userManager.FindByEmailAsync(adminEmail);
+            Assert.NotNull(admin);
+            var addLoginResult = await userManager.AddLoginAsync(
+                admin!, new UserLoginInfo(GoogleAuthenticationSchemeNames.Google, sub, "Google"));
+            Assert.True(addLoginResult.Succeeded);
+        }
+
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        await client.GetAsync(new Uri(
+            $"{GoogleLoginSimulationStartupFilter.Path}?sub={sub}&email={Uri.EscapeDataString(adminEmail)}",
+            UriKind.Relative));
+
+        var completeResponse = await client.GetAsync(new Uri("/api/v1/auth/google/complete", UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.Forbidden, completeResponse.StatusCode);
+
+        // Proves no session was ever established - not just that the response happened to be
+        // Forbidden. This is exactly the check that would fail if bypassTwoFactor: true were still
+        // called before the Super Admin check (the pre-fix ordering).
+        var sessionResponse = await client.GetAsync(new Uri("/api/v1/auth/session", UriKind.Relative));
+        using var sessionBody = JsonDocument.Parse(await sessionResponse.Content.ReadAsStringAsync());
+        Assert.False(sessionBody.RootElement.GetProperty("authenticated").GetBoolean());
     }
 
     [Fact]
@@ -260,6 +841,12 @@ public sealed class AdminMfaAndGoogleEndpointsTests(PostgreSqlFixture postgreSql
         Assert.Equal(HttpStatusCode.OK, firstLoginResponse.StatusCode);
         var firstLoginBody = await firstLoginResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("requiresTwoFactor", firstLoginBody, StringComparison.Ordinal);
+        using (var firstFactorSession = await client.GetAsync(new Uri("/api/v1/auth/session", UriKind.Relative)))
+        using (var firstFactorJson = JsonDocument.Parse(await firstFactorSession.Content.ReadAsStringAsync()))
+        {
+            Assert.Equal(HttpStatusCode.OK, firstFactorSession.StatusCode);
+            Assert.Equal("mfa-setup-required-super-admin", firstFactorJson.RootElement.GetProperty("access").GetString());
+        }
 
         // Enroll + verify, using this same first-factor-only session (gated by "SuperAdminOnly", not
         // "MfaComplete" - there is nothing to complete yet).
@@ -310,6 +897,23 @@ public sealed class AdminMfaAndGoogleEndpointsTests(PostgreSqlFixture postgreSql
         // Now the session carries both the Super Admin claim and the per-session "amr=mfa" marker.
         var probeAfterCompletion = await client.GetAsync(new Uri(MfaCompletePolicyProbeStartupFilter.Path, UriKind.Relative));
         Assert.Equal(HttpStatusCode.OK, probeAfterCompletion.StatusCode);
+        using (var completedSession = await client.GetAsync(new Uri("/api/v1/auth/session", UriKind.Relative)))
+        using (var completedSessionJson = JsonDocument.Parse(await completedSession.Content.ReadAsStringAsync()))
+        {
+            Assert.Equal("mfa-complete-super-admin", completedSessionJson.RootElement.GetProperty("access").GetString());
+        }
+
+        // MFA-complete Super Admins cannot replace an active factor by calling the setup endpoint.
+        var guardedEnrollCsrf = await GetCsrfTokenAsync(client);
+        using var guardedEnroll = await PostWithCsrfAsync(client, "/api/v1/admin/mfa/enroll", new { }, guardedEnrollCsrf);
+        Assert.Equal(HttpStatusCode.Conflict, guardedEnroll.StatusCode);
+        using (var scope = factory.Services.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var enabledUser = await userManager.FindByEmailAsync(email);
+            Assert.NotNull(enabledUser);
+            Assert.Equal(sharedKey, await userManager.GetAuthenticatorKeyAsync(enabledUser!));
+        }
 
         // A recovery code completes a fresh second-factor challenge too, and is single-use.
         await LogoutAsync(client);
@@ -329,6 +933,155 @@ public sealed class AdminMfaAndGoogleEndpointsTests(PostgreSqlFixture postgreSql
             new Uri("/api/v1/admin/mfa/login/complete", UriKind.Relative),
             new { code = recoveryCode, isRecoveryCode = true });
         Assert.Equal(HttpStatusCode.BadRequest, reusedRecoveryCodeResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Lost_factor_recovery_requires_acknowledgments_clears_factors_audits_and_revokes_sessions_immediately()
+    {
+        await using var factory = CreateFactory(extraConfig: new Dictionary<string, string?>
+        {
+            ["AuthCookie:SecurityStampValidationIntervalSeconds"] = "900"
+        });
+        using var client = factory.CreateClient();
+        var email = UniqueEmail();
+        await BootstrapSuperAdminAsync(factory, email, ValidPassword);
+        var operatorEmail = UniqueEmail();
+        await BootstrapSuperAdminAsync(factory, operatorEmail, ValidPassword);
+
+        await client.PostAsJsonAsync(new Uri("/api/v1/auth/login", UriKind.Relative), new { email, password = ValidPassword });
+        var enrollCsrf = await GetCsrfTokenAsync(client);
+        using var enroll = await PostWithCsrfAsync(client, "/api/v1/admin/mfa/enroll", new { }, enrollCsrf);
+        using var enrollBody = JsonDocument.Parse(await enroll.Content.ReadAsStringAsync());
+        var oldKey = enrollBody.RootElement.GetProperty("sharedKey").GetString()!;
+        var verifyCsrf = await GetCsrfTokenAsync(client);
+        using var verify = await PostWithCsrfAsync(client, "/api/v1/admin/mfa/verify",
+            new { code = GenerateTotpCode(oldKey) }, verifyCsrf);
+        Assert.Equal(HttpStatusCode.OK, verify.StatusCode);
+        using var verifyBody = JsonDocument.Parse(await verify.Content.ReadAsStringAsync());
+        var oldRecoveryCode = verifyBody.RootElement.GetProperty("recoveryCodes")[0].GetString()!;
+        await LogoutAsync(client);
+
+        await client.PostAsJsonAsync(new Uri("/api/v1/auth/login", UriKind.Relative), new { email, password = ValidPassword });
+        using var twoFactor = await client.PostAsJsonAsync(new Uri("/api/v1/admin/mfa/login/complete", UriKind.Relative),
+            new { code = GenerateTotpCode(oldKey), isRecoveryCode = false });
+        Assert.Equal(HttpStatusCode.OK, twoFactor.StatusCode);
+        using var activeSession = await client.GetAsync(new Uri("/api/v1/auth/session", UriKind.Relative));
+        using var activeBody = JsonDocument.Parse(await activeSession.Content.ReadAsStringAsync());
+        Assert.Equal("mfa-complete-super-admin", activeBody.RootElement.GetProperty("access").GetString());
+
+        Guid userId;
+        Guid operatorId;
+        string? oldStamp;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var user = await userManager.FindByEmailAsync(email);
+            Assert.NotNull(user);
+            userId = user!.Id;
+            operatorId = (await userManager.FindByEmailAsync(operatorEmail))!.Id;
+            oldStamp = await userManager.GetSecurityStampAsync(user);
+
+            var runner = new AdminMfaLostFactorRecoveryRunner(
+                userManager,
+                scope.ServiceProvider.GetRequiredService<IUserStore<ApplicationUser>>(),
+                scope.ServiceProvider.GetRequiredService<DavetiyeDbContext>(),
+                scope.ServiceProvider.GetRequiredService<Davetiye.Application.Modules.Administration.Contracts.IAdminAuditWriter>());
+            await Assert.ThrowsAsync<InvalidOperationException>(() => runner.RunAsync(
+                userId, Guid.NewGuid(), confirmed: false, outOfBandIdentityVerified: true, CancellationToken.None));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => runner.RunAsync(
+                userId, Guid.NewGuid(), confirmed: true, outOfBandIdentityVerified: false, CancellationToken.None));
+            Assert.Equal(oldStamp, await userManager.GetSecurityStampAsync(user));
+            Assert.True(await userManager.GetTwoFactorEnabledAsync(user));
+        }
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var runner = new AdminMfaLostFactorRecoveryRunner(
+                scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>(),
+                scope.ServiceProvider.GetRequiredService<IUserStore<ApplicationUser>>(),
+                scope.ServiceProvider.GetRequiredService<DavetiyeDbContext>(),
+                scope.ServiceProvider.GetRequiredService<Davetiye.Application.Modules.Administration.Contracts.IAdminAuditWriter>());
+            Assert.Equal(AdminMfaLostFactorRecoveryOutcome.Recovered, await runner.RunAsync(
+                userId, operatorId, confirmed: true, outOfBandIdentityVerified: true, CancellationToken.None));
+        }
+
+        // Even with a 15-minute configured interval, privileged cookies validate their stamp on each request.
+        using var revokedSession = await client.GetAsync(new Uri("/api/v1/auth/session", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.OK, revokedSession.StatusCode);
+        using (var revokedBody = JsonDocument.Parse(await revokedSession.Content.ReadAsStringAsync()))
+            Assert.False(revokedBody.RootElement.GetProperty("authenticated").GetBoolean());
+
+        await client.PostAsJsonAsync(new Uri("/api/v1/auth/login", UriKind.Relative), new { email, password = ValidPassword });
+        using var setupSession = await client.GetAsync(new Uri("/api/v1/auth/session", UriKind.Relative));
+        using var setupBody = JsonDocument.Parse(await setupSession.Content.ReadAsStringAsync());
+        Assert.Equal("mfa-setup-required-super-admin", setupBody.RootElement.GetProperty("access").GetString());
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var user = await userManager.FindByIdAsync(userId.ToString());
+            Assert.NotNull(user);
+            Assert.False(await userManager.GetTwoFactorEnabledAsync(user!));
+            Assert.NotEqual(oldStamp, await userManager.GetSecurityStampAsync(user!));
+            Assert.False((await userManager.GetAuthenticatorKeyAsync(user!)) == oldKey);
+            Assert.False((await userManager.RedeemTwoFactorRecoveryCodeAsync(user!, oldRecoveryCode)).Succeeded);
+
+            var db = scope.ServiceProvider.GetRequiredService<DavetiyeDbContext>();
+            var audit = await db.AdminAuditRecords.SingleAsync(record => record.SubjectId == userId);
+            Assert.Equal(operatorId, audit.ActorId);
+            Assert.Equal("SuperAdminMfaLostFactorRecovered", audit.EventType);
+        }
+    }
+
+    [Fact]
+    public async Task Lost_factor_recovery_refuses_non_admins_and_super_admin_identities_with_creator_accounts()
+    {
+        await using var factory = CreateFactory();
+        var adminEmail = UniqueEmail();
+        await BootstrapSuperAdminAsync(factory, adminEmail, ValidPassword);
+        var operatorEmail = UniqueEmail();
+        await BootstrapSuperAdminAsync(factory, operatorEmail, ValidPassword);
+        var creatorEmail = UniqueEmail();
+        Guid adminId;
+        Guid creatorId;
+        Guid operatorId;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var db = scope.ServiceProvider.GetRequiredService<DavetiyeDbContext>();
+            var admin = await userManager.FindByEmailAsync(adminEmail);
+            Assert.NotNull(admin);
+            adminId = admin!.Id;
+            operatorId = (await userManager.FindByEmailAsync(operatorEmail))!.Id;
+            var creator = new ApplicationUser
+            {
+                Id = Guid.NewGuid(), UserName = creatorEmail, Email = creatorEmail, EmailConfirmed = true
+            };
+            Assert.True((await userManager.CreateAsync(creator, ValidPassword)).Succeeded);
+            creatorId = creator.Id;
+            db.Accounts.Add(Davetiye.Domain.Modules.IdentityAndAccounts.Account.Create(
+                Guid.NewGuid(), adminId, AccountType.Individual, "Invalid mixed identity", DateTimeOffset.UtcNow));
+            await db.SaveChangesAsync();
+        }
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var runner = new AdminMfaLostFactorRecoveryRunner(
+                scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>(),
+                scope.ServiceProvider.GetRequiredService<IUserStore<ApplicationUser>>(),
+                scope.ServiceProvider.GetRequiredService<DavetiyeDbContext>(),
+                scope.ServiceProvider.GetRequiredService<Davetiye.Application.Modules.Administration.Contracts.IAdminAuditWriter>());
+            Assert.Equal(AdminMfaLostFactorRecoveryOutcome.RefusedCreatorAccount, await runner.RunAsync(
+                adminId, operatorId, confirmed: true, outOfBandIdentityVerified: true, CancellationToken.None));
+            Assert.Equal(AdminMfaLostFactorRecoveryOutcome.RefusedNotSuperAdmin, await runner.RunAsync(
+                creatorId, operatorId, confirmed: true, outOfBandIdentityVerified: true, CancellationToken.None));
+        }
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<DavetiyeDbContext>();
+            Assert.Empty(await db.AdminAuditRecords.ToListAsync());
+        }
     }
 
     [Fact]
@@ -396,15 +1149,54 @@ public sealed class AdminMfaAndGoogleEndpointsTests(PostgreSqlFixture postgreSql
         return document.RootElement.GetProperty("token").GetString()!;
     }
 
+    private static async Task<(string Cookie, string Token)> GetFormCsrfAsync(HttpClient client)
+    {
+        var response = await client.GetAsync(new Uri("/api/v1/antiforgery/token", UriKind.Relative));
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.True(response.IsSuccessStatusCode, $"Status {response.StatusCode}: {body}");
+        Assert.True(response.Headers.TryGetValues("Set-Cookie", out var setCookies));
+
+        var cookie = setCookies!
+            .Select(value => value.Split(';', 2)[0])
+            .First(value => !value.StartsWith("davetiye-auth-dev=", StringComparison.Ordinal));
+        using var document = JsonDocument.Parse(body);
+        return (cookie, document.RootElement.GetProperty("token").GetString()!);
+    }
+
     private static async Task<HttpResponseMessage> PostWithCsrfAsync(
         HttpClient client, string path, object body, string csrfToken)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(path, UriKind.Relative))
+        using var request = CreatePostWithCsrfRequest(path, body, csrfToken);
+        return await client.SendAsync(request);
+    }
+
+    private static void AssertExternalCookieCleared(HttpResponseMessage response)
+    {
+        Assert.True(response.Headers.TryGetValues("Set-Cookie", out var setCookieHeaders));
+        Assert.Contains(setCookieHeaders!, header =>
+            header.Contains(IdentityConstants.ExternalScheme, StringComparison.Ordinal) &&
+            (header.Contains("expires=", StringComparison.OrdinalIgnoreCase) ||
+             header.Contains("max-age=0", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private static void AssertExternalCookieRetainedForConfirmation(HttpResponseMessage response)
+    {
+        if (!response.Headers.TryGetValues("Set-Cookie", out var setCookieHeaders))
+            return;
+        Assert.DoesNotContain(setCookieHeaders!, header =>
+            header.Contains(IdentityConstants.ExternalScheme, StringComparison.Ordinal) &&
+            (header.Contains("expires=", StringComparison.OrdinalIgnoreCase) ||
+             header.Contains("max-age=0", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private static HttpRequestMessage CreatePostWithCsrfRequest(string path, object body, string csrfToken)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, new Uri(path, UriKind.Relative))
         {
             Content = JsonContent.Create(body),
         };
         request.Headers.Add("X-CSRF-TOKEN", csrfToken);
-        return await client.SendAsync(request);
+        return request;
     }
 
     private static async Task RegisterAndConfirmAsync(
@@ -412,7 +1204,7 @@ public sealed class AdminMfaAndGoogleEndpointsTests(PostgreSqlFixture postgreSql
     {
         var registerResponse = await client.PostAsJsonAsync(
             new Uri("/api/v1/auth/register", UriKind.Relative),
-            new { email, password, displayName = "Test User" });
+            new { email, password, displayName = "Test User", accountType = "Individual", serviceNoticeAcknowledged = true });
         Assert.Equal(HttpStatusCode.OK, registerResponse.StatusCode);
 
         var confirmation = emailSender.Sent.Single(message =>
@@ -427,7 +1219,8 @@ public sealed class AdminMfaAndGoogleEndpointsTests(PostgreSqlFixture postgreSql
     private static (string UserId, string Token) ExtractUserIdAndToken(string link)
     {
         var uri = new Uri(link);
-        var query = QueryHelpers.ParseQuery(uri.Query);
+        Assert.Empty(uri.Query);
+        var query = QueryHelpers.ParseQuery(uri.Fragment.TrimStart('#'));
         return (query["userId"].ToString(), query["token"].ToString());
     }
 
@@ -501,8 +1294,9 @@ public sealed class AdminMfaAndGoogleEndpointsTests(PostgreSqlFixture postgreSql
         string environmentName = "Development",
         CapturingEmailSender? emailSender = null,
         Dictionary<string, string?>? extraConfig = null,
-        IStartupFilter? extraStartupFilter = null) =>
-        new(connectionString, environmentName, emailSender, extraConfig, extraStartupFilter);
+        IStartupFilter? extraStartupFilter = null,
+        bool registerGoogleHandlerForChallenge = false) =>
+        new(connectionString, environmentName, emailSender, extraConfig, extraStartupFilter, registerGoogleHandlerForChallenge);
 
     private static DavetiyeDbContext CreateDbContext(string connectionString)
     {
@@ -615,6 +1409,10 @@ public sealed class AdminMfaAndGoogleEndpointsTests(PostgreSqlFixture postgreSql
                     // check keeps exercising the success path unchanged; a test that needs to prove
                     // the fail-closed rejection passes "false" explicitly.
                     var emailVerified = context.Request.Query["emailVerified"].ToString();
+                    var accountType = context.Request.Query["accountType"].ToString();
+                    var returnUrl = context.Request.Query["returnUrl"].ToString();
+                    var serviceNoticeAcknowledged = context.Request.Query["serviceNoticeAcknowledged"].ToString();
+                    var marketingOptIn = context.Request.Query["marketingOptIn"].ToString();
 
                     var identity = new ClaimsIdentity("Test");
                     identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, sub));
@@ -634,6 +1432,14 @@ public sealed class AdminMfaAndGoogleEndpointsTests(PostgreSqlFixture postgreSql
                     var signInManager = context.RequestServices.GetRequiredService<SignInManager<ApplicationUser>>();
                     var properties = signInManager.ConfigureExternalAuthenticationProperties(
                         GoogleAuthenticationSchemeNames.Google, redirectUrl: null);
+                    properties.Items["davetiye:account_type"] =
+                        string.IsNullOrWhiteSpace(accountType) ? "Individual" : accountType;
+                    properties.Items["davetiye:return_path"] =
+                        string.IsNullOrWhiteSpace(returnUrl) ? "/" : returnUrl;
+                    properties.Items["davetiye:service_notice_acknowledged"] =
+                        string.IsNullOrWhiteSpace(serviceNoticeAcknowledged) ? "true" : serviceNoticeAcknowledged;
+                    properties.Items["davetiye:marketing_opt_in"] =
+                        string.IsNullOrWhiteSpace(marketingOptIn) ? "false" : marketingOptIn;
 
                     await context.SignInAsync(
                         IdentityConstants.ExternalScheme, new ClaimsPrincipal(identity), properties);
@@ -693,7 +1499,8 @@ public sealed class AdminMfaAndGoogleEndpointsTests(PostgreSqlFixture postgreSql
         string environmentName,
         CapturingEmailSender? emailSender,
         Dictionary<string, string?>? extraConfig,
-        IStartupFilter? extraStartupFilter) : WebApplicationFactory<Program>
+        IStartupFilter? extraStartupFilter,
+        bool registerGoogleHandlerForChallenge) : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -723,6 +1530,17 @@ public sealed class AdminMfaAndGoogleEndpointsTests(PostgreSqlFixture postgreSql
             if (emailSender is not null)
             {
                 builder.ConfigureTestServices(services => services.AddSingleton<IEmailSender>(emailSender));
+            }
+
+            if (registerGoogleHandlerForChallenge)
+            {
+                builder.ConfigureTestServices(services => services.AddAuthentication().AddGoogle("Google", options =>
+                {
+                    options.ClientId = "test-client-id";
+                    options.ClientSecret = "test-client-secret";
+                    options.CallbackPath = "/api/v1/auth/google/oauth-callback";
+                    options.SignInScheme = IdentityConstants.ExternalScheme;
+                }));
             }
 
             if (extraStartupFilter is not null)

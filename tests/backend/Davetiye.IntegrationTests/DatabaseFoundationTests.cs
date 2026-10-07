@@ -1,8 +1,11 @@
 using System.Diagnostics;
+using Davetiye.Domain.Modules.IntegrationFoundation;
 using Davetiye.Domain.Modules.IdentityAndAccounts;
 using Davetiye.Infrastructure.Modules.IdentityAndAccounts;
 using Davetiye.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql;
 using Xunit;
 
@@ -50,6 +53,119 @@ public sealed class DatabaseFoundationTests(PostgreSqlFixture postgreSql)
 
         var applied = await dbContext.Database.GetAppliedMigrationsAsync();
         Assert.Equal(dbContext.Database.GetMigrations(), applied);
+    }
+
+    [Fact]
+    public async Task P10M3_downgrade_is_refused_when_account_deletion_evidence_exists()
+    {
+        var connectionString = await postgreSql.CreateEmptyDatabaseAsync();
+        await RunMigratorAsync(connectionString);
+
+        await using (var dbContext = CreateDbContext(connectionString))
+        {
+            var identityUserId = Guid.NewGuid();
+            dbContext.Users.Add(new ApplicationUser
+            {
+                Id = identityUserId,
+                UserName = $"deletion-{identityUserId:N}",
+                NormalizedUserName = $"DELETION-{identityUserId:N}",
+                Email = $"{identityUserId:N}@example.test",
+                NormalizedEmail = $"{identityUserId:N}@EXAMPLE.TEST"
+            });
+            var account = Account.Create(Guid.NewGuid(), identityUserId, AccountType.Individual,
+                "Deletion evidence", DateTimeOffset.UtcNow);
+            account.BeginDeletion(DateTimeOffset.UtcNow);
+            dbContext.Accounts.Add(account);
+            await dbContext.SaveChangesAsync();
+
+            var migrations = dbContext.Database.GetMigrations().ToArray();
+            var deletionMigration = Assert.Single(migrations, migration =>
+                migration.EndsWith("_P10M3AccountDeletionLifecycle", StringComparison.Ordinal));
+            var priorMigration = migrations.TakeWhile(migration => migration != deletionMigration).Last();
+            var migrator = dbContext.GetService<IMigrator>();
+
+            var exception = await Assert.ThrowsAsync<PostgresException>(() => migrator.MigrateAsync(priorMigration));
+            Assert.Contains("cannot be downgraded while account-deletion or settlement evidence exists", exception.Message);
+            // The independent dispatch-schema migration contains no dispatch evidence and can safely
+            // roll back first; the lifecycle migration then refuses to erase deletion evidence.
+            Assert.Equal(migrations[..^1], await dbContext.Database.GetAppliedMigrationsAsync());
+        }
+    }
+
+    [Fact]
+    public async Task P10M3_allows_only_one_pending_deletion_token_per_account_and_preserves_history()
+    {
+        var connectionString = await postgreSql.CreateEmptyDatabaseAsync();
+        await RunMigratorAsync(connectionString);
+        var accountId = Guid.NewGuid();
+        var identityUserId = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+
+        await using (var seedContext = CreateDbContext(connectionString))
+        {
+            seedContext.Users.Add(new ApplicationUser
+            {
+                Id = identityUserId,
+                UserName = $"deletion-token-{identityUserId:N}",
+                NormalizedUserName = $"DELETION-TOKEN-{identityUserId:N}",
+                Email = $"{identityUserId:N}@example.test",
+                NormalizedEmail = $"{identityUserId:N}@EXAMPLE.TEST"
+            });
+            seedContext.Accounts.Add(Account.Create(accountId, identityUserId, AccountType.Individual, "Token test", now));
+            seedContext.AccountDeletionRequests.Add(AccountDeletionRequest.Create(Guid.NewGuid(), accountId,
+                new string('a', 64), now, now.AddHours(1)));
+            await seedContext.SaveChangesAsync();
+        }
+
+        await using (var competingContext = CreateDbContext(connectionString))
+        {
+            competingContext.AccountDeletionRequests.Add(AccountDeletionRequest.Create(Guid.NewGuid(), accountId,
+                new string('b', 64), now.AddMinutes(1), now.AddHours(1)));
+            var exception = await Assert.ThrowsAsync<DbUpdateException>(() => competingContext.SaveChangesAsync());
+            Assert.Equal("23505", Assert.IsType<PostgresException>(exception.InnerException).SqlState);
+        }
+
+        await using (var replacementContext = CreateDbContext(connectionString))
+        {
+            var prior = await replacementContext.AccountDeletionRequests.SingleAsync();
+            Assert.True(prior.Supersede(now.AddMinutes(2)));
+            replacementContext.AccountDeletionRequests.Add(AccountDeletionRequest.Create(Guid.NewGuid(), accountId,
+                new string('c', 64), now.AddMinutes(2), now.AddHours(1)));
+            await replacementContext.SaveChangesAsync();
+            Assert.Equal(2, await replacementContext.AccountDeletionRequests.CountAsync());
+        }
+    }
+
+    [Fact]
+    public async Task P10M3_dispatch_history_cannot_be_dropped_after_transport_authorization()
+    {
+        var connectionString = await postgreSql.CreateEmptyDatabaseAsync();
+        await RunMigratorAsync(connectionString);
+        var now = DateTimeOffset.UtcNow;
+        var messageId = Guid.NewGuid();
+
+        await using (var seedContext = CreateDbContext(connectionString))
+        {
+            seedContext.OutboxMessages.Add(OutboxMessage.Create(messageId, "notifications.email", "{}", now,
+                Guid.NewGuid()));
+            await seedContext.SaveChangesAsync();
+            await Assert.ThrowsAsync<PostgresException>(() => seedContext.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE outbox_messages SET dispatch_started_at_utc = created_at - interval '1 second' WHERE id = {messageId}"));
+            await seedContext.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE outbox_messages SET dispatch_started_at_utc = created_at + interval '1 second' WHERE id = {messageId}");
+            await Assert.ThrowsAsync<PostgresException>(() => seedContext.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE outbox_messages SET processed_at = created_at WHERE id = {messageId}"));
+
+            var migrations = seedContext.Database.GetMigrations().ToArray();
+            var dispatchMigration = Assert.Single(migrations, migration =>
+                migration.EndsWith("_P10M3EmailDispatchLinearization", StringComparison.Ordinal));
+            var priorMigration = migrations.TakeWhile(migration => migration != dispatchMigration).Last();
+            var migrator = seedContext.GetService<IMigrator>();
+
+            var exception = await Assert.ThrowsAsync<PostgresException>(() => migrator.MigrateAsync(priorMigration));
+            Assert.Contains("dispatch history cannot be downgraded after external delivery was authorized", exception.Message);
+            Assert.Equal(migrations, await seedContext.Database.GetAppliedMigrationsAsync());
+        }
     }
 
     [Fact]
@@ -111,6 +227,39 @@ public sealed class DatabaseFoundationTests(PostgreSqlFixture postgreSql)
         Assert.Contains("20260928170000_M5B_IntegrationFoundationInboxOutbox", applied);
 
         string[] expectedTables = ["inbox_messages", "outbox_messages"];
+
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'";
+        await using var reader = await command.ExecuteReaderAsync();
+        var actualTables = new List<string>();
+        while (await reader.ReadAsync())
+        {
+            actualTables.Add(reader.GetString(0));
+        }
+
+        foreach (var expectedTable in expectedTables)
+        {
+            Assert.Contains(expectedTable, actualTables);
+        }
+    }
+
+    [Fact]
+    public async Task P2M2_migration_applies_to_an_empty_database_creates_the_expected_tables_and_is_idempotent()
+    {
+        var connectionString = await postgreSql.CreateEmptyDatabaseAsync();
+
+        await RunMigratorAsync(connectionString);
+        await RunMigratorAsync(connectionString);
+
+        await using var dbContext = CreateDbContext(connectionString);
+        var applied = await dbContext.Database.GetAppliedMigrationsAsync();
+
+        Assert.Contains("20260929200313_P2M2_InvitationsAndTemplates", applied);
+
+        string[] expectedTables = ["invitations", "working_contents", "template_definitions"];
 
         await using var connection = new NpgsqlConnection(connectionString);
         await connection.OpenAsync();

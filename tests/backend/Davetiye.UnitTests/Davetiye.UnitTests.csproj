@@ -23,4 +23,13 @@
     <ProjectReference Include="../../../src/backend/Davetiye.Domain/Davetiye.Domain.csproj" />
     <ProjectReference Include="../../../src/backend/Davetiye.Infrastructure/Davetiye.Infrastructure.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../../src/web/src/features/templates/rendering/registry.manifest.json"
+          Link="Contracts/registry.manifest.json"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../../src/web/public/template-previews/*.*"
+          Link="WebPublic/template-previews/%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

@@ -45,12 +45,14 @@ public static class AdminMfaEndpoints
         // already legitimately request one at a time.
         group.MapPost("/enroll", EnrollAsync)
             .RequireAuthorization(superAdminOnlyPolicy)
-            .AddEndpointFilter<AntiforgeryEndpointFilter>();
+            .AddEndpointFilter<AntiforgeryEndpointFilter>()
+            .Produces<AdminMfaEnrollment>();
 
         group.MapPost("/verify", VerifyAsync)
             .RequireAuthorization(superAdminOnlyPolicy)
             .RequireRateLimiting(adminMfaVerifyRateLimitPolicy)
-            .AddEndpointFilter<AntiforgeryEndpointFilter>();
+            .AddEndpointFilter<AntiforgeryEndpointFilter>()
+            .Produces<AdminMfaVerification>();
 
         // Deliberately NOT RequireAuthorization: the caller here is only authenticated against the
         // intermediate TwoFactorUserIdScheme (established by AuthAccountService.LoginAsync via
@@ -71,7 +73,14 @@ public static class AdminMfaEndpoints
     {
         var result = await adminMfaService.EnrollAsync(GetIdentityUserId(httpContext), cancellationToken);
 
-        return Results.Ok(new { sharedKey = result.SharedKey, authenticatorUri = result.AuthenticatorUri });
+        if (result.AlreadyEnabled)
+        {
+            return Results.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "MFA is already enabled for this account.");
+        }
+
+        return Results.Ok(new AdminMfaEnrollment(result.SharedKey!, result.AuthenticatorUri!));
     }
 
     private static async Task<IResult> VerifyAsync(
@@ -85,7 +94,7 @@ public static class AdminMfaEndpoints
 
         return result.Outcome switch
         {
-            VerifyMfaOutcome.Succeeded => Results.Ok(new { recoveryCodes = result.RecoveryCodes }),
+            VerifyMfaOutcome.Succeeded => Results.Ok(new AdminMfaVerification(result.RecoveryCodes)),
             VerifyMfaOutcome.AlreadyEnabled => Results.Problem(
                 statusCode: StatusCodes.Status409Conflict,
                 title: "MFA is already enabled for this account."),
@@ -128,3 +137,7 @@ public static class AdminMfaEndpoints
 
     private sealed record VerifyMfaRequestBody(string Code);
 }
+
+public sealed record AdminMfaEnrollment(string SharedKey, string AuthenticatorUri);
+
+public sealed record AdminMfaVerification(IReadOnlyCollection<string> RecoveryCodes);

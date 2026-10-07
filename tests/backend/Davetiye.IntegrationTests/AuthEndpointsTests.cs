@@ -2,8 +2,10 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Davetiye.Application.Modules.IdentityAndAccounts.Contracts;
 using Davetiye.Application.Modules.Notifications.Contracts;
 using Davetiye.Domain.Modules.IdentityAndAccounts;
+using Davetiye.Domain.Modules.Invitations;
 using Davetiye.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -13,6 +15,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using Xunit;
 
 namespace Davetiye.IntegrationTests;
@@ -65,6 +68,274 @@ public sealed class AuthEndpointsTests(PostgreSqlFixture postgreSql) : IAsyncLif
     }
 
     [Fact]
+    public async Task Verified_deletion_revokes_a_stale_cookie_and_keeps_public_guest_route_anonymous()
+    {
+        var emailSender = new CapturingEmailSender();
+        await using var factory = CreateFactory(emailSender: emailSender);
+        using var client = factory.CreateClient();
+        var email = UniqueEmail();
+        await RegisterAndConfirmAsync(client, emailSender, email, ValidPassword);
+        var staleCookie = await LoginAndCaptureCookieAsync(client, email, ValidPassword);
+        var (csrfCookie, csrfToken) = await GetCsrfAsync(client);
+
+        using var startRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/account/deletion-requests");
+        startRequest.Headers.Add("Cookie", $"{staleCookie}; {csrfCookie}");
+        startRequest.Headers.Add("X-CSRF-TOKEN", csrfToken);
+        using var started = await client.SendAsync(startRequest);
+        Assert.Equal(HttpStatusCode.Accepted, started.StatusCode);
+        Assert.True(started.Headers.CacheControl?.NoStore);
+
+        var deleteMail = Assert.Single(emailSender.Sent,
+            message => message.Kind == EmailNotificationKinds.AccountDeletionConfirmation);
+        var token = QueryHelpers.ParseQuery(new Uri(deleteMail.Data["confirmationLink"]).Fragment.TrimStart('#'))["token"].ToString();
+        Assert.False(string.IsNullOrWhiteSpace(token));
+        Assert.Empty(new Uri(deleteMail.Data["confirmationLink"]).Query);
+
+        using var missingCsrf = new HttpRequestMessage(HttpMethod.Post, "/api/v1/account/deletion-requests/confirm")
+        {
+            Content = JsonContent.Create(new { token })
+        };
+        missingCsrf.Headers.Add("Cookie", csrfCookie);
+        using var rejected = await client.SendAsync(missingCsrf);
+        Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
+        await using (var context = CreateDbContext(connectionString))
+        {
+            var account = await context.Accounts.Join(context.Users, item => item.IdentityUserId,
+                user => user.Id, (item, user) => new { Account = item, user.Email }).SingleAsync(item => item.Email == email);
+            Assert.Null(account.Account.DeletionStartedAtUtc);
+        }
+
+        using var confirm = new HttpRequestMessage(HttpMethod.Post, "/api/v1/account/deletion-requests/confirm")
+        {
+            Content = JsonContent.Create(new { token })
+        };
+        confirm.Headers.Add("Cookie", csrfCookie);
+        confirm.Headers.Add("X-CSRF-TOKEN", csrfToken);
+        using var confirmed = await client.SendAsync(confirm);
+        Assert.Equal(HttpStatusCode.NoContent, confirmed.StatusCode);
+        Assert.True(confirmed.Headers.CacheControl?.NoStore);
+
+        using var creatorRequest = new HttpRequestMessage(HttpMethod.Get, "/api/v1/invitations");
+        creatorRequest.Headers.Add("Cookie", staleCookie);
+        using var creatorResponse = await client.SendAsync(creatorRequest);
+        Assert.Equal(HttpStatusCode.Unauthorized, creatorResponse.StatusCode);
+
+        using var publicGuestRequest = new HttpRequestMessage(HttpMethod.Get,
+            $"/api/v1/public/invitations/{new string('a', PublicInvitationCode.EncodedLength)}");
+        publicGuestRequest.Headers.Add("Cookie", staleCookie);
+        using var publicGuestResponse = await client.SendAsync(publicGuestRequest);
+        Assert.Equal(HttpStatusCode.NotFound, publicGuestResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Register_with_organization_account_type_persists_an_organization_account()
+    {
+        var emailSender = new CapturingEmailSender();
+        await using var factory = CreateFactory(emailSender: emailSender);
+        using var client = factory.CreateClient();
+        var email = UniqueEmail();
+
+        var registerResponse = await client.PostAsJsonAsync(
+            new Uri("/api/v1/auth/register", UriKind.Relative),
+            new { email, password = ValidPassword, displayName = "Test Org", accountType = "Organization", serviceNoticeAcknowledged = true });
+        Assert.Equal(HttpStatusCode.OK, registerResponse.StatusCode);
+
+        await using var context = CreateDbContext(connectionString);
+        var user = await context.Users.SingleAsync(u => u.Email == email);
+        var account = await context.Accounts.SingleAsync(a => a.IdentityUserId == user.Id);
+        Assert.Equal(AccountType.Organization, account.AccountType);
+    }
+
+    [Fact]
+    public async Task Register_requires_service_notice_acknowledgement_and_records_default_off_marketing_preference()
+    {
+        var emailSender = new CapturingEmailSender();
+        await using var factory = CreateFactory(emailSender: emailSender);
+        using var client = factory.CreateClient();
+        var email = UniqueEmail();
+
+        var rejected = await client.PostAsJsonAsync("/api/v1/auth/register", new
+        {
+            email,
+            password = ValidPassword,
+            displayName = "Test User",
+            accountType = "Individual",
+            marketingOptIn = true,
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
+
+        await using (var context = CreateDbContext(connectionString))
+        {
+            Assert.False(await context.Users.AnyAsync(user => user.Email == email));
+            Assert.Empty(await context.AccountConsentRecords.ToListAsync());
+        }
+
+        var accepted = await client.PostAsJsonAsync("/api/v1/auth/register", new
+        {
+            email,
+            password = ValidPassword,
+            displayName = "Test User",
+            accountType = "Individual",
+            serviceNoticeAcknowledged = true,
+        });
+        Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
+
+        await using var acceptedContext = CreateDbContext(connectionString);
+        var account = await acceptedContext.Accounts.Join(acceptedContext.Users,
+            account => account.IdentityUserId, user => user.Id, (account, user) => new { account.Id, user.Email })
+            .SingleAsync(item => item.Email == email);
+        var records = await acceptedContext.AccountConsentRecords.Where(record => record.AccountId == account.Id)
+            .OrderBy(record => record.Kind).ToListAsync();
+        Assert.Equal(2, records.Count);
+        Assert.Contains(records, record => record.Kind == AccountConsentKind.ServiceNoticeAcknowledgement && record.Granted);
+        Assert.Contains(records, record => record.Kind == AccountConsentKind.MarketingPreference && !record.Granted);
+    }
+
+    [Fact]
+    public async Task Creator_can_read_and_update_marketing_preference_with_antiforgery_and_audited_history()
+    {
+        var emailSender = new CapturingEmailSender();
+        await using var factory = CreateFactory(emailSender: emailSender);
+        using var client = factory.CreateClient();
+        var email = UniqueEmail();
+        await RegisterAndConfirmAsync(client, emailSender, email, ValidPassword);
+        var authCookie = await LoginAndCaptureCookieAsync(client, email, ValidPassword);
+
+        using var getRequest = new HttpRequestMessage(HttpMethod.Get, "/api/v1/account/consents");
+        getRequest.Headers.Add("Cookie", authCookie);
+        using var getResponse = await client.SendAsync(getRequest);
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+        Assert.Equal("no-store", getResponse.Headers.CacheControl?.ToString());
+        using var body = JsonDocument.Parse(await getResponse.Content.ReadAsStringAsync());
+        Assert.True(body.RootElement.GetProperty("serviceNotice").GetProperty("acknowledged").GetBoolean());
+        Assert.False(body.RootElement.GetProperty("marketing").GetProperty("optedIn").GetBoolean());
+        Assert.Equal(2, body.RootElement.GetProperty("history").GetArrayLength());
+
+        using var unprotectedRequest = new HttpRequestMessage(HttpMethod.Put, "/api/v1/account/consents/marketing")
+        {
+            Content = JsonContent.Create(new { optedIn = true }),
+        };
+        unprotectedRequest.Headers.Add("Cookie", authCookie);
+        using var unprotectedResponse = await client.SendAsync(unprotectedRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, unprotectedResponse.StatusCode);
+
+        var (csrfCookie, csrfToken) = await GetCsrfAsync(client);
+        using var updateRequest = new HttpRequestMessage(HttpMethod.Put, "/api/v1/account/consents/marketing")
+        {
+            Content = JsonContent.Create(new { optedIn = true }),
+        };
+        updateRequest.Headers.Add("Cookie", $"{authCookie}; {csrfCookie}");
+        updateRequest.Headers.Add("X-CSRF-TOKEN", csrfToken);
+        using var updateResponse = await client.SendAsync(updateRequest);
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+        using var updatedBody = JsonDocument.Parse(await updateResponse.Content.ReadAsStringAsync());
+        Assert.True(updatedBody.RootElement.GetProperty("marketing").GetProperty("optedIn").GetBoolean());
+        Assert.Equal(3, updatedBody.RootElement.GetProperty("history").GetArrayLength());
+
+        await using var context = CreateDbContext(connectionString);
+        Assert.Equal(3, await context.AccountConsentRecords.CountAsync());
+    }
+
+    [Fact]
+    public async Task Legacy_creator_session_is_gated_until_explicit_notice_acknowledgement()
+    {
+        var emailSender = new CapturingEmailSender();
+        await using var factory = CreateFactory(emailSender: emailSender);
+        using var client = factory.CreateClient();
+        var email = UniqueEmail();
+        await RegisterAndConfirmAsync(client, emailSender, email, ValidPassword);
+
+        await using (var context = CreateDbContext(connectionString))
+        {
+            var account = await context.Accounts.Join(context.Users,
+                account => account.IdentityUserId, user => user.Id, (account, user) => new { account.Id, user.Email })
+                .SingleAsync(item => item.Email == email);
+            var serviceNotice = await context.AccountConsentRecords.SingleAsync(record =>
+                record.AccountId == account.Id && record.Kind == AccountConsentKind.ServiceNoticeAcknowledgement);
+            context.AccountConsentRecords.Remove(serviceNotice);
+            await context.SaveChangesAsync();
+        }
+
+        var authCookie = await LoginAndCaptureCookieAsync(client, email, ValidPassword);
+        using var sessionRequest = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/session");
+        sessionRequest.Headers.Add("Cookie", authCookie);
+        using var sessionResponse = await client.SendAsync(sessionRequest);
+        Assert.Equal(HttpStatusCode.OK, sessionResponse.StatusCode);
+        using (var sessionBody = JsonDocument.Parse(await sessionResponse.Content.ReadAsStringAsync()))
+            Assert.True(sessionBody.RootElement.GetProperty("serviceNoticeRequired").GetBoolean());
+
+        using var creatorRequest = new HttpRequestMessage(HttpMethod.Get, "/api/v1/invitations");
+        creatorRequest.Headers.Add("Cookie", authCookie);
+        using var gatedResponse = await client.SendAsync(creatorRequest);
+        Assert.Equal((HttpStatusCode)428, gatedResponse.StatusCode);
+        Assert.Contains("no-store", gatedResponse.Headers.CacheControl?.ToString(), StringComparison.Ordinal);
+
+        using var publicGuestRequest = new HttpRequestMessage(HttpMethod.Get, "/api/v1/public/invitations/not-a-real-code");
+        publicGuestRequest.Headers.Add("Cookie", authCookie);
+        using var publicGuestResponse = await client.SendAsync(publicGuestRequest);
+        Assert.Equal(HttpStatusCode.NotFound, publicGuestResponse.StatusCode);
+
+        using var consentRequest = new HttpRequestMessage(HttpMethod.Get, "/api/v1/account/consents");
+        consentRequest.Headers.Add("Cookie", authCookie);
+        using var consentResponse = await client.SendAsync(consentRequest);
+        Assert.Equal(HttpStatusCode.OK, consentResponse.StatusCode);
+        using (var consentBody = JsonDocument.Parse(await consentResponse.Content.ReadAsStringAsync()))
+            Assert.False(consentBody.RootElement.GetProperty("serviceNotice").GetProperty("acknowledged").GetBoolean());
+
+        var (csrfCookie, csrfToken) = await GetCsrfAsync(client);
+        using var acknowledgeRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/account/consents/service-notice")
+        {
+            Content = JsonContent.Create(new { acknowledged = true }),
+        };
+        acknowledgeRequest.Headers.Add("Cookie", $"{authCookie}; {csrfCookie}");
+        acknowledgeRequest.Headers.Add("X-CSRF-TOKEN", csrfToken);
+        using var acknowledgeResponse = await client.SendAsync(acknowledgeRequest);
+        Assert.Equal(HttpStatusCode.OK, acknowledgeResponse.StatusCode);
+        using var acknowledgement = JsonDocument.Parse(await acknowledgeResponse.Content.ReadAsStringAsync());
+        Assert.True(acknowledgement.RootElement.GetProperty("serviceNotice").GetProperty("acknowledged").GetBoolean());
+
+        using var releasedRequest = new HttpRequestMessage(HttpMethod.Get, "/api/v1/invitations");
+        releasedRequest.Headers.Add("Cookie", authCookie);
+        using var releasedResponse = await client.SendAsync(releasedRequest);
+        Assert.Equal(HttpStatusCode.OK, releasedResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Register_with_an_invalid_account_type_is_rejected_and_creates_nothing()
+    {
+        var emailSender = new CapturingEmailSender();
+        await using var factory = CreateFactory(emailSender: emailSender);
+        using var client = factory.CreateClient();
+        var email = UniqueEmail();
+
+        var registerResponse = await client.PostAsJsonAsync(
+            new Uri("/api/v1/auth/register", UriKind.Relative),
+            new { email, password = ValidPassword, displayName = "Test User", accountType = "SuperOrg" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, registerResponse.StatusCode);
+
+        await using var context = CreateDbContext(connectionString);
+        Assert.False(await context.Users.AnyAsync(u => u.Email == email));
+    }
+
+    [Fact]
+    public async Task Register_rolls_back_identity_user_and_account_when_confirmation_enqueue_fails()
+    {
+        var emailSender = new CapturingEmailSender { FailEnqueue = true };
+        await using var factory = CreateFactory(emailSender: emailSender);
+        using var client = factory.CreateClient();
+        var email = UniqueEmail();
+
+        var response = await RegisterAsync(client, email, ValidPassword);
+
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        await using var context = CreateDbContext(connectionString);
+        Assert.False(await context.Users.AnyAsync(user => user.Email == email));
+        Assert.False(await context.Accounts.Join(context.Users, account => account.IdentityUserId, user => user.Id,
+            (account, user) => user).AnyAsync(user => user.Email == email));
+    }
+
+    [Fact]
     public async Task Session_access_is_pii_free_and_classifies_anonymous_and_creator_sessions()
     {
         var emailSender = new CapturingEmailSender();
@@ -78,7 +349,8 @@ public sealed class AuthEndpointsTests(PostgreSqlFixture postgreSql) : IAsyncLif
         {
             Assert.False(anonymousBody.RootElement.GetProperty("authenticated").GetBoolean());
             Assert.Equal("none", anonymousBody.RootElement.GetProperty("access").GetString());
-            Assert.Equal(2, anonymousBody.RootElement.EnumerateObject().Count());
+            Assert.False(anonymousBody.RootElement.GetProperty("serviceNoticeRequired").GetBoolean());
+            Assert.Equal(3, anonymousBody.RootElement.EnumerateObject().Count());
         }
 
         var email = UniqueEmail();
@@ -91,7 +363,19 @@ public sealed class AuthEndpointsTests(PostgreSqlFixture postgreSql) : IAsyncLif
         using var creatorBody = JsonDocument.Parse(await creatorResponse.Content.ReadAsStringAsync());
         Assert.True(creatorBody.RootElement.GetProperty("authenticated").GetBoolean());
         Assert.Equal("creator", creatorBody.RootElement.GetProperty("access").GetString());
-        Assert.Equal(2, creatorBody.RootElement.EnumerateObject().Count());
+        Assert.False(creatorBody.RootElement.GetProperty("serviceNoticeRequired").GetBoolean());
+        Assert.Equal(3, creatorBody.RootElement.EnumerateObject().Count());
+
+        Guid creatorIdentityId;
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<DavetiyeDbContext>();
+            creatorIdentityId = await db.Users.Where(user => user.Email == email).Select(user => user.Id).SingleAsync();
+            var sessionAccess = scope.ServiceProvider.GetRequiredService<IAuthSessionAccessService>();
+            var mixed = await sessionAccess.GetAccessAsync(creatorIdentityId,
+                hasSuperAdminClaim: true, hasMfaClaim: true, CancellationToken.None);
+            Assert.Equal(SessionAccess.None, mixed.Access);
+        }
     }
 
     [Fact]
@@ -111,7 +395,15 @@ public sealed class AuthEndpointsTests(PostgreSqlFixture postgreSql) : IAsyncLif
 
         // RequireConfirmedAccount=true makes Identity reject this login before it ever checks the
         // password, regardless of whether the password is right or wrong.
-        Assert.Equal(HttpStatusCode.Forbidden, loginBeforeConfirmResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, loginBeforeConfirmResponse.StatusCode);
+        using var unknownAccountResponse = await client.PostAsJsonAsync(
+            new Uri("/api/v1/auth/login", UriKind.Relative),
+            new { email = UniqueEmail(), password = ValidPassword });
+        Assert.Equal(loginBeforeConfirmResponse.StatusCode, unknownAccountResponse.StatusCode);
+        using var loginBeforeConfirmBody = JsonDocument.Parse(await loginBeforeConfirmResponse.Content.ReadAsStringAsync());
+        using var unknownAccountBody = JsonDocument.Parse(await unknownAccountResponse.Content.ReadAsStringAsync());
+        Assert.Equal(loginBeforeConfirmBody.RootElement.GetProperty("title").GetString(),
+            unknownAccountBody.RootElement.GetProperty("title").GetString());
 
         var confirmation = emailSender.Sent.Single(message =>
             message.Kind == EmailNotificationKinds.EmailConfirmation && message.ToEmail == email);
@@ -125,6 +417,92 @@ public sealed class AuthEndpointsTests(PostgreSqlFixture postgreSql) : IAsyncLif
             new Uri("/api/v1/auth/login", UriKind.Relative),
             new { email, password = ValidPassword });
         Assert.Equal(HttpStatusCode.OK, loginAfterConfirmResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_uses_same_public_status_and_title_for_unknown_wrong_unconfirmed_and_locked_accounts()
+    {
+        var sender = new CapturingEmailSender();
+        await using var factory = CreateFactory(emailSender: sender, extraConfig: new Dictionary<string, string?>
+        {
+            ["AuthRateLimits:Login:PermitLimit"] = "30",
+        });
+        using var client = factory.CreateClient();
+
+        var lockedEmail = UniqueEmail();
+        await RegisterAndConfirmAsync(client, sender, lockedEmail, ValidPassword);
+        using var wrongPassword = await client.PostAsJsonAsync(new Uri("/api/v1/auth/login", UriKind.Relative),
+            new { email = lockedEmail, password = "WrongPassw0rd!" });
+        using var unknownAccount = await client.PostAsJsonAsync(new Uri("/api/v1/auth/login", UriKind.Relative),
+            new { email = UniqueEmail(), password = ValidPassword });
+
+        var unconfirmedEmail = UniqueEmail();
+        using var registration = await RegisterAsync(client, unconfirmedEmail, ValidPassword);
+        Assert.Equal(HttpStatusCode.OK, registration.StatusCode);
+        using var unconfirmedAccount = await client.PostAsJsonAsync(new Uri("/api/v1/auth/login", UriKind.Relative),
+            new { email = unconfirmedEmail, password = ValidPassword });
+
+        var failedAttempts = new List<HttpResponseMessage>();
+        try
+        {
+            for (var attempt = 0; attempt < 6; attempt++)
+            {
+                failedAttempts.Add(await client.PostAsJsonAsync(new Uri("/api/v1/auth/login", UriKind.Relative),
+                    new { email = lockedEmail, password = "WrongPassw0rd!" }));
+            }
+
+            await using var db = CreateDbContext(connectionString);
+            var user = await db.Users.SingleAsync(candidate => candidate.Email == lockedEmail);
+            Assert.True(user.LockoutEnd > DateTimeOffset.UtcNow, "The integration setup must reach Identity's lockout state.");
+
+            using var lockedAccount = await client.PostAsJsonAsync(new Uri("/api/v1/auth/login", UriKind.Relative),
+                new { email = lockedEmail, password = ValidPassword });
+            var responses = new[] { wrongPassword, unknownAccount, unconfirmedAccount, lockedAccount };
+            foreach (var response in responses)
+            {
+                Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+                Assert.Equal("Invalid email or password.", await ReadProblemTitleAsync(response));
+            }
+            Assert.All(failedAttempts, response => Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode));
+        }
+        finally
+        {
+            foreach (var response in failedAttempts)
+                response.Dispose();
+        }
+    }
+
+    private static async Task<string?> ReadProblemTitleAsync(HttpResponseMessage response)
+    {
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        return body.RootElement.GetProperty("title").GetString();
+    }
+
+    [Fact]
+    public async Task Password_reset_destination_limit_is_independent_of_account_existence_and_keeps_generic_success()
+    {
+        var sender = new CapturingEmailSender();
+        await using var factory = CreateFactory(emailSender: sender, extraConfig: new Dictionary<string, string?>
+        {
+            ["AuthRateLimits:PasswordResetRequestDestination:PermitLimit"] = "1",
+            ["AuthRateLimits:PasswordResetRequestDestination:WindowSeconds"] = "3600",
+        });
+        using var client = factory.CreateClient();
+        var registeredEmail = UniqueEmail();
+        await RegisterAndConfirmAsync(client, sender, registeredEmail, ValidPassword);
+
+        using var knownResponse = await client.PostAsJsonAsync(
+            new Uri("/api/v1/auth/request-password-reset", UriKind.Relative), new { email = registeredEmail });
+        using var knownSecondResponse = await client.PostAsJsonAsync(
+            new Uri("/api/v1/auth/request-password-reset", UriKind.Relative), new { email = registeredEmail });
+        using var unknownResponse = await client.PostAsJsonAsync(
+            new Uri("/api/v1/auth/request-password-reset", UriKind.Relative), new { email = UniqueEmail() });
+
+        Assert.Equal(HttpStatusCode.OK, knownResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.TooManyRequests, knownSecondResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, unknownResponse.StatusCode);
+        Assert.Equal(await knownResponse.Content.ReadAsStringAsync(), await unknownResponse.Content.ReadAsStringAsync());
+        Assert.Equal("no-store", knownSecondResponse.Headers.CacheControl?.ToString());
     }
 
     [Fact]
@@ -333,7 +711,7 @@ public sealed class AuthEndpointsTests(PostgreSqlFixture postgreSql) : IAsyncLif
     }
 
     [Fact]
-    public async Task Production_without_a_configured_email_adapter_fails_closed_instead_of_silently_sending_no_email()
+    public async Task Production_durably_queues_protected_email_without_provider_credentials()
     {
         await using var factory = CreateFactory(environmentName: "Production");
 
@@ -344,16 +722,19 @@ public sealed class AuthEndpointsTests(PostgreSqlFixture postgreSql) : IAsyncLif
             BaseAddress = new Uri("https://localhost"),
         });
 
-        var registerResponse = await RegisterAsync(client, UniqueEmail(), ValidPassword);
+        var email = UniqueEmail();
+        var registerResponse = await RegisterAsync(client, email, ValidPassword);
 
-        // No real IEmailSender adapter exists yet in this phase (docs/ARCHITECTURE.md §5).
-        // DependencyInjection.AddInfrastructure only wires DevEmailSender in Development, mirroring
-        // docs/THREAT_MODEL.md §9's FakePaymentGateway production-startup-failure posture, so
-        // Production fails closed here instead of silently dropping the confirmation email.
-        Assert.Equal(HttpStatusCode.InternalServerError, registerResponse.StatusCode);
+        // Queue acceptance is durable even while the provider is not configured; the worker keeps
+        // the message retryable and never stores the auth link in plaintext.
+        Assert.Equal(HttpStatusCode.OK, registerResponse.StatusCode);
 
         var body = await registerResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("IEmailSender", body, StringComparison.Ordinal);
+        await using var context = CreateDbContext(connectionString);
+        var queued = await context.OutboxMessages.SingleAsync(message => message.MessageType == "notifications.email");
+        Assert.DoesNotContain(email, queued.Payload, StringComparison.Ordinal);
+        Assert.DoesNotContain("confirmationLink", queued.Payload, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -379,7 +760,7 @@ public sealed class AuthEndpointsTests(PostgreSqlFixture postgreSql) : IAsyncLif
     private static async Task<HttpResponseMessage> RegisterAsync(HttpClient client, string email, string password) =>
         await client.PostAsJsonAsync(
             new Uri("/api/v1/auth/register", UriKind.Relative),
-            new { email, password, displayName = "Test User" });
+            new { email, password, displayName = "Test User", accountType = "Individual", serviceNoticeAcknowledged = true });
 
     private static async Task RegisterAndConfirmAsync(
         HttpClient client, CapturingEmailSender emailSender, string email, string password)
@@ -434,7 +815,8 @@ public sealed class AuthEndpointsTests(PostgreSqlFixture postgreSql) : IAsyncLif
     private static (string UserId, string Token) ExtractUserIdAndToken(string link)
     {
         var uri = new Uri(link);
-        var query = QueryHelpers.ParseQuery(uri.Query);
+        Assert.Empty(uri.Query);
+        var query = QueryHelpers.ParseQuery(uri.Fragment.TrimStart('#'));
         return (query["userId"].ToString(), query["token"].ToString());
     }
 
@@ -535,6 +917,7 @@ public sealed class AuthEndpointsTests(PostgreSqlFixture postgreSql) : IAsyncLif
     private sealed class CapturingEmailSender : IEmailSender
     {
         public List<(string ToEmail, string Kind, IReadOnlyDictionary<string, string> Data)> Sent { get; } = [];
+        public bool FailEnqueue { get; init; }
 
         public Task SendAsync(
             string toEmail,
@@ -542,6 +925,8 @@ public sealed class AuthEndpointsTests(PostgreSqlFixture postgreSql) : IAsyncLif
             IReadOnlyDictionary<string, string> data,
             CancellationToken cancellationToken)
         {
+            if (FailEnqueue)
+                throw new InvalidOperationException("Simulated durable enqueue failure.");
             Sent.Add((toEmail, kind, data));
             return Task.CompletedTask;
         }
@@ -560,9 +945,10 @@ public sealed class AuthEndpointsTests(PostgreSqlFixture postgreSql) : IAsyncLif
             builder.UseEnvironment(environmentName);
             builder.ConfigureAppConfiguration((_, configurationBuilder) =>
             {
+                var databaseConnectionString = connectionString;
                 var config = new Dictionary<string, string?>
                 {
-                    ["Database:ConnectionString"] = connectionString,
+                    ["Database:ConnectionString"] = databaseConnectionString,
                     ["Cors:AllowedOrigins:0"] = AllowedOrigin,
                     ["PublicWeb:BaseUrl"] = "https://davetiye.example.test",
                 };

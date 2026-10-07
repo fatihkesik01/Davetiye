@@ -117,6 +117,9 @@ public sealed class AuthSecurityOptionsTests
         var options = provider.GetRequiredService<IOptions<AuthRateLimitOptions>>().Value;
 
         Assert.Equal(10, options.Login.PermitLimit);
+        Assert.Equal(5, options.PasswordResetRequestDestination.PermitLimit);
+        Assert.Equal(3600, options.PasswordResetRequestDestination.WindowSeconds);
+        Assert.Equal(262_144, options.PasswordResetDestinationBucketCount);
     }
 
     [Fact]
@@ -130,6 +133,32 @@ public sealed class AuthSecurityOptionsTests
         var exception = Assert.Throws<OptionsValidationException>(() =>
             _ = provider.GetRequiredService<IOptions<AuthRateLimitOptions>>().Value);
         Assert.Contains("Login:PermitLimit must be between", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AuthRateLimits_rejects_an_out_of_range_Creator_RSVP_account_window()
+    {
+        using var provider = BuildProvider(new Dictionary<string, string?>
+        {
+            ["AuthRateLimits:CreatorRsvpWriteAccount:WindowSeconds"] = "3601",
+        });
+
+        var exception = Assert.Throws<OptionsValidationException>(() =>
+            _ = provider.GetRequiredService<IOptions<AuthRateLimitOptions>>().Value);
+        Assert.Contains("CreatorRsvpWriteAccount:WindowSeconds must be between", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AuthRateLimits_rejects_an_out_of_range_destination_bucket_count()
+    {
+        using var provider = BuildProvider(new Dictionary<string, string?>
+        {
+            ["AuthRateLimits:PasswordResetDestinationBucketCount"] = "0",
+        });
+
+        var exception = Assert.Throws<OptionsValidationException>(() =>
+            _ = provider.GetRequiredService<IOptions<AuthRateLimitOptions>>().Value);
+        Assert.Contains("PasswordResetDestinationBucketCount must be between", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

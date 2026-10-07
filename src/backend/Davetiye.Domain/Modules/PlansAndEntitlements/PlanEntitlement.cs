@@ -63,8 +63,14 @@ public sealed class PlanEntitlement
         var definition = EntitlementCatalog.Require(EntitlementKey);
         ValidateValue(definition, numericValue, booleanValue);
 
+        if (NumericValue == numericValue && BooleanValue == booleanValue)
+        {
+            return;
+        }
+
         NumericValue = numericValue;
         BooleanValue = booleanValue;
+        Revision++;
     }
 
     private static void ValidateValue(
