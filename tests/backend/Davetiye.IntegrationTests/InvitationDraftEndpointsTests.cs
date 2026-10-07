@@ -765,7 +765,7 @@ public sealed class InvitationDraftEndpointsTests(PostgreSqlFixture postgreSql) 
 
     private static async Task RunMigratorAsync(string testConnectionString)
     {
-        var migratorAssembly = Path.Combine(FindRepositoryRoot(), "tools", "Davetiye.DatabaseMigrator", "bin", "Debug", "net10.0", "Davetiye.DatabaseMigrator.dll");
+        var migratorAssembly = Path.Combine(FindRepositoryRoot(), "tools", "Davetiye.DatabaseMigrator", "bin", TestBuildConfiguration.Name, "net10.0", "Davetiye.DatabaseMigrator.dll");
         Assert.True(File.Exists(migratorAssembly), $"Migrator assembly was not built: {migratorAssembly}");
 
         var startInfo = new ProcessStartInfo("dotnet")

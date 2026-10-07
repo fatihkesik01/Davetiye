@@ -30,8 +30,10 @@ public sealed class CreatorGiftRegistryEndpointsTests(PostgreSqlFixture postgreS
 {
     private const string Origin = "https://allowed.example.test";
     private const string Password = "TestPassw0rd1";
-    private static readonly DateTimeOffset Now = new(2026, 10, 5, 12, 0, 0, TimeSpan.Zero);
-    private const string Content = """{"eventType":"dugun","headline":"Gift registry","startsAt":"2026-10-10T12:00:00Z","timeZoneId":"Europe/Istanbul","venue":{"name":"Venue","address":"Address"},"message":"Welcome","hostNames":["Ada"]}""";
+    // Anchored to the real date: the guest gift cookie expires at the publication window end, and the
+    // HTTP client's cookie container evaluates that expiry against the real clock, not the fixed one.
+    private static readonly DateTimeOffset Now = new(DateTime.UtcNow.Date.AddHours(12), TimeSpan.Zero);
+    private static readonly string Content = $$"""{"eventType":"dugun","headline":"Gift registry","startsAt":"{{Now.AddDays(5).ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture)}}","timeZoneId":"Europe/Istanbul","venue":{"name":"Venue","address":"Address"},"message":"Welcome","hostNames":["Ada"]}""";
 
     [Fact]
     public async Task Creator_can_manage_ordered_items_but_cannot_delete_reserved_items_or_access_foreign_items()
@@ -369,7 +371,9 @@ public sealed class CreatorGiftRegistryEndpointsTests(PostgreSqlFixture postgreS
             await using var scope = Services.CreateAsyncScope();
             var service = scope.ServiceProvider.GetRequiredService<IPublicationLifecycleService>();
             var status = (await service.GetAsync(Account, Invitation, default)).Status!;
-            var window = new PublicationWindowRequest("Immediate", null, "2026-10-07T15:00:00", "Europe/Istanbul", grantId);
+            var window = new PublicationWindowRequest("Immediate", null,
+                Now.AddDays(2).ToOffset(TimeSpan.FromHours(3)).ToString("yyyy-MM-ddTHH:mm:ss", System.Globalization.CultureInfo.InvariantCulture),
+                "Europe/Istanbul", grantId);
             var result = await service.ExecuteAsync(Account, Invitation,
                 new("publish", status.Expected, window, ProceedWithRecommendedWarnings: true), default);
             Assert.Equal("Succeeded", result.Code);

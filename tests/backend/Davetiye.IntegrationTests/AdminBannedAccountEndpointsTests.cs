@@ -282,7 +282,7 @@ public sealed class AdminBannedAccountEndpointsTests(PostgreSqlFixture postgreSq
     private static async Task RunMigratorAsync(string testConnectionString)
     {
         var root = FindRepositoryRoot();
-        var assembly = Path.Combine(root, "tools", "Davetiye.DatabaseMigrator", "bin", "Debug", "net10.0", "Davetiye.DatabaseMigrator.dll");
+        var assembly = Path.Combine(root, "tools", "Davetiye.DatabaseMigrator", "bin", TestBuildConfiguration.Name, "net10.0", "Davetiye.DatabaseMigrator.dll");
         Assert.True(File.Exists(assembly), $"Migrator assembly was not built: {assembly}");
         var info = new ProcessStartInfo("dotnet") { RedirectStandardError = true, RedirectStandardOutput = true, UseShellExecute = false };
         info.ArgumentList.Add(assembly);

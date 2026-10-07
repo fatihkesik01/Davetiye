@@ -190,7 +190,7 @@ public sealed class AdminPlanServiceTests(PostgreSqlFixture postgres)
     private static async Task RunMigratorAsync(string connection)
     {
         var root = FindRepositoryRoot();
-        var assembly = Path.Combine(root, "tools", "Davetiye.DatabaseMigrator", "bin", "Debug", "net10.0", "Davetiye.DatabaseMigrator.dll");
+        var assembly = Path.Combine(root, "tools", "Davetiye.DatabaseMigrator", "bin", TestBuildConfiguration.Name, "net10.0", "Davetiye.DatabaseMigrator.dll");
         var info = new ProcessStartInfo("dotnet") { RedirectStandardError = true, RedirectStandardOutput = true, UseShellExecute = false };
         info.ArgumentList.Add(assembly);
         info.Environment["Database__ConnectionString"] = connection;

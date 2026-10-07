@@ -85,7 +85,7 @@ public sealed class TemplateCatalogInitializerTests(PostgreSqlFixture postgreSql
 
     private static async Task RunMigratorAsync(string connectionString)
     {
-        var migratorAssembly = Path.Combine(FindRepositoryRoot(), "tools", "Davetiye.DatabaseMigrator", "bin", "Debug", "net10.0", "Davetiye.DatabaseMigrator.dll");
+        var migratorAssembly = Path.Combine(FindRepositoryRoot(), "tools", "Davetiye.DatabaseMigrator", "bin", TestBuildConfiguration.Name, "net10.0", "Davetiye.DatabaseMigrator.dll");
         Assert.True(File.Exists(migratorAssembly), $"Migrator assembly was not built: {migratorAssembly}");
 
         var startInfo = new System.Diagnostics.ProcessStartInfo("dotnet")
