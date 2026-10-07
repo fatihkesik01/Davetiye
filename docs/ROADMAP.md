@@ -78,7 +78,7 @@ ve kanıt ayrıntısı kendi `docs/PHASE_N_PLAN.md` dosyasındadır.
 
 ## 3. Where are we now? (Şu an neredeyiz?)
 
-- **Aktif phase:** Yok. Phase 10 tamamlandı; Phase 11 ayrıca açık onay bekliyor.
+- **Aktif phase:** Phase 11 (Fatih onayı 2026-10-08); site `https://kutlio.com`'da yayında, henüz duyurulmadı.
 - **Güncel çalışma noktası ve son doğrulama kanıtı:** `docs/AI_HANDOFF.md`.
 - Phase 1'den taşınan feature-activation gate'leri Part B §6'da doğru
   phase'e bağlıdır.
@@ -87,8 +87,7 @@ ve kanıt ayrıntısı kendi `docs/PHASE_N_PLAN.md` dosyasındadır.
 
 ### Şimdi
 
-Phase 11'in başlaması için Part B §16 / `docs/PHASE_11_PLAN.md`'deki
-`[DECISION REQUIRED — FATIH]` maddeleri ve aşağıdaki hesap/hukuk aksiyonları.
+Sıradaki owner işleri `docs/PHASE_11_PLAN.md` İş Takip Listesi'ndedir.
 
 ### Yaklaşan phase'lerde
 
