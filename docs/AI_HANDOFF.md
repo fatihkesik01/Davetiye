@@ -82,8 +82,9 @@ open alongside 22222, stale ufw allow rules for 8080/5050.
 
 ## Next Action
 
-Follow the ordered tracker in `docs/PHASE_11_PLAN.md` ("İş Takip Listesi"):
-company/tax/legal/iyzico live come last (Fatih, 2026-10-07). Row 1 — Fatih's
-explicit Phase 11 approval — is still open; do not deploy before it. Never
-touch Lora, including its backups; a VPS reboot's 1–3 minute Lora outage is
-accepted.
+Resume from `docs/PHASE_11_PLAN.md` ("İş Takip Listesi"). Agreed next steps
+(Fatih, 2026-10-08): 25c (check Resend verification, add API key on the
+server, test registration email), 25a (rename brand to "Kutlio"), 25b (real
+landing page for `/` — agree its content with Fatih first and record it in
+`docs/PRODUCT.md`; do not invent sections). Company/tax/legal/iyzico live stay
+last. Never touch Lora, including its backups.

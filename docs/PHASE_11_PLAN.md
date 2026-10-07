@@ -92,6 +92,9 @@ Bir satır tamamlandığında agent durumu ve kısa notu burada günceller.
 | 23 | Gerçek tarayıcı %200 zoom (otomatik kısım) | 🤖 | 9 | M8 | ⬜ |
 | 24 | Ekran okuyucu + kontrast elle test turu | 👤 (veya tester) | 9 | M8 | ⬜ |
 | 25 | OG/paylaşım önizlemesi kişiselleştirme seviyesi kararı | 👤 karar → 🤖 | — | M9 | ⬜ |
+| 25a | **Marka adı "Kutlio"** (Fatih kararı 2026-10-08): uygulama başlığı/logo metni, sayfa başlıkları, e-posta gönderen adı (`RESEND_FROM_NAME`) ve ürün dokümanları | 👤 karar ✅ → 🤖 | — | M9 | ⬜ |
+| 25b | **Gerçek ana sayfa (`/`)** — ürünü anlatan tanıtım sayfası (Fatih kararı 2026-10-08). Önce içerik/bölümler birlikte kararlaştırılır ve `docs/PRODUCT.md`'ye eklenir, sonra tasarım + uygulama. Şu an `/` "Sayfa bulunamadı" gösteriyor | 👤 içerik kararı → 🤖 | 25a | M9 | ⬜ |
+| 25c | Resend doğrulamasını kontrol et, gönderme-yetkili API anahtarını sunucu `.env`'ine ekle, kayıt doğrulama e-postasını uçtan uca test et | 🤖 | 12 | M5 | ⬜ |
 
 ### Aşama 2 — Şirket, hukuk ve ödeme (en son)
 
