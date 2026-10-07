@@ -76,9 +76,9 @@ Bir satır tamamlandığında agent durumu ve kısa notu burada günceller.
 | 7 | Cloudflare hesabı aç, domain'i ekle, nameserver'ları Cloudflare'e yönlendir | 👤 | 6 | M2 | ✅ 2026-10-07 zone Active, Cloudflare nameserver'ları |
 | 8 | DNS kayıtları (A → VPS IP, www) | 🤝 | 3, 7 | M2 | ⬜ deploy'dan sonra; önce girilirse domain Lora'nın nginx varsayılan sitesine düşebilir |
 | 9 | Nginx sitesi + HTTPS (Let's Encrypt), production URL/CORS/cookie ayarları | 🤖 | 3, 8 | M2 | ⬜ |
-| 10 | Destek/gönderici adreslerini belirle (`destek@`, `noreply@`) ve posta kutusu çözümü seç (ör. Cloudflare Email Routing veya Zoho/Google Workspace) | 👤 | 7 | M5 | ⬜ |
-| 11 | Resend hesabı aç, domain'i ekle | 👤 | 7 | M5 | ⬜ |
-| 12 | SPF/DKIM/DMARC kayıtları, Resend production anahtarı, teslim testi | 🤝 | 9, 10, 11 | M5 | ⬜ |
+| 10 | Destek/gönderici adreslerini belirle (`destek@`, `noreply@`) ve posta kutusu çözümü seç (ör. Cloudflare Email Routing veya Zoho/Google Workspace) | 👤 | 7 | M5 | ✅ 2026-10-07 Cloudflare Email Routing: `destek@` ve `noreply@kutlio.com` → 01fatihkesik@gmail.com; diğerleri Drop |
+| 11 | Resend hesabı aç, domain'i ekle | 👤 | 7 | M5 | ✅ 2026-10-07 Resend hesabı (01fatihkesik), `kutlio.com` eklendi, bölge Ireland (eu-west-1), tracking kapalı |
+| 12 | SPF/DKIM/DMARC kayıtları, Resend production anahtarı, teslim testi | 🤝 | 9, 10, 11 | M5 | 🔄 DKIM/SPF(`send`,`rsend` CNAME)/DMARC `p=none` Cloudflare'e girildi; Resend doğrulaması bekleniyor. Gönderme-yetkili API anahtarı deploy sırasında doğrudan sunucu `.env`'ine üretilecek |
 | 13 | Google Cloud projesi + OAuth onay ekranı + domain doğrulama (Search Console) | 👤 | 9 | M3 | ⬜ |
 | 14 | Google OAuth production ayarı ve smoke testi | 🤖 | 13 | M3 | ⬜ |
 | 15 | Cloudflare R2 / Images / Stream'i etkinleştir (kart gerekir), hesaba özel limitleri incele | 👤 (limit incelemesi 🤝) | 7 | M6 | ⬜ |
