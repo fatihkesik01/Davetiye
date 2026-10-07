@@ -70,9 +70,10 @@ Durum (2026-10-07 itibarıyla repository ve testlerle doğrulandı):
 | 10 | Privacy, Retention & Integrated MVP Hardening | **COMPLETED** (7/7) |
 | 11 | Production Readiness & Business Launch | **NOT STARTED** |
 
-**12 phase'in 11'i tamamlandı (Phase 0–10).** Phase 2–10'un bütün gerçek
-provider kabulleri (Cloudflare, iyzico, Resend, Google production), clean-
-checkout CI ve VPS deployment Phase 11'e ertelenmiştir. Her phase'in milestone
+**12 phase'in 11'i tamamlandı (Phase 0–10).** Phase 2–10 commit/push edildi ve
+clean-checkout GitHub Actions CI 2026-10-07'de yeşil geçti. Gerçek provider
+kabulleri (Cloudflare, iyzico, Resend, Google production) ve VPS deployment
+Phase 11'e ertelenmiştir. Her phase'in milestone
 ve kanıt ayrıntısı kendi `docs/PHASE_N_PLAN.md` dosyasındadır.
 
 ## 3. Where are we now? (Şu an neredeyiz?)
@@ -457,10 +458,10 @@ kanıtı yalnız kendi plan dosyasında tutulur; burada tekrarlanmaz.
 | 9 | 4 — Creator Media & Gated Delivery | COMPLETED 8/8 | 2026-10-03 | `docs/PHASE_4_PLAN.md` | Cloudflare hesap/limit ve gerçek-provider media kabulü (P11-M6/M8) |
 | 10 | 5 — RSVP & Attendance Insights | COMPLETED 6/6 | 2026-10-05 | `docs/PHASE_5_PLAN.md` | — |
 | 11 | 6 — Memories & Guest Media | COMPLETED 6/6 | 2026-10-05 | `docs/PHASE_6_PLAN.md` | Gerçek Cloudflare kabulü |
-| 12 | 7 — Gift Registry | COMPLETED 6/6 | 2026-10-05 | `docs/PHASE_7_PLAN.md` | Clean-checkout CI |
+| 12 | 7 — Gift Registry | COMPLETED 6/6 | 2026-10-05 | `docs/PHASE_7_PLAN.md` | — (clean CI 2026-10-07'de geçti) |
 | 13 | 8 — Commerce, Plans & Transactional Email | COMPLETED 7/7 | 2026-10-05 | `docs/PHASE_8_PLAN.md` | iyzico/Resend gerçek hesap kabulü; refund/dispute/chargeback kaynak doğrulaması |
 | 14 | 9 — Super Admin & Platform Governance | COMPLETED 7/7 | 2026-10-06 | `docs/PHASE_9_PLAN.md` | Audit retention hukuki kararı |
-| 15 | 10 — Privacy, Retention & Integrated MVP Hardening | COMPLETED 7/7 | 2026-10-06 | `docs/PHASE_10_PLAN.md` | Clean CI/push/VPS; Organization provider-cancellation adapter; gerçek tarayıcı 200% zoom ve manuel ekran okuyucu/kontrast; kesin hukuki retention süreleri |
+| 15 | 10 — Privacy, Retention & Integrated MVP Hardening | COMPLETED 7/7 | 2026-10-06 | `docs/PHASE_10_PLAN.md` | VPS deployment; Organization provider-cancellation adapter; gerçek tarayıcı 200% zoom ve manuel ekran okuyucu/kontrast; kesin hukuki retention süreleri |
 
 ## 16. Phase 11 — Production Readiness & Business Launch
 

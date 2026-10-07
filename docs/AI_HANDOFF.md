@@ -24,12 +24,19 @@ checks before trusting it (`docs/AI_WORKFLOW.md` §1/§11).
   Testing Library default) was fixed by raising `asyncUtilTimeout` in
   `src/web/src/test/setup.ts`.
 - Media-ingress Worker: 52/52, typecheck.
-- Last full PostgreSQL IntegrationTests run (P10-M7): 527/527; Playwright
-  177/177. Not re-run in this session.
+- **Clean-checkout GitHub Actions CI passed** —
+  [run 37653912659](https://github.com/fatihkesik01/Davetiye/actions/runs/37653912659)
+  on `d25383f`: backend (Architecture 81, Unit 491, PostgreSQL Integration
+  527), frontend, Playwright e2e, media Worker, container smoke and
+  dependency/config/Trivy scan all green.
+- CI fixes on the way: integration tests hardcoded a `bin/Debug` migrator
+  path (now `TestBuildConfiguration`); the gift registry test's fixed
+  publication window had expired in real time (now anchored to today);
+  Vitest pins `TZ=Europe/Istanbul` and `testTimeout` 20s.
+- Phases 2–10 are committed and pushed to `main`.
 
 ## Deferred to Phase 11 (mandatory gates)
 
-- Clean-checkout GitHub Actions CI on the Phase 2–10 code.
 - VPS deployment (`docs/DEPLOYMENT.md`; never touch Lora).
 - Real provider acceptance: Cloudflare R2/Images/Stream (incl. in-flight
   upload at expiry and legacy 15-min capability grace), iyzico (incl.
@@ -41,6 +48,14 @@ checks before trusting it (`docs/AI_WORKFLOW.md` §1/§11).
 - Legal: exact retention periods, tombstone-ID acceptability, audit
   retention (no automatic audit deletion before this decision), refund/tax
   wording.
+
+## VPS (read-only check 2026-10-07)
+
+Davetiye is not deployed (`/opt/davetiye` absent; ports 5052/8082/15434
+free). Lora healthy. Host-level items reported to Fatih, not changed because
+the host is shared with Lora: reboot pending (newer kernel installed), 5
+pending security updates, sshd password authentication enabled and port 22
+open alongside 22222, stale ufw allow rules for 8080/5050.
 
 ## Open Technical Debt (Low)
 
