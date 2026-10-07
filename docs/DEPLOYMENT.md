@@ -52,6 +52,16 @@ Then on the VPS: create `/opt/davetiye/.env` (secrets generated on-box via `open
 cd /opt/davetiye && docker compose -f docker-compose.prod.yml --env-file .env up -d --build
 ```
 
+Cloudflare media remains disabled until the Phase 11 account and provider gates
+pass. At that time, set the Cloudflare runtime values in `.env`, then set the
+non-secret `CSP_MEDIA_WORKER_ORIGIN` and `CSP_STREAM_CUSTOMER_ORIGIN` build
+values to the exact HTTPS origins configured for
+`CloudflareMedia:WorkerBaseUrl` and `CloudflareMedia:StreamCustomerHostname`.
+Rebuild both the API and web images. The web build accepts only HTTPS origins
+and a `*.cloudflarestream.com` Stream hostname. The API and SPA CSP policies use
+these trusted origins; do not add them from request headers or broaden the
+policy to arbitrary HTTPS hosts.
+
 ## Safely removing/resetting the Davetiye deployment
 
 ```bash

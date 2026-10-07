@@ -1,7 +1,7 @@
 # AI Workflow — Provider-Neutral Delivery Protocol
 
 Status: **Accepted baseline**
-Last updated: **2026-09-28**
+Last updated: **2026-09-29**
 
 This document is the single, provider-neutral description of how AI coding
 agents collaborate on Davetiye — regardless of whether the acting tool is
@@ -36,6 +36,17 @@ over-state what actually exists in `src/`). When a document and the repo
 disagree, the repo wins, and the discrepancy is reported, not silently
 resolved.
 
+**Scope of this rule:** it binds a *session-starting* agent — the first
+thing any Orchestrator or specialist does when it picks up the repository
+cold (a new session, a new provider, or the Orchestrator at the start of a
+phase; see §11's full checklist). It does **not** mean every specialist the
+Orchestrator delegates to mid-session repeats this full independent
+verification for itself. Within one active session, a specialist trusts
+the Orchestrator's already-verified current state and verifies only the
+specific slice of work it was asked to do (its own diff, its own tests) —
+re-running the whole repo's build/test suite from scratch at every single
+specialist handoff is exactly the redundant cost this scoping avoids.
+
 ## 2. Roles
 
 ### Orchestrator
@@ -48,7 +59,12 @@ Not the default implementer. Responsible for:
   milestones;
 - selecting only the specialists a milestone actually needs;
 - giving each specialist an objective, scope, source-of-truth references,
-  constraints, expected output and verification criteria;
+  constraints, expected output and verification criteria — when the
+  Orchestrator already knows which section of a source-of-truth doc
+  applies, it cites/pastes that specific excerpt (e.g. "PRODUCT.md §10,
+  RSVP") rather than telling the specialist to read the whole file; the
+  specialist still reads the full document itself whenever the relevant
+  section isn't already known or the task is broad enough to need it;
 - parallelizing only genuinely independent work (see §5);
 - routing verification findings back to the owning specialist and requiring
   re-verification, never accepting "should be fixed now" without re-checking;
@@ -72,8 +88,20 @@ Not the default implementer. Responsible for:
 | Reviewer | Independent review for correctness, maintainability, architecture and scope compliance |
 
 Each specialist's detailed system prompt lives in `docs/agents/<name>.md` (see
-§8). This table is the stable, at-a-glance summary; the detail belongs in
+§12). This table is the stable, at-a-glance summary; the detail belongs in
 those files, not duplicated here.
+
+**Tester and Reviewer default to one combined pass** (§6) — for a routine
+milestone, one non-implementer session covers both behavior/regression
+testing and correctness/scope review, rather than two separate agent
+invocations that each reload context. Keep them as genuinely separate
+passes only when a milestone specifically warrants it (e.g. it needs deep,
+dedicated test-suite work before review is even useful). Security review
+is never folded into this combined pass — it stays independent whenever a
+milestone touches auth, data exposure, payments, uploads, or another trust
+boundary, because this project handles real payment and user data and a
+self-combined check is measurably weaker at catching security defects than
+a dedicated pass.
 
 ## 3. Product Decisions vs. Technical Decisions
 
@@ -86,7 +114,7 @@ those files, not duplicated here.
   resolved by the Architect and the relevant specialist without user
   escalation.
 - An **open product decision** recorded in a decision register (e.g.
-  `docs/PHASE_0_BASELINE.md` §12, PD-01…PD-13) is not permission to invent
+  `docs/PHASE_0_PLAN.md` §12, PD-01…PD-13) is not permission to invent
   behavior. Foundation work must not close it implicitly by choosing an
   implementation that only makes sense under one of the possible answers.
 
@@ -108,13 +136,29 @@ real product ambiguity.
 
 - Break an approved phase into milestones small enough to verify
   independently (their own build/tests/review), not so small that
-  coordination overhead dominates.
+  coordination overhead dominates. **Prefer bundling related work into one
+  milestone over splitting it into several** — e.g. "schema + migration +
+  seed data" is one milestone, not three; "backend skeleton + frontend
+  skeleton" is one milestone if neither blocks the other's review. A phase
+  should typically decompose into roughly 5-10 milestones, not 15+; Phase
+  1's original 17-unit breakdown (`docs/PHASE_1_PLAN.md` §3) is the
+  cautionary example, not the target shape — each of its fine-grained
+  sub-units (M2A/M2B, M5A/M5B, M6a/M6b, M7A/M7B) triggered its own full
+  implement→test→review cycle, and the coordination/context-reload
+  overhead across that many cycles measurably outweighed the benefit of
+  the extra granularity.
 - Each milestone states: objective, dependencies, owning specialist(s), and
   an explicit, checkable completion criterion (not "looks done" — a build
   passes, a test suite is green, a documented contract exists).
 - Milestones are dependency-aware: a milestone that needs another milestone's
   output declares that dependency explicitly rather than assuming ordering.
-
+- Splitting a bundled milestone back into smaller pieces is still
+  legitimate when it is genuinely needed — e.g. a milestone turns out to
+  touch a trust boundary that deserves its own focused security pass, or a
+  single agent session cannot fit the bundled work in one sitting. Default
+  to bundling; split only when a specific reason requires it, not by
+  habit.
+  
 ## 5. Safe Parallelism
 
 - Parallelize only work that is genuinely independent — different modules,
@@ -128,7 +172,7 @@ real product ambiguity.
   shared module boundary) blocks dependents until it is merged and verified,
   not just "in progress."
 
-## 6. Implement → Test → Security → Review → Fix → Re-verify Loop
+## 6. Implement → Test/Review → Security → Fix → Re-verify Loop
 
 For every milestone:
 
@@ -136,10 +180,14 @@ For every milestone:
 Plan
   → select specialists
   → implement
-  → test
+  → combined Tester/Reviewer pass (behavior, edge cases, correctness,
+    maintainability and scope compliance, checked by someone other than
+    the implementer, in one pass — split back into separate Tester and
+    Reviewer passes only when the milestone specifically warrants it, see
+    §2)
   → security review (when the milestone touches auth, data exposure,
-    payments, uploads, or another trust boundary)
-  → independent review
+    payments, uploads, or another trust boundary) — always independent,
+    never folded into the combined pass above
   → fix findings (routed back to the owning specialist)
   → re-test / re-review (never skipped because a fix "should" work)
   → milestone completion report
@@ -229,9 +277,14 @@ provider) picks up this repository:
 6. Only then resume work, staying inside the currently approved phase (§9).
 
 `docs/AI_HANDOFF.md` is a living snapshot, not a history log. Permanent
-history belongs in Git and in dated phase documents (`docs/PHASE_1_PLAN.md`,
-`docs/PHASE_1_EXECUTION.md`, future phase plans) — do not let the handoff
-file grow into a chronological journal.
+history belongs in Git and in dated phase documents (`docs/PHASE_1_PLAN.md`
+— which also carries the UX Foundation contract as its §10 — and future
+phase plans) — do not let the handoff file grow into a chronological journal.
+Concretely: when recording a process/docs change, **update or replace** the
+relevant section of `docs/AI_HANDOFF.md` with the current fact, rather than
+appending a new dated "addendum" paragraph on top of the previous ones —
+a growing stack of "2026-09-29 addendum" blocks *is* the chronological
+journal this rule forbids, even if each individual addendum seems short.
 
 ## 12. Provider Adapter Principle
 
@@ -289,9 +342,18 @@ Phase Status" section at each milestone/phase boundary.
 For each milestone, the Orchestrator records: which specialist(s) owned
 implementation, which specialist(s) performed the Reviewer/Security
 passes, and the resulting finding counts by severity (Critical/High/
-Medium/Low raised and fixed). This is recorded as columns/notes on the
-current phase's execution document's milestone table (e.g.
-`docs/PHASE_1_EXECUTION.md` §3).
+Medium/Low raised and fixed). This is recorded **only as columns/short
+notes on the current phase plan's milestone table** (e.g.
+`docs/PHASE_1_PLAN.md` §3) — a few words per cell, not a separate prose
+write-up. A one-line finding summary belongs in the table cell itself
+("1 Medium found and fixed: X"); it does not get its own subsection unless
+the finding is still open and needs a tracked owner/disposition (in which
+case one line under "Known Technical Debt" in `docs/AI_HANDOFF.md`
+suffices — see §14). Routine facts that a real build/test run already
+proves (exact test counts, "0 warnings", which commands were re-run) are
+not recorded in prose; they are implied by "verified" and can be
+regenerated by re-running the suite, so writing them out milestone by
+milestone is exactly the kind of record this section does **not** require.
 
 This attribution is a **record of responsibility**, not a measured
 workload split. It must never be presented to the user as a precise
@@ -299,5 +361,29 @@ effort-share percentage ("Backend did 40% of the work") — no tool in this
 workflow measures actual effort or time spent. It answers "who owned this
 milestone and what did independent review find," not "how much did each
 agent contribute." If a milestone's implementer is not explicitly named in
-the execution record, the Orchestrator records "not recorded" rather than
+the phase plan, the Orchestrator records "not recorded" rather than
 inferring or guessing an owner after the fact.
+
+## 14. Roadmap / Plan / Handoff Status Synchronization
+
+When a milestone or phase is actually verified — not merely reported by its
+implementer — the Orchestrator updates three layers in this order:
+
+1. the relevant `docs/PHASE_N_PLAN.md`'s milestone table with milestone-level
+   truth, ownership, and finding counts by severity — table cells and
+   one-line notes only (§13.3), not a narrative subsection;
+2. `docs/AI_HANDOFF.md` with the short current-state snapshot needed by the
+   next session/provider, including any *still-open* finding with an owner;
+3. `docs/ROADMAP.md` with only the high-level milestone/phase status and any
+   changed dependency, decision or owner-action gate.
+
+These files must not copy the same detailed narrative, and none of them is
+a build/test log. `ROADMAP.md` answers where the project is going and shows
+the whole delivery path; `docs/PHASE_N_PLAN.md`'s milestone table records
+who did what and what independent review found, in the fewest words that
+stay checkable; `AI_HANDOFF.md` says where work is paused now and lists
+only *open* risks with an owner — a fixed finding is not carried forward
+once re-verified. Git, code, migrations and real test/CI results remain the
+implementation truth; nothing here substitutes for re-running them. A
+roadmap or plan entry never authorizes implementation of an unapproved
+phase.

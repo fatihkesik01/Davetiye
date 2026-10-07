@@ -1,6 +1,6 @@
 # ADR-0001 — Modular Monolith ve Modül Sahipliği
 
-Durum: **Accepted**  
+Durum: **Accepted (Kabul edildi)**  
 Tarih: **2026-09-28**
 
 ## Bağlam

@@ -1,6 +1,6 @@
 # Faz 0 — Threat Model
 
-Durum: **Accepted baseline**  
+Durum: **Accepted baseline (Kabul edilmiş temel doküman)**  
 Tarih: **2026-09-28**
 
 Kapsam MVP modular monolith, React browser uygulaması, PostgreSQL,
@@ -173,6 +173,9 @@ state untrusted kabul edilir.
 - Loglanmaması gerekenler: Authorization/Cookie/CSRF, OAuth code, MFA
   seed/recovery, reset token, upload URL, webhook raw body, RSVP answer,
   memory text, gift contact ve payment payload.
+- Admin banned-account email search sends the prefix in a JSON request body,
+  not the URL, so standard proxy request-line logs do not capture it.
+  Application diagnostics must not record search request bodies.
 - Audit append-only, access-controlled ve minimize metadata'lıdır.
 - Purge capability digest'leri ve provider media'yı kapsar.
 - Backup şifreli/off-site olur; backup retention da deletion/retention

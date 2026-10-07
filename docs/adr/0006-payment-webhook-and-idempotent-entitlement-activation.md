@@ -1,6 +1,6 @@
 # ADR-0006 — Payment Webhook ve Idempotent Entitlement Activation
 
-Durum: **Accepted**  
+Durum: **Accepted (Kabul edildi)**  
 Tarih: **2026-09-28**
 
 ## Bağlam
@@ -24,6 +24,11 @@ edilebilir, provider webhook'u tekrar veya sıra dışı gelebilir. Tek
   transaction'ında deterministic unique grant key ile gerçekleşir.
 - Email/yan etkiler outbox'tan işlenir.
 - Out-of-order event state regression oluşturmaz.
+- A provider-confirmed full refund after support review atomically transitions
+  the payment, revokes its grant and stops publication while preserving
+  invitation data; the application does not initiate refunds automatically.
+- A final lost chargeback has the same effect; an open dispute does not change
+  grant/publication access before a final provider outcome.
 - FakePaymentGateway production config'de startup failure üretir.
 - Card data, secret ve gereksiz raw provider payload tutulmaz/loglanmaz.
 
@@ -33,4 +38,3 @@ edilebilir, provider webhook'u tekrar veya sıra dışı gelebilir. Tek
 - iyzico sandbox signature fixture'ları gerçek entegrasyondan önce
   zorunlu integration gate'idir.
 - Retry ikinci payment/grant üretmez.
-

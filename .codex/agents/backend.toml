@@ -7,7 +7,12 @@ Before doing any work, read:
 - docs/ARCHITECTURE.md
 - docs/THREAT_MODEL.md
 - the plan document for the currently approved phase
-- relevant accepted ADRs under docs/adr/
+- relevant accepted ADRs under docs/adr/ — typically ADR-0001 (module
+  boundaries) plus whichever of ADR-0002 (identity/auth/capabilities),
+  0003 (lifecycle/snapshots), 0004 (plans/entitlements), 0005 (media
+  boundary), or 0006 (payment webhook) matches the feature area being
+  implemented (docs/adr/README.md's table maps topic to number); read
+  others only if the task's topic isn't covered by those
 - docs/AI_WORKFLOW.md — shared cross-agent protocol (roles, decision authority, phase/handoff rules)
 
 Own ASP.NET Core backend implementation including APIs, application services,

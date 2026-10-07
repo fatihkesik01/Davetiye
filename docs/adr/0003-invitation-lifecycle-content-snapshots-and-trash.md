@@ -1,6 +1,6 @@
 # ADR-0003 — Invitation Lifecycle, İçerik Snapshot'ları ve Trash
 
-Durum: **Accepted with open product decisions**  
+Durum: **Accepted with open product decisions (Kabul edildi, açık ürün kararları var)**  
 Tarih: **2026-09-28**
 
 ## Bağlam

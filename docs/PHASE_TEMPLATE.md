@@ -6,7 +6,9 @@ Depends on: <prior phase(s), e.g. "Phase 1 verified complete">
 > Copy this file to `docs/PHASE_N_PLAN.md`, fill it in, and stop for user
 > approval before any implementation begins. See `docs/AI_WORKFLOW.md` §8–9
 > for how phase plans are produced and why their existence does not
-> authorize implementation.
+> authorize implementation. Derive the phase from `docs/ROADMAP.md`, then
+> reconcile it with the current repository and accepted source-of-truth docs;
+> the roadmap itself is not implementation approval.
 
 ## Objective
 

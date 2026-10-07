@@ -1,6 +1,6 @@
 # ADR-0007 — Template Renderer Version Sözleşmesi
 
-Durum: **Accepted**  
+Durum: **Accepted (Kabul edildi)**  
 Tarih: **2026-09-28**
 
 ## Bağlam

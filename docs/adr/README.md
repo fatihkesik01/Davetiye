@@ -2,7 +2,7 @@
 
 `docs/PRODUCT.md` product source of truth'tür. Bu klasördeki ADR'lar
 yalnız kabul edilmiş teknik kararları kaydeder. Ürün kararı bekleyen
-noktalar `docs/PHASE_0_BASELINE.md` içindeki decision register'dadır ve
+noktalar `docs/PHASE_0_PLAN.md` içindeki decision register'dadır ve
 onay verilmeden implement edilmez.
 
 | ADR | Durum | Konu |

@@ -1,6 +1,6 @@
 # ADR-0002 — Identity, Authorization, publicCode ve Guest Capability'leri
 
-Durum: **Accepted**  
+Durum: **Accepted (Kabul edildi)**  
 Tarih: **2026-09-28**
 
 ## Bağlam

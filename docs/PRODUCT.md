@@ -172,6 +172,10 @@ aşama bulunabilir.
 Creator davetiyesine fotoğraf ve video yükleyebilir ve galeri
 oluşturabilir.
 
+Creator fotoğraf yüklemelerinden EXIF/GPS metadata, dosya sağlayıcı
+depolamasına aktarılmadan önce kaldırılır. Creator fotoğraf ve videoları
+cover ve gallery sunumlarında kullanabilir.
+
 Fotoğraf/video dosyaları VPS diskinde veya PostgreSQL içinde tutulmaz.
 Fotoğrafların object storage katmanında **Cloudflare R2**, responsive
 teslimat ve dönüşümlerinde **Cloudflare Images Transformations**;
@@ -186,6 +190,14 @@ türünü, boyutunu ve durumunu tutar.
 
 Fotoğraf/video adet, boyut ve uygun olduğunda video süre limitleri
 paketlere göre değişir ve DB-driven entitlement olarak yönetilir.
+Creator medya kotası Guest medya kotasından ayrıdır; Guest medya kendi
+entitlement ve abuse sınırlarına tabidir.
+
+Creator medya upload intent'i yalnızca publication window/grant atanmış bir
+davetiye için oluşturulabilir; grant atanmamış Draft davetiyeye medya
+yüklenemez. Cover/gallery sunumu seçilirken şablonun ilgili modülü
+desteklemesi yeterlidir; Creator tarafından ayrı bir modül etkinleştirme
+alanı gerekmemektedir.
 
 ## 10. RSVP
 
@@ -199,6 +211,25 @@ başlangıç soru seti oluşturulur:
 
 Creator varsayılan soruları değiştirebilir, silebilir, yeniden
 sıralayabilir, zorunlu/opsiyonel yapabilir ve yeni soru ekleyebilir.
+
+Fatih 2026-10-05'te varsayılan zorunlulukları onayladı: ad, katılım ve kişi
+sayısı soruları zorunludur; not/mesaj sorusu isteğe bağlıdır.
+
+Fatih 2026-10-05'te RSVP soru yapılandırmasının yalnız Taslak veya
+Duraklatıldı davetiyelerde düzenlenmesine karar verdi. Active davetiyede soru
+değişiklikleri engellenir; Creator önce davetiyeyi duraklatmalıdır.
+
+Fatih 2026-10-05'te RSVP yanıt/doğrulama sınırlarını makul engineering
+varsayımlarıyla belirleme yetkisi verdi. Başlangıç sınırları: kısa yanıt en çok
+200, uzun yanıt en çok 2.000 karakter; semantic ParticipantCount 0–20 arasında
+tam sayı; MultipleChoice yanıtında en çok 10 seçili seçenek; davetiye başına
+en çok 20 aktif soru. `0`, RSVP'ye katılmayacağını bildiren misafirin
+katılımcı sayısını tutarlı biçimde yanıtlamasını sağlar. Semantic rolü olmayan
+Number soruları decimal kabul eder ve .NET decimal temsil aralığıyla sınırlıdır.
+Kaynak tüketimini sınırlandırmak için soru prompt'u en çok 200 karakter,
+seçenek etiketi en çok 100 karakter ve her choice sorusu en çok 20 seçenek
+olabilir. Bu değerler backend doğrulamasında ve Creator arayüzünde tutarlı
+uygulanır; planın `maxRSVPResponses` kotasından ayrıdır.
 
 Desteklenebilecek soru türleri: - Kısa metin - Uzun metin - Tek seçim -
 Çoklu seçim - Evet/Hayır - Sayı
@@ -214,7 +245,8 @@ verdiniz → Yanıtımı Güncelle** akışı sağlanabilir.
 
 Farklı cihaz, gizli sekme veya cookie temizleme durumlarında mükerrer
 cevap oluşabilmesi bilinen MVP kısıtıdır. Creator mükerrer kayıtları
-yönetebilir.
+yönetebilir. Fatih 2026-10-05'te Creator için yalnızca mükerrer yanıtı
+silme davranışını seçti; yok sayma ve birleştirme MVP kapsamı dışındadır.
 
 Toplam katılımcı istatistiği, "Kaç kişi katılacaksınız?" sorusunun
 cevaplarından üretilebilir. Creator bu soruyu değiştirir veya silerse
@@ -236,17 +268,31 @@ Davetliler: - mesaj, - emoji, - fotoğraf, - video
 
 bırakabilir.
 
-Görünürlüğü Creator seçer: - **Sadece Creator** - **Public**
+Varsayılan görünürlük **Sadece Creator**'dır. Creator **Public** seçerse
+misafir mesajı ve emojisi hemen, fotoğraf/video ise yalnızca provider
+tarafından doğrulanıp `Ready` olduktan sonra herkese görünür. Public'den
+Sadece Creator'a geçiş mevcut anıları da public görünümden kaldırır; veri
+silinmez ve ayar yeniden Public yapılırsa görünürlük geri döner.
 
-Creator memories'i Public olarak ayarladıysa yeni guest gönderileri
-zorunlu approval queue olmadan otomatik görünür olabilir. Creator her
-durumda gönderileri gizleyebilir veya silebilir.
+Creator anıları gizleyebilir veya silebilir. Gizleme terminaldir; gizlenen anı
+yeniden public yapılamaz ancak Creator silebilir. Creator listesi Published ve
+Hidden anıları içerir; PendingMedia ve Abandoned kayıtlarını içermez.
+
+Memories entitlement'ı veya davetiye modülü kapatılırsa mevcut anılar public
+görünümden saklanır ve korunur; Creator bunları görüp silebilir, yeni anı
+kabul edilmez. Memories modülü davetiye başına Creator tarafından açılır ve
+varsayılan olarak kapalıdır. Guest gönderimi yalnızca davetiye effective Active
+iken kabul edilir; Scheduled davetiye anı kabul etmez.
 
 Memory bırakmak için ad, e-posta veya telefon zorunlu değildir. Guest
 isterse görünen bir isim yazabilir veya anonim bırakabilir.
 
-Misafir uploadlarında dosya türü/boyutu kontrolleri, güvenlik
-kontrolleri ve rate limit uygulanır.
+Misafir uploadlarında dosya türü/boyutu kontrolleri, güvenlik kontrolleri ve
+rate limit uygulanır. Başlangıç plan kataloğu değerleri davetiye başına 100
+fotoğraf ve 10 video; fotoğraf başına 10 MB; video başına 100 MB ve 60 saniyedir.
+Guest medya kotası Creator medya kotasından ayrıdır. Fotoğraflarda EXIF/GPS
+metadata provider depolamasına yazılmadan önce Worker normalizasyonuyla
+temizlenir; guest videolarında metadata temizliği MVP'de garanti edilmez.
 
 ## 13. Hediye / Çeyiz Listesi
 
@@ -257,16 +303,33 @@ Creator ürün ve istenen miktarı ekler. Davetliler ürünleri rezerve
 edebilir. Partial quantity reservation desteklenir; örneğin altı adet
 istenen bir üründen iki adet rezerve edilebilir.
 
-Rezervasyon sırasında guest adı zorunludur; iletişim bilgisi
-opsiyoneldir. Creator rezervasyonu yapan kişinin adını görebilir.
+Rezervasyon sırasında guest ad-soyadı zorunludur; e-posta ve telefon
+birbirinden bağımsız olarak opsiyoneldir (misafir ikisini, birini veya
+hiçbirini girebilir). Creator rezervasyonu yapan kişinin ad-soyadını ve
+verilmişse iletişim bilgisini görebilir. İletişim bilgisi Guest iptali veya
+Creator'ın rezervasyonu kaldırmasıyla silinir; rezervasyon aktif kaldığı
+sürece davetiye kalıcı silinene kadar saklanır.
 
 Diğer davetliler rezervasyonu yapan kişinin kimliğini görmez; yalnızca
 ürünün seçildiğini veya miktar ilerlemesini görür.
 
 Creator kimin neyi seçtiğini görebilir ve gerektiğinde rezervasyonu
-kaldırabilir. Rezervasyon otomatik expire olmaz. Guest aynı browser'da
+kaldırabilir. Fatih 2026-10-05'te karar verdi: aktif Guest rezervasyonu
+bulunan bir item silinemez; Creator önce rezervasyonları ayrı ayrı
+kaldırmalıdır. Her kaldırma tüm rezervasyon kaydını ve kimliği siler, miktarı
+yeniden rezerve edilebilir hale getirir. Item ancak aktif rezervasyonu
+kalmadığında silinebilir. Rezervasyon otomatik expire olmaz. Guest aynı browser'da
 saklanan anonim management token/cookie ile kendi rezervasyonunu iptal
 edebilir.
+
+Misafir rezervasyonu iptal ettiğinde veya Creator rezervasyonu kaldırdığında
+rezervasyon kaydının tamamı (ad-soyad ve varsa e-posta/telefon dahil) silinir;
+miktar tekrar rezerve edilebilir.
+
+`giftRegistryEnabled` entitlement'ı kapanırsa mevcut hediye listesi
+misafirlerden gizlenir ve yeni rezervasyonlar durur. Hediye item ve
+rezervasyon verileri korunur; Creator listeyi görüp yönetebilir. Entitlement
+yeniden açılırsa liste tekrar public olur.
 
 ## 14. Duyuru, FAQ ve Ulaşım
 
@@ -362,6 +425,34 @@ Başlangıç DB seed değerleri aşağıdadır. Bunlar kod sabiti değildir;
 Super Admin tarafından değiştirilebilen başlangıç ticari değerleridir.
 Liste fiyatlarının vergi/gösterim biçimi production öncesinde ticari ve
 hukuki olarak doğrulanır.
+MVP'de paket fiyatı tutar ve ödeme dönemiyle gösterilir (ör. `1.199 TRY / tek
+sefer`); verginin fiyata dahil veya hariç olduğu iddiası gösterilmez. Bu
+iddia Phase 11'de hukuki/ticari doğrulamaya tabidir.
+
+Organization aboneliğinin paid-through süresi dolduğunda public erişim ve
+aktif yayın durur; davetiye ve içerik verisi korunur. Uygun bir grant
+atanırsa davetiye yeniden yayınlanabilir.
+Organization aboneliği, Creator iptal edene kadar aylık olarak otomatik
+yenilenir ve tahsil edilir.
+Creator iptal ettiğinde bir sonraki yenileme durur; mevcut paid-through
+döneminin sonuna kadar yayın ve public erişim sürer. Dönem sonunda yukarıdaki
+erişim kesme ve veri koruma kuralı uygulanır.
+İptal işlemi tamamlandığında Creator'ın hesap e-posta adresine iptal onayı
+gönderilir.
+
+Standard ve Premium tek seferlik paketlerde iade talepleri destek üzerinden
+manuel değerlendirilir. MVP'de Creator için uygulama içi veya otomatik iade
+akışı bulunmaz; kesin yasal iade koşulları ve metinleri Phase 11'de doğrulanır.
+Destek kararıyla işlenen tam iade sağlayıcı tarafından doğrulandığında ilgili
+yayın hakkı iptal edilir, davetiye yayından kaldırılır ve içerik verisi korunur.
+Kart itirazı (chargeback) kesin olarak kaybedilirse aynı erişim sonucu uygulanır;
+itiraz incelemesi sürerken hak ve yayın durumu değişmez.
+Creator ödeme sayfasından vazgeçerse yeni bir ödeme denemesi başlatabilir.
+İptal edilen eski deneme yayın hakkı oluşturmaz; hak yalnızca sunucu tarafında
+doğrulanmış başarılı ödeme sonrasında açılır.
+Ödeme sağlayıcısı tek seferlik paket denemesini başarısız döndürürse Creator
+yeni bir deneme başlatabilir; başarısız deneme yayın hakkı oluşturmaz.
+Ödeme başlatma butonunun metni `Ödemeye geç` olur.
 
 | Özellik | Free | Standard | Premium | Organization |
 | --- | ---: | ---: | ---: | ---: |
@@ -446,6 +537,18 @@ kotasından sayılmaz.
 
 Retention süresi sonrasında kalıcı silme süreci uygulanır.
 
+Süresi dolan, reddedilen veya tamamlanmamış medya yüklemeleri sağlayıcıdaki
+byte'larıyla davetiye kalıcı olarak silinene kadar tutulur. Yükleme intent'inin
+expire/reject olması erişimi ve devam eden capability'yi kapatır; tek başına
+fiziksel provider silme başlatmaz. Kalıcı purge sırasında davetiyeye bağlı tüm
+medya durumları idempotent provider-delete kuyruğuna alınır.
+
+Provider'dan silinmesi henüz doğrulanmamış `Rejected` ve `PendingDeletion`
+Creator medyası, davetiyenin mevcut Creator medya öğesi kotasını kullanmaya
+devam eder. Yalnız provider silmesinin doğrulandığı `Deleted` öğe kotayı
+bırakır; mantıksal silme veya reddedilme, saklanan dosya için yeni bir boş
+quota slotu oluşturmaz.
+
 Kalıcı purge, invitation'a bağlı aşağıdaki verileri ve diğer davetiye
 içeriklerini temizler:
 
@@ -460,6 +563,20 @@ içeriklerini temizler:
 Payment/invoice kayıtları ve gerekli audit kayıtları operasyonel veya
 yasal retention gereklerine göre invitation content'ten ayrıştırılarak
 daha uzun süre tutulabilir.
+
+Creator hesabı silme talebini başlatır ve e-posta doğrulamasıyla onaylar.
+Doğrulama sonrası aktif oturumlar hemen iptal edilir; hesap ve hesaba ait tüm
+davetiyeler ile konuk içerikleri çöp kutusu bekleme süresi olmadan kalıcı
+silme akışına girer ve public erişim anında kapanır. Cloudflare medya
+silmesi idempotent, tekrar denenebilir bir provider işlemi olarak tamamlanır.
+Hukuken saklanması gereken ödeme ve audit kayıtları içerik silmesinden ayrı
+tutulur. Kesin yasal/operasyonel retention süreleri Phase 11 hukuk incelemesine
+kadar belirlenmemiştir; o zamana kadar ödeme, audit, log ve backup verileri
+otomatik silinmez. Hesap silme isteği otomatik refund başlatmaz; ödeme
+değerlendirmesi destek üzerinden manuel yapılır. Silme başladıktan sonra
+önceden başlatılmış tek seferlik ödeme sağlayıcıda başarılı sonuçlanırsa
+settlement kanıtı saklanır fakat silinmiş hesaba yeni yayın hakkı verilmez;
+olası refund talebini destek manuel değerlendirir.
 
 ## 23. Planlanmış, Süresi Bitmiş veya Pasif Davetiye
 
@@ -516,9 +633,16 @@ bilgiler tutulabilir.
 
 Önemli Super Admin işlemleri audit log'a yazılır.
 
+MVP'de MFA doğrulaması tamamlanmış Super Admin aktif banı kaldırabilir.
+Unban işlemi audit log'a yazılır ve hesabın erişimi geri gelir.
+
 Super Admin public registration üzerinden oluşturulmaz; kontrollü bir
 bootstrap yöntemi kullanılır. Super Admin hesaplarında MFA zorunludur.
 Creator hesaplarında MFA MVP'de zorunlu değildir.
+
+MVP'de Admin, banlı hesap listesinde Creator e-posta adresini görebilir ve
+e-posta önekine göre arayabilir. Bu görünüm dahili ban notunu ve özel davetli
+içeriklerini içermez.
 
 ## 26. E-posta
 
@@ -531,7 +655,25 @@ E-posta şu işlemlerde kullanılabilir: - E-posta doğrulama - Şifre
 sıfırlama - Ödeme/paket işlemleri - Davetiye yayın işlemleri - Yayın
 süresinin bitmesine yaklaşılması - Kritik hesap/güvenlik bildirimleri
 
+Standard/Premium tek seferlik paket ödemesi başarılı olduğunda Creator'ın
+hesap e-posta adresine satın alma onayı gönderilir.
+Standard/Premium tek seferlik paket ödemesi başarısız olduğunda Creator'ın
+hesap e-posta adresine bildirim gönderilir. Aktif bireysel yayın hakkı
+bitmeden 7 gün önce Creator'a bitiş hatırlatma e-postası da gönderilir.
+Organization aboneliğinin aylık yenileme tahsilatı başarısız olduğunda
+Creator'ın hesap e-posta adresine, aylık fatura dönemi başına ilk başarısız
+deneme için bir kez bildirim gönderilir.
+Organization aboneliğinin her başarılı aylık yenileme tahsilatında Creator'ın
+hesap e-posta adresine ödeme onayı gönderilir.
+Başarısız yenileme tahsilatı, mevcut paid-through dönem bitmeden önce
+provider'ın yapılandırılmış otomatik tekrar politikasıyla yeniden denenir;
+gerçek merchant retry ayarları Phase 11'de doğrulanır.
+Organization aboneliğini iptal etmiş Creator'a, mevcut paid-through dönemi
+bitmeden 7 gün önce erişimin sona ereceğini hatırlatan e-posta gönderilir.
+
 Her RSVP/anı geldiğinde ayrı e-posta göndererek spam oluşturulmaz.
+Creator'ın davetiyesi başarıyla yayınlandığında hesap e-posta adresine yayın
+onayı gönderilir.
 
 Production transactional email provider **Resend**'dir. Provider
 abstraction korunur (`IEmailSender` veya eşdeğeri). Development
@@ -597,10 +739,16 @@ Mimari baştan KVKK ve privacy gereksinimleri düşünülerek tasarlanır.
 -   Data minimization uygulanır; özellik için gerekmeyen kişisel veri
     toplanmaz.
 -   Hizmetin çalışması için gerekli consent ile marketing consent ayrı
-    tutulur.
+    tutulur. Hizmet bildirimi zorunludur; marketing izni ayrı ve varsayılan
+    kapalı opt-in olarak alınır. MVP'de isteğe bağlı çerez/izleme yoktur.
+    Kesin metinlerin hukuki yeterliliği Phase 11 hukuk incelemesine tabidir.
 -   Account/data deletion taleplerini destekleyecek veri sahipliği ve
-    silme altyapısı bulunur.
+    silme altyapısı bulunur. E-posta doğrulamalı hesap silme onayı oturumları
+    hemen kapatır ve hesap/içerik purge'unu başlatır.
 -   Retention politikaları uygun alanlarda configurable olur.
+-   Günlük off-site backup için MVP kurtarma hedefi RPO ≤24 saat ve RTO ≤8
+    saattir. Gerçek restore provası ve VPS kapasite doğrulaması Phase 11
+    operasyon kapısıdır.
 -   Gelecekte data export eklenebilmesine uygun veri sınırları korunur;
     data export özelliğinin kendisi MVP kapsamına eklenmez.
 -   Legal metinler AI tarafından hukuken kesin kabul edilmez ve

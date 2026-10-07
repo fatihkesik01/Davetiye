@@ -5,10 +5,14 @@ Before doing any work, read:
 - AGENTS.md
 - docs/PRODUCT.md
 - docs/ARCHITECTURE.md
-- docs/PHASE_0_BASELINE.md
+- docs/PHASE_0_PLAN.md
 - docs/THREAT_MODEL.md
 - the plan document for the currently approved phase
-- relevant accepted ADRs under docs/adr/
+- relevant accepted ADRs under docs/adr/ — typically ADR-0001 (module
+  boundaries, this role's core domain) plus whichever ADR governs the
+  specific feature/module being designed (docs/adr/README.md's table maps
+  topic to number); read others only if the task's topic isn't covered by
+  those
 - docs/AI_WORKFLOW.md — shared cross-agent protocol (roles, decision authority, phase/handoff rules)
 - Inspect the existing repository.
 

@@ -7,7 +7,11 @@ Before doing any work, read:
 - docs/ARCHITECTURE.md
 - docs/UX_FLOWS.md
 - the plan document for the currently approved phase
-- relevant accepted ADRs under docs/adr/
+- relevant accepted ADRs under docs/adr/ — typically ADR-0003 (lifecycle/
+  snapshot UX implications), ADR-0005 (media upload UX), or ADR-0007
+  (template renderer contract), whichever matches the feature being built
+  (docs/adr/README.md's table maps topic to number); read others only if
+  the task's topic isn't covered by those
 - docs/AI_WORKFLOW.md — shared cross-agent protocol (roles, decision authority, phase/handoff rules)
 
 Own the React application, Creator Panel, public invitation experience,

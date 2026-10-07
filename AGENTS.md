@@ -17,13 +17,22 @@ provider choices. It does not override `docs/PRODUCT.md`.
 
 Before starting implementation, also read:
 
-- `docs/PHASE_0_BASELINE.md`
+- `docs/ROADMAP.md`
+- `docs/PHASE_0_PLAN.md`
 - `docs/THREAT_MODEL.md`
 - `docs/UX_FLOWS.md`
 - the plan document for the currently approved phase
 - relevant accepted ADRs under `docs/adr/`
 - `docs/AI_WORKFLOW.md`
 - `docs/AI_HANDOFF.md`
+
+**This full list is for the Orchestrator at the start of a phase or a new
+session** (establishing orientation and the current point-in-time state),
+**not a blanket requirement repeated by every specialist for every task.**
+A specialist delegated to mid-session follows its own `docs/agents/<name>.md`
+reading list plus whatever specific excerpt the Orchestrator hands it
+(`docs/AI_WORKFLOW.md` §2) — it does not re-read this entire list from
+scratch for a routine milestone.
 
 Do not assume that the existence of a phase plan authorizes implementation of that phase.
 Only the phase explicitly approved by the user may be implemented.
@@ -35,6 +44,10 @@ Accepted ADRs are under `docs/adr/`. Open product decisions in the Phase
 
 Do not invent product features that are not described there.
 If a product decision is unclear or missing, ask the user instead of making a major assumption.
+
+`docs/ROADMAP.md` is the long-term delivery map from the verified current
+state through production/business launch. It provides phase sequencing and
+high-level status, but never authorizes implementation by itself.
 
 `docs/AI_WORKFLOW.md` is the common, provider-neutral workflow
 source-of-truth — it defines the orchestration protocol referenced below in
@@ -131,9 +144,9 @@ Expected workflow:
 User
 → Orchestrator
 → Relevant Specialist Agents
-→ Tester
+→ Tester/Reviewer (combined quality pass; may still run separately when a
+  milestone warrants it)
 → Security when relevant
-→ Reviewer
 → Orchestrator
 → User
 

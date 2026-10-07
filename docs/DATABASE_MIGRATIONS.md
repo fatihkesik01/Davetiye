@@ -8,7 +8,7 @@ define product schema or commercial seed values.
 
 ## Ownership
 
-See `docs/PHASE_1_EXECUTION.md` §4 for the full ownership and serialization
+See `docs/PHASE_1_PLAN.md` §4 for the full ownership and serialization
 rules (why `Davetiye.Infrastructure` owns the only `DbContext`/migration
 assembly, why the API never calls `Migrate`/`EnsureCreated`, etc.).
 Operationally: migration files are serialized through the Database
@@ -58,6 +58,14 @@ must not add hardcoded commercial plan values or secrets.
 4. Verify both empty-database migration and upgrade from the previously
    released migration to the latest migration against real PostgreSQL.
 5. Re-running the migrator at the latest version must be idempotent.
+
+The ordinary latest-version run (without `--target`) also reconciles the
+code-owned `TemplateDefinition` catalog after migrations complete. This seed
+is idempotent and is the only operational writer of
+`CurrentRendererVersion`; a catalog/compiled-registry mismatch fails the
+one-shot migration step. Explicit `--target` runs are migration-only so a
+rollback or point-in-time test never queries a catalog table that may not yet
+exist at that target.
 
 For an explicit test or recovery target, the runner accepts
 `--target <migration-name>`; `--target 0` returns a disposable database to the

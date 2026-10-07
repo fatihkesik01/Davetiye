@@ -10,10 +10,10 @@ must stop until the product source of truth is clarified.
 
 Detailed implementation boundaries are recorded in:
 
-- `docs/PHASE_0_BASELINE.md`
+- `docs/PHASE_0_PLAN.md`
 - `docs/THREAT_MODEL.md`
 - `docs/UX_FLOWS.md`
-- `docs/PHASE_1_PLAN.md`
+- `docs/PHASE_1_PLAN.md` (§10 carries the UX Foundation contract)
 - `docs/adr/`
 
 ## 1. Application Shape
@@ -80,14 +80,34 @@ Detailed implementation boundaries are recorded in:
 
 ### Media
 
-- Photos are stored in Cloudflare R2 and delivered through Cloudflare
-  Images Transformations.
+- Photos are stored in private Cloudflare R2 and delivered through
+  Cloudflare Images Transformations. Before any photo reaches durable
+  provider storage, its bytes pass through a Cloudflare Worker using the
+  Images binding to decode and re-encode as WebP; the Worker writes only
+  the transformed output to R2. This output format discards source EXIF/GPS
+  metadata. Original uploads are never written to R2 or hosted Images
+  storage.
 - Videos use Cloudflare Stream.
-- Browser-to-provider direct upload is preferred. The API authorizes an
-  upload intent before issuing short-lived upload access.
+- The browser uploads photo bytes to the Cloudflare Worker, not to the
+  Davetiye API/VPS. The API authorizes an upload intent and issues a
+  short-lived capability scoped to one asset/key; the Worker verifies that
+  capability and enforces the actual streamed byte ceiling before storing
+  transformed output. Client metadata and completion claims remain
+  untrusted. Videos may keep direct browser-to-Stream upload after API
+  authorization.
 - Media bytes are not stored on the VPS or in PostgreSQL. PostgreSQL
   stores ownership, provider identifiers, metadata and processing state.
-- Cloudflare credentials stay server-side.
+- Cloudflare credentials stay server-side. The image Worker uses narrowly
+  scoped Images and R2 bindings; raw provider credentials are not sent to
+  the browser.
+- The image upload Worker requires the Cloudflare Images binding, which
+  requires a paid Images subscription. Cloudflare account-plan request-body
+  limits and Worker memory/CPU limits are deployment prerequisites: they
+  must support the configured hard ceilings, and do not replace the
+  Worker's streamed byte counter. Per Fatih's 2026-10-04 decision, account
+  setup, account-specific limit review, and real-provider acceptance are
+  deferred to Phase 11 P11-M6/M8. Local contract tests do not verify those
+  account limits; media remains unavailable to users until the Phase 11 gate.
 
 ### Payments
 
@@ -121,6 +141,14 @@ Detailed implementation boundaries are recorded in:
   Cloudflare media.
 - Payment/invoice and required audit records can remain separately under
   applicable operational or legal retention.
+- Account deletion is confirmed by email; confirmation immediately revokes
+  active sessions, closes public access and starts permanent deletion of the
+  account and invitation/guest content. Provider media deletion remains
+  retryable and independently verifiable.
+- Exact legal/operational retention periods are deferred to Phase 11 review.
+  Until that decision, payment, audit, log and backup records are not
+  automatically deleted. Service notice is separate from a default-off
+  marketing opt-in; optional tracking cookies are not used in the MVP.
 
 ## 7. Deployment and Operations
 
@@ -138,6 +166,8 @@ Detailed implementation boundaries are recorded in:
 - Production secrets remain outside Git.
 - The initial database backup requirement is a daily off-site PostgreSQL
   backup with a documented restore procedure.
+- Accepted MVP recovery objectives are RPO ≤24 hours and RTO ≤8 hours;
+  a real restore drill and VPS capacity proof are Phase 11 gates.
 - Point-in-time recovery is evaluated later when scale and RPO/RTO
   requirements justify it.
 - The shared VPS isolation and Lora safety rules in

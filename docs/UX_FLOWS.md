@@ -1,6 +1,6 @@
 # Faz 0 — MVP Kullanıcı Yolculukları ve Ekran Sınırları
 
-Durum: **Accepted baseline**  
+Durum: **Accepted baseline (Kabul edilmiş temel doküman)**  
 Tarih: **2026-09-28**
 
 Bu belge business feature tasarımı değildir; PRODUCT.md kapsamındaki
@@ -16,7 +16,8 @@ belirler.
   belirlenir
 - `/davetiye/:slug-:publicCode`: Active public invitation veya PII-free
   inactive state
-- Kayıt, giriş, email verification ve password reset rotaları
+- Kayıt, giriş, email verification, password reset ve
+  `/hesap-silme/onayla` hesap silme doğrulama rotaları
 
 Public invitation Creator/Admin navigasyonu taşımaz. Public sayfada ayrı
 paylaş butonu bulunmaz.
@@ -62,6 +63,13 @@ memory ve gift guest içeriği normal Admin navigasyonunda bulunmaz.
 9. Publish sonrası share, yönetim ve aggregate stats alanları açılır.
 10. Active düzenlemede autosave değişiklikleri “henüz yayında değil”
     olarak ayrılır; explicit **Güncelle** PublishedContent'i yeniler.
+
+Yayın sonrası aggregate istatistikler yalnız davetiye sahibine gösterilir:
+toplam sayfa görüntüleme, RSVP yanıt adedi, aktif `ParticipantCount`
+sorusundaki yanıt toplamı, Published + Hidden anılar, Ready Creator + Guest
+medyası ve aktif hediye rezervasyon kayıtları. Guest kayıtları, iletişim
+bilgileri veya ziyaretçi kimlikleri bu görünümde yer almaz. İstatistikler
+yüklenirken, hata aldığında ve tekrar denenirken metinli durum sunulur.
 
 Wizard'ın kesin ekran sırası açık decision register konusudur. Domain ve
 API adım sırasına bağımlı tasarlanmaz.
@@ -113,6 +121,29 @@ Kurallar:
 - Delete confirmation public erişimin hemen kapanacağını ve trash
   retention'ı açıklar.
 
+### Hesap, gizlilik tercihleri ve silme
+
+1. Kayıtta ve Google ile ilk hesap oluşturmada zorunlu hizmet bildirimi ayrı
+   ve açıkça onaylanır; marketing izni ayrı checkbox'tır ve varsayılan kapalıdır.
+2. Mevcut Creator, hizmet bildirimi onayını ilk Creator kullanımı öncesinde
+   bir kez verir. Onay gelene kadar Creator API işlemleri açılmaz.
+3. Creator hesap ayarlarından marketing tercihini görüntüler ve değiştirebilir;
+   bu tercih hizmet bildirimi onayını değiştirmez. İsteğe bağlı tracking cookie
+   veya ölçüm izni istenmez.
+4. Creator silme talebini hesap ayarlarından başlatır ve kayıtlı e-postasına
+   gelen tek kullanımlık bağlantıyla onaylar. Bağlantı token'ı URL'den
+   temizlenir; onaydan önce hesap silinmez.
+5. E-posta doğrulandığı anda oturumlar kapanır, uygulama/API/public erişimi ve
+   yeni medya erişim bağlantısı üretimi durur, davetiye ve konuk verileri
+   kalıcı purge kuyruğuna girer. Organization otomatik yenilemesi yerel olarak
+   durdurulur; provider iptal isteği beklemede gösterilir ve sağlayıcı onayı
+   alınmış gibi sunulmaz. Otomatik iade yapılmaz.
+6. Önceden üretilmiş imzalı medya bağlantıları süreleri dolana veya provider
+   silmesi tamamlanana kadar çalışabilir. Geçersiz/eksik token durumunda
+   hesap varlığı ya da silme durumu ifşa edilmeden genel hata gösterilir.
+7. Ödeme, audit, log ve backup saklama süreleri Phase 11 hukuk/operasyon
+   kararına bırakılmıştır; o zamana kadar bunlar için otomatik silme yapılmaz.
+
 ## 5. Guest Yolculukları
 
 ### Public invitation
@@ -123,6 +154,11 @@ Kurallar:
    kullanılabilir.
 4. Creator'ın açtığı RSVP, Memories ve Gift modülleri görünür.
 5. Guest hesabı istenmez.
+
+Public davetiye HTML'i `noindex, nofollow` kalır. Yalnız Active içerikte
+paylaşım için sınırlı Open Graph başlık/açıklama/görsel metadatası üretilir;
+erişilemeyen durumlarda başlık genel hale döner ve özel içerik metadatası
+temizlenir.
 
 ### RSVP
 
@@ -137,6 +173,12 @@ Kurallar:
 Creator görünümünde submission listesi ile aggregate toplamlar ayrılır.
 Semantic participant-count sorusu değiştirildiğinde/silindiğinde stats
 etkisi işlem öncesinde açıklanır.
+
+Creator aggregate panelinde yanıt adedi submission kayıtlarını, katılım
+toplamı ise yalnız aktif Number türündeki `ParticipantCount` sorusuna ait
+cevap snapshot'larını sayar. Published ve Hidden anılar, Ready Creator ve
+Guest medyaları ve aktif gift reservation kayıtları dahil edilir; bekleyen/
+terk edilmiş upload'lar dahil edilmez.
 
 ### Memories
 
@@ -172,7 +214,13 @@ etkisi işlem öncesinde açıklanır.
    olarak gösterilir.
 7. Önemli işlemler audit görünümünde izlenir.
 
-Unban PRODUCT'ta henüz onaylı olmadığı için accepted ekran/eylem değildir.
+MVP'de MFA tamamlamış Admin, banlı hesap özetinden banı kaldırabilir.
+Onaylı unban işlemi audit kaydına yazılır ve hesap erişimini geri getirir.
+
+Admin, e-posta ile arayabildiği banlı hesap özetinden banı kaldırabilir.
+Özet e-posta, görünen ad, hesap türü, hesap tarihi, ban tarihi ve public ban
+sebebini içerir; dahili notu veya davetli içeriğini göstermez. Onaylı unban
+işlemi audit kaydına yazılır ve hesap erişimini geri getirir.
 
 ## 7. Responsive Kabul Kriterleri
 

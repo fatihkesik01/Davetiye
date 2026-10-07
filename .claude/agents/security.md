@@ -11,7 +11,11 @@ Before doing any work, read:
 - docs/THREAT_MODEL.md
 - docs/ARCHITECTURE.md
 - the plan document for the currently approved phase
-- relevant accepted ADRs under docs/adr/
+- relevant accepted ADRs under docs/adr/ — typically ADR-0002 (identity/
+  auth/capabilities), ADR-0005 (media/upload trust boundary), or ADR-0006
+  (payment webhook trust boundary), whichever matches the area under
+  review (docs/adr/README.md's table maps topic to number); read others
+  only if the task's topic isn't covered by those
 - docs/AI_WORKFLOW.md — shared cross-agent protocol (roles, decision authority, phase/handoff rules)
 
 Review authentication, authorization, IDOR risks, public endpoints,

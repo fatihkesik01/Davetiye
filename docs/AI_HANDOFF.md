@@ -1,63 +1,70 @@
 # AI Handoff — Current State
 
-**Last updated: 2026-09-29** (Codex Phase 1 closure recovery)
+**Last updated: 2026-10-07**
 
-This is a living snapshot. Independently verify it against `git status`, Git
-history, source, migrations, and real checks per `docs/AI_WORKFLOW.md` §1/§11.
+Living snapshot only. History lives in Git and each `docs/PHASE_N_PLAN.md`.
+Independently verify this against `git status`/`git log`, source and real
+checks before trusting it (`docs/AI_WORKFLOW.md` §1/§11).
 
 ## Current Phase Status
 
-**Phase 1 — Repository and Production Foundation is complete and verified
-(17/17 milestone units).** The final clean-checkout GitHub Actions gate is
-[run 36534834602](https://github.com/fatihkesik01/Davetiye/actions/runs/36534834602)
-on commit `b9971d1`; backend, frontend, container smoke/image scans, and
-dependency/config scan all passed.
+- **Phases 0–10: COMPLETED (11/12).** Milestone tables, attribution and
+  per-phase evidence are in `docs/PHASE_N_PLAN.md`.
+- **Phase 11 — Production Readiness & Business Launch: NOT STARTED.** It
+  requires Fatih's separate explicit approval. Plan: `docs/PHASE_11_PLAN.md`.
+- No active implementation phase.
 
-There is **no approved implementation phase currently active**. Phase 2 is
-planned in `docs/PHASE_2_PLAN.md`, but remains a draft and must not be
-implemented until the user explicitly approves it.
+## Latest Verification (2026-10-07, local)
 
-## Final Phase 1 Evidence
+- Release solution build: 0 warnings / 0 errors.
+- UnitTests 491/491; ArchitectureTests 81/81.
+- EF model: no pending changes against the latest migration.
+- Web: lint, typecheck, API-client check, Vitest 269/269, `npm audit` 0.
+  A load-sensitive Vitest timeout (lazy route chunks exceeding the 1s
+  Testing Library default) was fixed by raising `asyncUtilTimeout` in
+  `src/web/src/test/setup.ts`.
+- Media-ingress Worker: 52/52, typecheck.
+- Last full PostgreSQL IntegrationTests run (P10-M7): 527/527; Playwright
+  177/177. Not re-run in this session.
 
-- Local Release integration tests: **43/43**; unit: **96/96**; architecture:
-  **66/66**. Frontend Vitest: **13/13**; generated API contract, lint,
-  typecheck, production build, and npm audit passed.
-- Local Compose was rebuilt from final sources: PostgreSQL/API/web healthy;
-  `/health/live`, `/health/ready`, and web root returned 200. Web runs Nginx
-  1.30.1 as UID 101 with read-only filesystem/capability drop/no-new-
-  privileges; API drops to UID `app` with zero effective capabilities.
-- Restore rehearsal succeeded in an isolated disposable PostgreSQL 16
-  container; checksum and schema verification are recorded in
-  `docs/PHASE_1_EXECUTION.md` §9.
-- Tester, Security, Reviewer, and Architect gates completed. No open
-  Critical, High, or Medium Phase 1 finding remains.
+## Deferred to Phase 11 (mandatory gates)
 
-## Pushed History
+- Clean-checkout GitHub Actions CI on the Phase 2–10 code.
+- VPS deployment (`docs/DEPLOYMENT.md`; never touch Lora).
+- Real provider acceptance: Cloudflare R2/Images/Stream (incl. in-flight
+  upload at expiry and legacy 15-min capability grace), iyzico (incl.
+  refund/dispute/chargeback source verification), Resend, Google OAuth.
+- Organization provider-side cancellation adapter/worker (account deletion
+  currently stops local auto-renewal and queues a cancellation intent only;
+  no automatic refund).
+- Actual browser-UI 200% zoom and manual screen-reader/contrast review.
+- Legal: exact retention periods, tombstone-ID acceptability, audit
+  retention (no automatic audit deletion before this decision), refund/tax
+  wording.
 
-`main` contains the Phase 1 implementation and closure fixes, including:
-
-- `629cf31 feat: complete phase 1 foundation`
-- `18d6144 fix: make phase 1 CI release gate portable`
-- `266d227 fix: use available trivy action release`
-- `1ee4df1 fix: refresh web runtime security packages`
-- `b9971d1 fix: declare nonroot API image default`
-
-## Known Technical Debt / Follow-up
+## Open Technical Debt (Low)
 
 - Trusted-proxy CIDR in Compose is broader than least privilege; narrow it
   when the production proxy topology is fixed.
-- Session projection has no dedicated rate-limit/telemetry policy.
-- Google return URL uses a safe relative-path heuristic, rather than the
-  literal route allowlist described in ADR text; no open redirect is possible.
-- API bootstrap uses a documented root-only entrypoint step to own the named
-  Data Protection volume, then drops privileges. The image default is `app`.
-- `apk upgrade` improves runtime patching but reduces fully reproducible
-  builds; consider digest pinning and a controlled refresh cadence.
-- PD-01 through PD-13 remain unresolved. Do not infer product behavior.
+- Session projection and Creator draft endpoints lack dedicated
+  account-partitioned rate-limit policies.
+- `/auth/google/complete` returns a distinct 403 for a Super Admin email
+  (minor enumeration signal).
+- Google return URL uses a safe relative-path heuristic instead of a literal
+  route allowlist; no open redirect is possible.
+- `apk upgrade` in images reduces build reproducibility; consider digest
+  pinning with a controlled refresh cadence.
+
+## Runbooks
+
+- Admin lost-MFA recovery (platform owner only): `docs/ADMIN_MFA_LOST_FACTOR_RECOVERY.md`.
+- Terminal media deletion: `dotnet run --project tools/Davetiye.MediaDeletionRetry -- --list --limit 100`;
+  requeue with `-- --retry <message-guid> --confirm`.
+- Backup/restore: `docs/BACKUP_RESTORE_RUNBOOK.md`; migrations:
+  `docs/DATABASE_MIGRATIONS.md`.
 
 ## Next Action
 
-Ask the user to approve Phase 2 before implementation. Its scope is limited
-to Creator invitation drafts, template catalog/preview, autosave/concurrency,
-and their tests; it explicitly excludes publishing, RSVP, media, payments,
-and production deployment.
+Await Fatih's explicit Phase 11 approval and the owner decisions listed in
+`docs/PHASE_11_PLAN.md` (domain, support/sender addresses, legal texts,
+provider accounts). Do not deploy before that approval.
