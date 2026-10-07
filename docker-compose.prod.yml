@@ -61,6 +61,12 @@ services:
       TrustedProxies__Networks__0: 172.16.0.0/12
       GoogleAuth__Enabled: "false"
       PublicWeb__AppShellUrl: http://web:8080/
+      RsvpCapabilities__HmacKeyBase64: ${RSVP_CAPABILITY_HMAC_KEY_BASE64:?set in .env}
+      RsvpCapabilities__HmacKeyVersion: ${RSVP_CAPABILITY_HMAC_KEY_VERSION:-1}
+      GiftCapabilities__HmacKeyBase64: ${GIFT_CAPABILITY_HMAC_KEY_BASE64:?set in .env}
+      GiftCapabilities__HmacKeyVersion: ${GIFT_CAPABILITY_HMAC_KEY_VERSION:-1}
+      MemoryUploadCapabilities__HmacKeyBase64: ${MEMORY_UPLOAD_CAPABILITY_HMAC_KEY_BASE64:?set in .env}
+      MemoryUploadCapabilities__HmacKeyVersion: ${MEMORY_UPLOAD_CAPABILITY_HMAC_KEY_VERSION:-1}
       CloudflareMedia__Enabled: ${CLOUDFLARE_MEDIA_ENABLED:-false}
       CloudflareMedia__WorkerBaseUrl: ${CLOUDFLARE_MEDIA_WORKER_BASE_URL:-}
       CloudflareMedia__ImageCapabilitySigningKeyBase64Url: ${CLOUDFLARE_MEDIA_IMAGE_CAPABILITY_SIGNING_KEY_BASE64URL:-}

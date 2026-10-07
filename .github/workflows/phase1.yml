@@ -92,6 +92,9 @@ jobs:
         run: |
           cp .env.example .env
           sed -i 's/replace-with-a-long-random-secret/ci-only-not-a-production-secret/' .env
+          for name in RSVP_CAPABILITY_HMAC_KEY_BASE64 GIFT_CAPABILITY_HMAC_KEY_BASE64 MEMORY_UPLOAD_CAPABILITY_HMAC_KEY_BASE64; do
+            sed -i "s|^${name}=.*|${name}=$(openssl rand -base64 32)|" .env
+          done
       - name: Build and start the isolated stack
         run: docker compose -f docker-compose.prod.yml --env-file .env up --build -d
       - name: Verify health endpoints
