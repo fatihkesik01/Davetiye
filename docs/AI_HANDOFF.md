@@ -80,6 +80,8 @@ open alongside 22222, stale ufw allow rules for 8080/5050.
 
 ## Next Action
 
-Await Fatih's explicit Phase 11 approval and the owner decisions listed in
-`docs/PHASE_11_PLAN.md` (domain, support/sender addresses, legal texts,
-provider accounts). Do not deploy before that approval.
+Follow the ordered tracker in `docs/PHASE_11_PLAN.md` ("İş Takip Listesi"):
+company/tax/legal/iyzico live come last (Fatih, 2026-10-07). Row 1 — Fatih's
+explicit Phase 11 approval — is still open; do not deploy before it. Never
+touch Lora, including its backups; a VPS reboot's 1–3 minute Lora outage is
+accepted.

@@ -49,20 +49,75 @@ yetkilendirmesi; owner/legal/external aksiyonlar.
 - OG personalization seviyesi.
 - Launch zamanlaması.
 
-Bu kararların büyük kısmı, ilgili milestone (P11-M1 iş/ticari hazırlık,
-P11-M2 domain/DNS) başlamadan cevaplanmalıdır; launch zamanlaması yalnız
-P11-M10'u (go-live) bloke eder.
+Her kararın hangi sırada gerektiği aşağıdaki İş Takip Listesi'ndedir; launch
+zamanlaması yalnız P11-M10'u (go-live) bloke eder.
+
+## İş Takip Listesi (sıralı — Fatih buradan takip eder)
+
+Fatih'in 2026-10-07 kararı: **şirket, vergi levhası, hukuk ve iyzico canlı
+başvurusu en sona** bırakılır; önce şirket gerektirmeyen hazırlıklar yapılır.
+Lora'ya (yedeği dahil) hiçbir şekilde dokunulmaz; yalnız VPS reboot'unun
+Lora'da 1–3 dakikalık erişim kesintisi yaratması kabul edilmiştir.
+
+**Kim:** 👤 Fatih · 🤖 AI agent · 🤝 Fatih bilgi/erişim verir, agent yapar.
+**Durum:** ⬜ bekliyor · 🔄 devam ediyor · ✅ tamam · ⏸️ engelli.
+Bir satır tamamlandığında agent durumu ve kısa notu burada günceller.
+
+### Aşama 1 — Şirket gerektirmeyen hazırlıklar
+
+| Sıra | İş | Kim | Önce bitmesi gereken | Milestone | Durum |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | Phase 11'i açıkça onayla | 👤 | — | — | ⬜ |
+| 2 | VPS bakım kararı: reboot saati, SSH şifreli girişin kapatılması, bekleyen güvenlik güncellemeleri, kullanılmayan 8080/5050 ufw kuralları | 👤 karar → 🤖 | 1 | M7 | ⬜ |
+| 3 | Davetiye'yi VPS'e IP üzerinden deploy et (özel smoke; gerçek kullanıcı trafiği yok) | 🤖 (Fatih "deploy et" onayı) | 1 | M7 | ⬜ |
+| 4 | Organization abonelik iptali için iyzico adapter/worker kodu | 🤖 | 1 | M4 | ⬜ |
+| 5 | Kalan Low teknik borçlar (trusted-proxy CIDR, session/draft rate-limit vb.) | 🤖 | 1 | M8 | ⬜ |
+| 6 | Domain adını seç ve satın al | 👤 | — | M2 | ⬜ |
+| 7 | Cloudflare hesabı aç, domain'i ekle, nameserver'ları Cloudflare'e yönlendir | 👤 | 6 | M2 | ⬜ |
+| 8 | DNS kayıtları (A → VPS IP, www) | 🤝 | 7 | M2 | ⬜ |
+| 9 | Nginx sitesi + HTTPS (Let's Encrypt), production URL/CORS/cookie ayarları | 🤖 | 3, 8 | M2 | ⬜ |
+| 10 | Destek/gönderici adreslerini belirle (`destek@`, `noreply@`) ve posta kutusu çözümü seç (ör. Cloudflare Email Routing veya Zoho/Google Workspace) | 👤 | 7 | M5 | ⬜ |
+| 11 | Resend hesabı aç, domain'i ekle | 👤 | 7 | M5 | ⬜ |
+| 12 | SPF/DKIM/DMARC kayıtları, Resend production anahtarı, teslim testi | 🤝 | 9, 10, 11 | M5 | ⬜ |
+| 13 | Google Cloud projesi + OAuth onay ekranı + domain doğrulama (Search Console) | 👤 | 9 | M3 | ⬜ |
+| 14 | Google OAuth production ayarı ve smoke testi | 🤖 | 13 | M3 | ⬜ |
+| 15 | Cloudflare R2 / Images / Stream'i etkinleştir (kart gerekir), hesaba özel limitleri incele | 👤 (limit incelemesi 🤝) | 7 | M6 | ⬜ |
+| 16 | Dar yetkili Cloudflare token'ları, media Worker deploy, medya CSP origin'leri | 🤖 | 9, 15 | M6 | ⬜ |
+| 17 | Medyanın gerçek sağlayıcıda kabulü (yükleme, EXIF temizliği, limitler, süre dolumu, silme/retry, yükleme sırasında süre dolması) | 🤖 | 16 | M6 | ⬜ |
+| 18 | Off-site yedek hedefini seç (ör. ayrı R2 bucket'ı veya Backblaze) | 👤 | — | M7 | ⬜ |
+| 19 | Günlük şifreli Davetiye yedeği + restore tatbikatı + rollback runbook | 🤖 | 3, 18 | M7 | ⬜ |
+| 20 | İzleme/uyarı (uptime, hata, disk) ve uyarıların gideceği adres | 🤖 + 👤 adres | 9 | M7 | ⬜ |
+| 21 | iyzico sandbox hesabı (ücretsiz, şirket gerektirmez) | 👤 | — | M4 | ⬜ |
+| 22 | iyzico sandbox ile ödeme, webhook ve abonelik iptali uçtan uca testleri | 🤖 | 4, 9, 21 | M4 | ⬜ |
+| 23 | Gerçek tarayıcı %200 zoom (otomatik kısım) | 🤖 | 9 | M8 | ⬜ |
+| 24 | Ekran okuyucu + kontrast elle test turu | 👤 (veya tester) | 9 | M8 | ⬜ |
+| 25 | OG/paylaşım önizlemesi kişiselleştirme seviyesi kararı | 👤 karar → 🤖 | — | M9 | ⬜ |
+
+### Aşama 2 — Şirket, hukuk ve ödeme (en son)
+
+| Sıra | İş | Kim | Önce bitmesi gereken | Milestone | Durum |
+| ---: | --- | --- | --- | --- | --- |
+| 26 | Şirket aç (şahıs şirketi), vergi levhası, ticari banka hesabı | 👤 (mali müşavir) | — | M1 | ⬜ |
+| 27 | ETBİS ve VERBİS gerekliliğini doğrula, gerekiyorsa kaydol | 👤 (mali müşavir/hukukçu) `[EXTERNAL VERIFICATION REQUIRED]` | 26 | M1/M9 | ⬜ |
+| 28 | Hukuki metinler: KVKK aydınlatma, gizlilik, çerez, kullanım şartları, mesafeli satış, ön bilgilendirme, iptal/iade, fiyat/vergi gösterimi | 👤 hukukçu onayı → 🤖 siteye ekler | 26 | M9 | ⬜ |
+| 29 | Kesin saklama süreleri (audit, ödeme, silinen hesap, tombstone ID) | 👤 hukukçu → 🤖 uygular | 28 | M9 | ⬜ |
+| 30 | iyzico canlı üye işyeri başvurusu ve onayı | 👤 | 9, 26, 28 | M1/M4 | ⬜ |
+| 31 | iyzico canlı anahtarları, webhook imzası, iade/itiraz/chargeback kaynağı doğrulaması | 🤖 | 22, 30 | M4 | ⬜ |
+| 32 | Security go-live incelemesi ve release commit'te temiz CI (Security + Reviewer) | 🤖 | 2–31 | M8 | ⬜ |
+| 33 | Kontrollü düşük tutarlı ilk gerçek ödeme | 👤 onay → 🤖 | 31, 32 | M4 | ⬜ |
+| 34 | Uçtan uca production smoke testi → **PRODUCTION READY** | 🤖 | 33 | M10 | ⬜ |
+| 35 | Go-live kararı (trafik/duyuru) → **LIVE** | 👤 | 34 | M10 | ⬜ |
 
 ## Milestone'lar
 
 | No | Milestone | Bağımlılık | Sorumlu roller | Tamamlanma ölçütü |
 | ---: | --- | --- | --- | --- |
-| 1 | İş ve ticari hazırlık | Faz 10 | Fatih (owner), legal/commercial | Ticari olarak ücret kabul etmeye yetkili hesap ve imzalı/onaylı provider süreci var; credential'lar secret store'a teslim edilmiştir. |
-| 2 | Domain, DNS, HTTPS ve public URL'ler | 1 | Fatih (owner), Backend, Security | Güvenilir HTTPS domain altında health ve public shell çalışır; düz HTTP auth/session trafiği kapalıdır. |
+| 1 | İş ve ticari hazırlık (en son) | Faz 10 | Fatih (owner), legal/commercial | Ticari olarak ücret kabul etmeye yetkili hesap ve imzalı/onaylı provider süreci var; credential'lar secret store'a teslim edilmiştir. |
+| 2 | Domain, DNS, HTTPS ve public URL'ler | — | Fatih (owner), Backend, Security | Güvenilir HTTPS domain altında health ve public shell çalışır; düz HTTP auth/session trafiği kapalıdır. |
 | 3 | Google OAuth production | 2 | Backend, Security | Google login gerçek production domaininde güvenli smoke geçer; raw IP deployment'ın yalnız email/password private acceptance olduğu açık kalır. |
 | 4 | Ödeme production kurulumu | 1, 2 | Backend, Security | Test verisi temizlenmiş, ödeme/hak açma/audit evidence kayıtlı; hesap silme e-posta doğrulamasıyla anında tetiklenen Organization otomatik yenileme iptalinin gerçek sağlayıcıda çalıştığı ve doğrulandığı kanıtlı; Critical/High bulgu yok; kontrollü düşük tutarlı ilk gerçek ödeme Fatih onayıyla yapılır. |
-| 5 | Resend production email | 1, 2 | Backend, Security | Production inbox'a teslim kanıtı; SPF/DKIM/DMARC sonucu ve alerting kaydı var. |
-| 6 | Cloudflare/media production | 1, 2 | Fatih (owner), Backend, Security | Fatih Cloudflare hesabı/kaynakları ve hesaba özel limitleri hazırlar; scoped secret'lar secret store'a aktarılır; eşleşen exact HTTPS media CSP origin'leri API ve web image yapılandırmasına eklenir; EXIF temizliği, request/TUS byte-süre limitleri, expiry, private delivery, deletion/retry/cleanup ve residual exposure gerçek sağlayıcıda test edilip kabul edilir. Phase 4/5 local testleri production doğrulaması sayılmaz. |
+| 5 | Resend production email | 2 | Backend, Security | Production inbox'a teslim kanıtı; SPF/DKIM/DMARC sonucu ve alerting kaydı var. |
+| 6 | Cloudflare/media production | 2 | Fatih (owner), Backend, Security | Fatih Cloudflare hesabı/kaynakları ve hesaba özel limitleri hazırlar; scoped secret'lar secret store'a aktarılır; eşleşen exact HTTPS media CSP origin'leri API ve web image yapılandırmasına eklenir; EXIF temizliği, request/TUS byte-süre limitleri, expiry, private delivery, deletion/retry/cleanup ve residual exposure gerçek sağlayıcıda test edilip kabul edilir. Phase 4/5 local testleri production doğrulaması sayılmaz. |
 | 7 | VPS, veritabanı ve operasyon | 2 | Backend, Security | Backup yalnız VPS'te değildir; restore timestamp/checksum/version/duration/query evidence var; rollback owner/runbook tanımlıdır; Lora'ya dokunulmamıştır. |
 | 8 | Security go-live gate | 3-7 | Security, Reviewer | All release-candidate workflows pass in clean checkout on the release commit (Phase 2–10 clean CI first passed 2026-10-07, run 37653912659); actual browser UI zoom at 200% and manual screen-reader/contrast review pass with evidence; no open Critical/High finding; every Medium has owner/risk/disposition; independent Security and Reviewer sign-off. VPS deployment is not authorized before Phase 11 is explicitly approved. |
 | 9 | Hukuk, gizlilik, SEO ve public web | 1, 2 | Legal reviewer, Backend, Frontend | Legal owner onayı kayıtlıdır; public metadata yalnız accepted projection'dan gelir; share/QR management token/internal ID taşımaz. |
@@ -71,20 +126,18 @@ P11-M10'u (go-live) bloke eder.
 ## Milestone Bağımlılık Grafiği
 
 ```text
-M1 ──> M2 ──┬──> M3 ──┐
-            ├──> M4 ──┤
-            ├──> M5 ──┼──> M8 ──┐
-            ├──> M6 ──┤         │
-            └──> M7 ──┘         ├──> M10
-                                │
-            M9 (M1, M2'ye bağımlı) ─┘
+        ┌──> M3 ──┐
+        ├──> M5 ──┤
+M2 ─────┼──> M6 ──┤
+        ├──> M7 ──┤
+        └─────────┼──> M4 (sandbox) ─┐
+                  │                  │
+M1 (şirket/vergi, en son) ──> M9 ──> M4 (canlı) ──> M8 ──> M10
 ```
 
-M3–M7, M2'den sonra farklı provider yüzeylerini (Google/ödeme/email/media/
-VPS) etkilediği için paralel yürütülebilir; her biri kendi `[EXTERNAL
-SETUP]`/`[EXTERNAL VERIFICATION REQUIRED]` ön koşuluna bağımlıdır. M8
-(güvenlik kapısı) M3–M7'nin tamamına bağımlıdır. M10 (go-live) M8 ve M9'a
-bağımlıdır.
+M3, M5, M6 ve M7 domain/HTTPS (M2) sonrasında paralel yürütülebilir. M4'ün
+sandbox kısmı şirket beklemez; canlı kısmı M1 (şirket/vergi) ve M9 (hukuki
+metinler) sonrasına kalır. M8 güvenlik kapısı ve M10 go-live en sondadır.
 
 ## Beklenen Uzman Rolleri
 
