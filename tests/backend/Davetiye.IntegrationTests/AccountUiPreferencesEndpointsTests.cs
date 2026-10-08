@@ -73,7 +73,7 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
         Assert.True(missing.Headers.CacheControl?.NoStore);
         Assert.Equal(HttpStatusCode.BadRequest, bad.StatusCode);
         Assert.True(bad.Headers.CacheControl?.NoStore);
-        await AssertStoredAsync(creator.UserId, "tr", "kutlio", "system");
+        await AssertStoredAsync(creator.UserId, "tr", "kutlio", "light");
 
         // The same session with the genuine token still works, proving the 400s were token-driven.
         using var ok = await SendPutAsync(client, body, validToken);
@@ -118,13 +118,13 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
 
         using var getB = await clientB.GetAsync(Route);
         Assert.Equal(HttpStatusCode.OK, getB.StatusCode);
-        Assert.Equal(("tr", "kutlio", "system"), await ReadPreferencesAsync(getB));
+        Assert.Equal(("tr", "kutlio", "light"), await ReadPreferencesAsync(getB));
 
         using var getA = await clientA.GetAsync(Route);
         Assert.Equal(("en", "plum", "dark"), await ReadPreferencesAsync(getA));
 
         await AssertStoredAsync(userA.UserId, "en", "plum", "dark");
-        await AssertStoredAsync(userB.UserId, "tr", "kutlio", "system");
+        await AssertStoredAsync(userB.UserId, "tr", "kutlio", "light");
     }
 
     [Fact]
@@ -151,7 +151,7 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
 
         using var before = await client.GetAsync(Route);
         Assert.Equal(HttpStatusCode.OK, before.StatusCode);
-        Assert.Equal(("tr", "kutlio", "system"), await ReadPreferencesAsync(before));
+        Assert.Equal(("tr", "kutlio", "light"), await ReadPreferencesAsync(before));
 
         var token = await GetCsrfTokenAsync(client);
         using var update = await SendPutAsync(client, new { locale = "en", colorTheme = "rose", appearance = "light", avatar = (string?)null }, token);
@@ -221,9 +221,9 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
             Assert.True(response.Headers.CacheControl?.NoStore, $"{name}: expected Cache-Control no-store.");
         }
 
-        await AssertStoredAsync(creator.UserId, "tr", "kutlio", "system");
+        await AssertStoredAsync(creator.UserId, "tr", "kutlio", "light");
         using var get = await client.GetAsync(Route);
-        Assert.Equal(("tr", "kutlio", "system"), await ReadPreferencesAsync(get));
+        Assert.Equal(("tr", "kutlio", "light"), await ReadPreferencesAsync(get));
     }
 
     [Fact]
@@ -258,6 +258,75 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
             Assert.Equal(PostgresErrorCodes.CheckViolation, exception.SqlState);
             Assert.Equal(constraint, exception.ConstraintName);
         }
+    }
+
+    [Fact]
+    public async Task Database_default_appearance_is_light_for_new_rows_while_system_and_dark_stay_valid()
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+
+        // (a) A raw INSERT that omits preferred_appearance gets the column default, 'light'.
+        var defaulted = Guid.NewGuid();
+        await InsertRawUserAsync(connection, defaulted, appearance: null);
+        Assert.Equal("light", await ReadRawAppearanceAsync(connection, defaulted));
+
+        // (b) An explicit 'system' is accepted on INSERT and kept, and a later UPDATE to it is kept too.
+        var explicitSystem = Guid.NewGuid();
+        await InsertRawUserAsync(connection, explicitSystem, appearance: "system");
+        Assert.Equal("system", await ReadRawAppearanceAsync(connection, explicitSystem));
+
+        await using (var toDark = new NpgsqlCommand(
+            "UPDATE asp_net_users SET preferred_appearance = 'dark' WHERE id = @id", connection))
+        {
+            toDark.Parameters.AddWithValue("id", defaulted);
+            Assert.Equal(1, await toDark.ExecuteNonQueryAsync());
+        }
+
+        // (c) 'dark' is accepted.
+        Assert.Equal("dark", await ReadRawAppearanceAsync(connection, defaulted));
+
+        await using (var toSystem = new NpgsqlCommand(
+            "UPDATE asp_net_users SET preferred_appearance = 'system' WHERE id = @id", connection))
+        {
+            toSystem.Parameters.AddWithValue("id", defaulted);
+            Assert.Equal(1, await toSystem.ExecuteNonQueryAsync());
+        }
+
+        Assert.Equal("system", await ReadRawAppearanceAsync(connection, defaulted));
+
+        // The allow-list itself is unchanged: an unsupported value is still rejected.
+        await using var invalid = new NpgsqlCommand(
+            "UPDATE asp_net_users SET preferred_appearance = 'bright' WHERE id = @id", connection);
+        invalid.Parameters.AddWithValue("id", defaulted);
+        var exception = await Assert.ThrowsAsync<PostgresException>(() => invalid.ExecuteNonQueryAsync());
+        Assert.Equal(PostgresErrorCodes.CheckViolation, exception.SqlState);
+        Assert.Equal("ck_asp_net_users_preferred_appearance", exception.ConstraintName);
+    }
+
+    private static async Task InsertRawUserAsync(NpgsqlConnection connection, Guid id, string? appearance)
+    {
+        var columns = "id, email_confirmed, phone_number_confirmed, two_factor_enabled, lockout_enabled, access_failed_count";
+        var values = "@id, false, false, false, false, 0";
+        if (appearance is not null)
+        {
+            columns += ", preferred_appearance";
+            values += ", @appearance";
+        }
+
+        await using var insert = new NpgsqlCommand($"INSERT INTO asp_net_users ({columns}) VALUES ({values})", connection);
+        insert.Parameters.AddWithValue("id", id);
+        if (appearance is not null)
+            insert.Parameters.AddWithValue("appearance", appearance);
+        Assert.Equal(1, await insert.ExecuteNonQueryAsync());
+    }
+
+    private static async Task<string> ReadRawAppearanceAsync(NpgsqlConnection connection, Guid id)
+    {
+        await using var select = new NpgsqlCommand(
+            "SELECT preferred_appearance FROM asp_net_users WHERE id = @id", connection);
+        select.Parameters.AddWithValue("id", id);
+        return (string)(await select.ExecuteScalarAsync())!;
     }
 
     [Fact]
@@ -306,7 +375,7 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
         Assert.True(get.Headers.CacheControl?.NoStore);
         Assert.Equal((HttpStatusCode)428, put.StatusCode);
         Assert.True(put.Headers.CacheControl?.NoStore);
-        await AssertStoredAsync(creator.UserId, "tr", "kutlio", "system");
+        await AssertStoredAsync(creator.UserId, "tr", "kutlio", "light");
 
         await using (var db = CreateDbContext())
         {
@@ -328,7 +397,7 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
         using var initial = await client.GetAsync(Route);
         Assert.Equal(HttpStatusCode.OK, initial.StatusCode);
         Assert.True(initial.Headers.CacheControl?.NoStore);
-        Assert.Equal(("tr", "kutlio", "system"), await ReadPreferencesAsync(initial));
+        Assert.Equal(("tr", "kutlio", "light"), await ReadPreferencesAsync(initial));
 
         var token = await GetCsrfTokenAsync(client);
         using var update = await SendPutAsync(client, new { locale = "en", colorTheme = "sage", appearance = "dark", avatar = (string?)null }, token);
@@ -520,7 +589,7 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
         using var rawPutResponse = await raw.SendAsync(rawPut);
         Assert.Equal(HttpStatusCode.BadRequest, rawPutResponse.StatusCode);
         Assert.Equal("HTTPS is required for authentication traffic.", await ReadProblemTitleAsync(rawPutResponse));
-        await AssertStoredAsync(creator.UserId, "tr", "kutlio", "system");
+        await AssertStoredAsync(creator.UserId, "tr", "kutlio", "light");
     }
 
     private static async Task<string?> ReadProblemTitleAsync(HttpResponseMessage response)

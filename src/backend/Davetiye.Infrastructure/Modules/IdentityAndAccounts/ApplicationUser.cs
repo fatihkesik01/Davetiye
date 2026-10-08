@@ -22,7 +22,7 @@ public sealed class ApplicationUser : IdentityUser<Guid>
 
     public string PreferredColorTheme { get; private set; } = "kutlio";
 
-    public string PreferredAppearance { get; private set; } = "system";
+    public string PreferredAppearance { get; private set; } = "light";
 
     public string? PreferredAvatar { get; private set; }
 

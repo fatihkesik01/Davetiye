@@ -19,7 +19,7 @@ internal sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<Ap
 
         builder.Property(user => user.PreferredAppearance)
             .HasMaxLength(6)
-            .HasDefaultValue("system")
+            .HasDefaultValue("light")
             .IsRequired();
 
         builder.Property(user => user.PreferredAvatar)

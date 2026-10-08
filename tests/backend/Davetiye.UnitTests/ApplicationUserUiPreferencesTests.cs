@@ -9,6 +9,29 @@ public sealed class ApplicationUserUiPreferencesTests
         ["sunny", "mint", "berry", "sky", "coral", "lilac", "amber", "forest", "night", "rose", "slate", "peach"];
 
     [Fact]
+    public void New_user_defaults_to_tr_kutlio_light()
+    {
+        var user = new ApplicationUser();
+
+        Assert.Equal("tr", user.PreferredLocale);
+        Assert.Equal("kutlio", user.PreferredColorTheme);
+        Assert.Equal("light", user.PreferredAppearance);
+    }
+
+    [Theory]
+    [InlineData("system")]
+    [InlineData("light")]
+    [InlineData("dark")]
+    public void Every_appearance_in_the_allow_list_remains_selectable(string appearance)
+    {
+        var user = new ApplicationUser();
+
+        user.UpdateUiPreferences("tr", "kutlio", appearance, null);
+
+        Assert.Equal(appearance, user.PreferredAppearance);
+    }
+
+    [Fact]
     public void New_user_has_no_avatar()
     {
         Assert.Null(new ApplicationUser().PreferredAvatar);

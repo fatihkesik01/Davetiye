@@ -89,6 +89,7 @@ public sealed class PersistenceConventionTests
                 "20261006201318_P10M3EmailDispatchLinearization",
                 "20261008130723_P11UiPreferences",
                 "20261008153057_P11AvatarPreference",
+                "20261008191425_P11DefaultAppearanceLight",
             ],
             context.Database.GetMigrations());
     }
