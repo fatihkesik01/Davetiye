@@ -105,6 +105,12 @@ for (const { path, session, name } of [{ path: '/panel/hesap', session: creator,
     await expect(controls.first()).toBeVisible()
     expect(await controls.count()).toBe(session === creator ? 2 : 1)
     const measure = () => drawer.evaluate(element => ({ client: element.clientWidth, scroll: element.scrollWidth }))
+    // The glyph must sit in the middle of each icon button (a stray justify-content once pinned it to the start).
+    const offsets = await controls.evaluateAll(elements => elements.map(element => {
+      const box = element.getBoundingClientRect(); const glyph = element.querySelector('svg')!.getBoundingClientRect()
+      return { x: glyph.left + glyph.width / 2 - (box.left + box.width / 2), y: glyph.top + glyph.height / 2 - (box.top + box.height / 2) }
+    }))
+    for (const offset of offsets) { expect(Math.abs(offset.x)).toBeLessThan(1); expect(Math.abs(offset.y)).toBeLessThan(1) }
     const tooltip = (control: ReturnType<typeof controls.nth>) => control.evaluate(element => {
       const style = getComputedStyle(element, '::after')
       return { display: style.display, content: style.content.replace(/^"|"$/g, ''), label: element.getAttribute('data-tooltip') ?? '', name: element.getAttribute('aria-label') ?? '' }

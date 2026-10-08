@@ -2034,7 +2034,7 @@ html { scroll-padding-block-start: 5rem; }
 .preferences-drawer__quick-actions .preferences-drawer__logout { min-width: 0; }
 .preferences-drawer__quick-actions .preferences-drawer__logout .session-actions { display: flex; width: auto; margin: 0; }
 .preferences-drawer__quick-actions .drawer-icon-action {
-  position: relative; display: inline-grid; place-items: center; box-sizing: border-box;
+  position: relative; display: inline-grid; place-items: center; justify-content: center; align-content: center; box-sizing: border-box;
   width: 2.75rem; min-width: 2.75rem; height: 2.75rem; min-height: 2.75rem; padding: 0;
   border: 1px solid var(--account-control-border); border-radius: .75rem;
   color: var(--account-ink) !important; background: var(--account-surface);

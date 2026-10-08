@@ -82,7 +82,7 @@ describe('SiteHeader', () => {
     for (const group of ['Dil', 'Tema', 'Görünüm']) expect(within(drawer).getByRole('radiogroup', { name: group, hidden: true })).toBeTruthy()
     expect(within(drawer).getByRole('group', { name: 'Profil resmi', hidden: true })).toBeTruthy()
     const heading = drawer.querySelector('.preferences-drawer__heading') as HTMLElement
-    expect(within(heading).getByRole('heading', { name: 'Görünüm ve hesap', hidden: true })).toBeTruthy()
+    expect(within(heading).getByRole('heading', { name: 'Hesabım', hidden: true })).toBeTruthy()
     expect(within(heading).getByRole('link', { name: 'Hesap tercihleri', hidden: true })).toBeTruthy()
     expect(within(heading).getByRole('button', { name: 'Güvenli çıkış yap', hidden: true })).toBeTruthy()
     const accountLink = within(heading).getByRole('link', { name: 'Hesap tercihleri', hidden: true })
