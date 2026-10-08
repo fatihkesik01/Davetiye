@@ -10,7 +10,7 @@ export function RouteShell({ children, title, zone }: RouteShellProps) {
   const headingReference = useRef<HTMLHeadingElement>(null)
 
   useEffect(() => {
-    document.title = `${title} | Davetiye`
+    document.title = `${title} | Kutlio`
     headingReference.current?.focus()
   }, [title])
 
@@ -20,7 +20,7 @@ export function RouteShell({ children, title, zone }: RouteShellProps) {
         Ana içeriğe geç
       </a>
       <header className="shell-header">
-        <p className="shell-brand">Davetiye</p>
+        <p className="shell-brand">Kutlio</p>
         {zone === 'creator' ? <p>Creator Paneli</p> : null}
         {zone === 'admin' ? <p>Platform yönetimi</p> : null}
       </header>

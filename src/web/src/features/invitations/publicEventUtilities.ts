@@ -26,7 +26,7 @@ function foldLine(value: string) {
 export function createInvitationCalendar(event: { startsAt: string; headline: string; message?: string; location?: string }, publicCode: string, now = new Date()): string {
   if (!/^[a-f0-9]{64}$/.test(publicCode) || Number.isNaN(Date.parse(event.startsAt))) throw new Error('Invalid calendar event')
   const utc = (date: Date) => date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
-  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Davetiye//Invitation//TR', 'CALSCALE:GREGORIAN',
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Kutlio//Invitation//TR', 'CALSCALE:GREGORIAN',
     'BEGIN:VEVENT', `UID:${publicCode}@davetiye`, `DTSTAMP:${utc(now)}`, `DTSTART:${utc(new Date(event.startsAt))}`,
     `SUMMARY:${escapeText(event.headline)}`, ...(event.message ? [`DESCRIPTION:${escapeText(event.message)}`] : []),
     ...(event.location ? [`LOCATION:${escapeText(event.location)}`] : []), 'END:VEVENT', 'END:VCALENDAR'].map(foldLine).join('\r\n') + '\r\n'

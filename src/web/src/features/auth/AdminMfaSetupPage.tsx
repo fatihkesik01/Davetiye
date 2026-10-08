@@ -72,7 +72,7 @@ export function AdminMfaSetupPage() {
   }
 
   const downloadRecoveryCodes = () => {
-    const blob = new Blob([`Davetiye Super Admin kurtarma kodları\n\n${recoveryCodes.join('\n')}\n`], { type: 'text/plain;charset=utf-8' })
+    const blob = new Blob([`Kutlio Super Admin kurtarma kodları\n\n${recoveryCodes.join('\n')}\n`], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url

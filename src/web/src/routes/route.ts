@@ -26,7 +26,7 @@ export function matchRoute(pathname: string): RouteMatch {
     pathname === '/gizlilik' ||
     pathname === '/kullanim-kosullari'
   ) {
-    return { zone: 'public', title: 'Davetiye' }
+    return { zone: 'public', title: 'Kutlio' }
   }
 
   if (pathname === '/panel' || pathname.startsWith('/panel/')) {

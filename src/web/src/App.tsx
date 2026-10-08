@@ -26,7 +26,7 @@ export function App() {
   const route = matchRoute(usePathname())
 
   useEffect(() => {
-    document.title = `${route.title} | Davetiye`
+    document.title = `${route.title} | Kutlio`
   }, [route.title])
 
   if (route.zone === 'not-found') {

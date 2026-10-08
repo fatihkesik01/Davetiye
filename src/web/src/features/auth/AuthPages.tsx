@@ -146,7 +146,7 @@ export function LoginPage() {
   )
 
   return (
-    <AuthCard intro="Davetiye panelinize güvenli oturum çereziyle erişin.">
+    <AuthCard intro="Kutlio panelinize güvenli oturum çereziyle erişin.">
       <ErrorSummary errors={errors} />
       <form className="auth-form" onSubmit={(event) => void submit(event)} noValidate>
         <TextField id="login-email" label="E-posta" type="email" value={email} onChange={setEmail} autoComplete="email" required errorText={errors.find(error => error.fieldId === 'login-email')?.message} />

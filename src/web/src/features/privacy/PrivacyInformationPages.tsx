@@ -10,7 +10,7 @@ export function PrivacyInformationPage() {
   return <article className="information-page" aria-labelledby="privacy-heading">
     <DraftNotice />
     <h2 id="privacy-heading">Hizmet bildirimi ve gizlilik bilgisi</h2>
-    <p>Davetiye hizmetini sunmak ve hesabınızı yönetmek için gerekli hesap ve davetiye bilgileri işlenir. Bu sayfa, toplanan bilgi türlerini ve ürün içindeki tercihleri anlaşılır biçimde açıklamak için hazırlanmış bir taslaktır.</p>
+    <p>Kutlio hizmetini sunmak ve hesabınızı yönetmek için gerekli hesap ve davetiye bilgileri işlenir. Bu sayfa, toplanan bilgi türlerini ve ürün içindeki tercihleri anlaşılır biçimde açıklamak için hazırlanmış bir taslaktır.</p>
     <h3>Hizmet için gerekli bilgiler</h3>
     <p>Hesap oluştururken görünen adınız, e-posta adresiniz, hesap türünüz ve oturum açma bilgileri kullanılır. Oluşturduğunuz davetiyelerdeki etkinlik metinleri ve seçtiğiniz özelliklere bağlı olarak RSVP yanıtları, anılar, medya ve hediye rezervasyonları saklanabilir.</p>
     <h3>Hizmet bildirimi ve ürün iletileri</h3>

@@ -6,7 +6,7 @@ const resources = {
     translation: {
       app: {
         eyebrow: 'Dijital davetiye platformu',
-        title: 'Davetiye web temeli hazır',
+        title: 'Kutlio web temeli hazır',
         description:
           'Ürün ekranları, onaylanan kullanıcı akışlarıyla sonraki milestone’larda eklenecek.',
       },

@@ -57,7 +57,7 @@ services:
       Cors__AllowedOrigins__0: ${PUBLIC_WEB_ORIGIN:?set in .env}
       Resend__ApiKey: ${RESEND_API_KEY:-}
       Resend__FromAddress: ${RESEND_FROM_ADDRESS:-}
-      Resend__FromName: ${RESEND_FROM_NAME:-Davetiye}
+      Resend__FromName: ${RESEND_FROM_NAME:-Kutlio}
       TrustedProxies__Networks__0: 172.16.0.0/12
       GoogleAuth__Enabled: "false"
       PublicWeb__AppShellUrl: http://web:8080/

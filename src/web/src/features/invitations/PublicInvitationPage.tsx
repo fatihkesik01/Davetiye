@@ -12,7 +12,7 @@ import { PublicGiftRegistrySection } from './PublicGiftRegistrySection'
 
 // Revalidation is a delivery cadence, never a local replacement for the server access gate.
 const publicRefreshIntervalMs = 60_000
-const genericTitle = 'Dijital davetiye | Davetiye'
+const genericTitle = 'Dijital davetiye | Kutlio'
 const genericDescription = 'Dijital davetiye sayfası.'
 
 type PublicPageView = { state: 'loading' | 'unavailable' | 'not-found' | 'error' } | {
@@ -42,7 +42,7 @@ export function PublicInvitationPage({ pathname }: { pathname: string }) {
     if (view.state !== 'active') {
       document.head.querySelectorAll('meta[property^="og:"], meta[name^="twitter:"], meta[property^="twitter:"]').forEach(element => element.remove())
     }
-    document.title = view.state === 'active' ? `${view.invitation.content.headline?.trim() || 'Dijital davetiye'} | Davetiye` : genericTitle
+    document.title = view.state === 'active' ? `${view.invitation.content.headline?.trim() || 'Dijital davetiye'} | Kutlio` : genericTitle
     const description = document.head.querySelector<HTMLMetaElement>('meta[name="description"]') ?? document.createElement('meta')
     description.name = 'description'
     description.content = view.state === 'active' ? view.invitation.content.message?.trim() || 'Dijital davetiye sayfası.' : genericDescription

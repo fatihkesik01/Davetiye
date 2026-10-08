@@ -35,7 +35,7 @@ describe('public invitation access', () => {
     await waitFor(() => expect(fetch.mock.calls.filter(([url]) => String(url).endsWith('/views'))).toHaveLength(1))
     expect(fetch.mock.calls.every(([url]) => [ `/api/v1/public/invitations/${code}`, `/api/v1/public/invitations/${code}/views`, `/api/v1/public/invitations/${code}/memories/configuration`, '/api/v1/templates' ].includes(String(url)))).toBe(true)
     expect(fetch.mock.calls.filter(([url]) => String(url).endsWith('/views'))).toHaveLength(1)
-    expect(document.title).toBe(`${active.content.headline} | Davetiye`)
+    expect(document.title).toBe(`${active.content.headline} | Kutlio`)
     expect(document.head.querySelector('meta[name="description"]')?.getAttribute('content')).toBe('Dijital davetiye sayfası.')
     expect(document.head.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe('noindex, nofollow')
     expect(screen.queryByText('Creator Paneli')).toBeNull()
@@ -161,7 +161,7 @@ describe('public invitation access', () => {
     expect(await screen.findByRole('heading', { name: 'Bu davetiye şu anda yayında değil' })).toBeTruthy()
     expect(screen.queryByText('Özel mekân')).toBeNull()
     expect(screen.queryByText('Özel adres')).toBeNull()
-    expect(document.title).toBe('Dijital davetiye | Davetiye')
+    expect(document.title).toBe('Dijital davetiye | Kutlio')
     expect(fetch.mock.calls.filter(([url]) => String(url).endsWith('/views'))).toHaveLength(1)
   })
 

@@ -12,7 +12,7 @@ public sealed class ResendOptions
     public const string SectionName = "Resend";
     public string? ApiKey { get; init; }
     public string? FromAddress { get; init; }
-    public string FromName { get; init; } = "Davetiye";
+    public string FromName { get; init; } = "Kutlio";
 }
 
 public sealed class EmailDeliveryException(string message, bool isTransient) : Exception(message)

@@ -43,7 +43,7 @@ export function ServiceNoticeAcknowledgementPage({ onAcknowledged }: ServiceNoti
   return <section className="service-notice-gate" aria-labelledby="service-notice-gate-heading">
     <p className="service-notice-gate__status">Bir defalık hesap adımı</p>
     <h2 id="service-notice-gate-heading">Hizmet bildirimi</h2>
-    <p>Davetiye hesabınızı ve seçtiğiniz ürün özelliklerini sunabilmek için hesap bilgileri, davetiye içeriği ve kullandığınız modüllere bağlı konuk bilgileri işlenir. Ayrıntılar için taslak <InternalLink to="/gizlilik">hizmet bildirimi ve gizlilik bilgisi</InternalLink> ile <InternalLink to="/kullanim-kosullari">kullanım koşullarını</InternalLink> inceleyin.</p>
+    <p>Kutlio hesabınızı ve seçtiğiniz ürün özelliklerini sunabilmek için hesap bilgileri, davetiye içeriği ve kullandığınız modüllere bağlı konuk bilgileri işlenir. Ayrıntılar için taslak <InternalLink to="/gizlilik">hizmet bildirimi ve gizlilik bilgisi</InternalLink> ile <InternalLink to="/kullanim-kosullari">kullanım koşullarını</InternalLink> inceleyin.</p>
     <p>Bu hesap daha önce oluşturulduğu için hizmet bildirimi kaydınız bulunmuyor. Panele devam etmek için bildirimi okuduğunuzu onaylayın. Metinler Phase 11 hukuk incelemesinde kesinleştirilecektir.</p>
     <form className="service-notice-gate__form" onSubmit={(event) => void submit(event)} noValidate>
       <ErrorSummary id="service-notice-error-summary" errors={errors} />

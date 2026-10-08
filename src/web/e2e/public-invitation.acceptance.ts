@@ -43,7 +43,7 @@ test('anonymous public route uses the Published pin and content without auth, ma
   await expect(page.getByText('Creator Paneli')).toHaveCount(0)
   await expect(page.getByText('Platform yönetimi')).toHaveCount(0)
   await expect(page.getByRole('button', { name: /paylaş|yayınla|güncelle/i })).toHaveCount(0)
-  await expect(page).toHaveTitle(`${active.content.headline} | Davetiye`)
+  await expect(page).toHaveTitle(`${active.content.headline} | Kutlio`)
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow')
   await expectAccessibleAndResponsive(page)
   expect(apiRequests.every(path => path === publicPath || path === `${publicPath}/views` || path === `${publicPath}/memories/configuration` || path === '/api/v1/templates')).toBe(true)
@@ -138,7 +138,7 @@ test('malformed locator and unavailable pins show generic states without leaking
 })
 
 async function expectGenericMetadata(page: Page) {
-  await expect(page).toHaveTitle('Dijital davetiye | Davetiye')
+  await expect(page).toHaveTitle('Dijital davetiye | Kutlio')
   await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', 'Dijital davetiye sayfası.')
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow')
   await expect(page.locator('meta[property^="og:"]')).toHaveCount(0)
