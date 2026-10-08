@@ -90,11 +90,11 @@ export function SiteHeader({ zone, sectionLinks, sectionLabel }: SiteHeaderProps
         </button> : null}
       </div>
     </div>
-    {authenticated && hydrate ? <dialog ref={drawerReference} className="preferences-drawer" aria-labelledby="preferences-drawer-title" aria-describedby="preferences-drawer-description" onClose={() => setDrawerOpen(false)} onClick={(event) => { if (event.target === drawerReference.current) setDrawerOpen(false) }}>
+    {authenticated && hydrate ? <dialog ref={drawerReference} className="preferences-drawer" aria-labelledby="preferences-drawer-title" onClose={() => setDrawerOpen(false)} onClick={(event) => { if (event.target === drawerReference.current) setDrawerOpen(false) }}>
       <div className="preferences-drawer__panel">
         <header className="preferences-drawer__heading">
           <Avatar className="preferences-drawer__avatar" avatarKey={avatarKey} size={48} />
-          <div><h2 id="preferences-drawer-title">{t('navigation.drawerTitle')}</h2><p id="preferences-drawer-description">{t('navigation.drawerDescription')}</p></div>
+          <div><h2 id="preferences-drawer-title">{t('navigation.drawerTitle')}</h2></div>
           <button className="preferences-drawer__close" type="button" aria-label={t('common.close')} onClick={() => setDrawerOpen(false)}>
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
           </button>
