@@ -4,6 +4,7 @@ using Davetiye.Api.Endpoints.Admin;
 using Davetiye.Api.Endpoints.Invitations;
 using Davetiye.Api.Endpoints.Templates;
 using Davetiye.Api.Endpoints.Payments;
+using Davetiye.Api.Endpoints.Plans;
 using Davetiye.Api.Infrastructure.Correlation;
 using Davetiye.Api.Infrastructure.ErrorHandling;
 using Davetiye.Api.Infrastructure.Hosting;
@@ -226,6 +227,7 @@ apiV1.MapTemplateCatalogEndpoints();
 apiV1.MapPaymentCheckoutEndpoints(AuthRateLimitPolicyNames.PublicationAction);
 apiV1.MapOrganizationSubscriptionEndpoints(AuthRateLimitPolicyNames.PublicationRead, AuthRateLimitPolicyNames.PublicationAction);
 apiV1.MapIndividualPurchasePlanEndpoints(AuthRateLimitPolicyNames.PublicationRead);
+apiV1.MapPublicPlanCatalogEndpoints(AuthRateLimitPolicyNames.PublicInvitationRead);
 apiV1.MapIyzicoWebhookEndpoints(AuthRateLimitPolicyNames.CreatorMediaIntentIp);
 
 // Resolving IOptions<GoogleAuthOptions> here (rather than only relying on ValidateOnStart's hosted

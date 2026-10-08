@@ -19,6 +19,10 @@ describe('auth routes', () => {
     expect(matchRoute(pathname).zone).toBe('public')
   })
 
+  it('maps the landing page / to the public shell', () => {
+    expect(matchRoute('/')).toEqual({ zone: 'public', title: 'Dijital davetiye' })
+  })
+
   it('does not accept arbitrary paths under the login prefix', () => {
     expect(matchRoute('/giris/bilinmeyen').zone).toBe('not-found')
   })

@@ -71,7 +71,7 @@ export function TemplateCatalogPage({ demoTemplateKey }: TemplateCatalogPageProp
   </section>
 }
 
-function TemplateCatalogCard({ template }: { template: TemplateCatalogItem }) {
+export function TemplateCatalogCard({ template }: { template: TemplateCatalogItem }) {
   return <article className="template-card">
     {template.previewImageUrl
       ? <img src={template.previewImageUrl} alt="" width="960" height="640" loading="lazy" />

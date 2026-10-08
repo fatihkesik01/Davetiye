@@ -232,6 +232,7 @@ public static class DependencyInjection
         services.AddScoped<IPaymentAccountEligibilityReader, PaymentAccountEligibilityReader>();
         services.AddScoped<IPaymentInvitationEligibilityReader, PaymentInvitationEligibilityReader>();
         services.AddScoped<IPaymentPlanCatalogReader, PaymentPlanCatalogReader>();
+        services.AddScoped<IPublicPlanCatalogReader, PublicPlanCatalogReader>();
         var fakePaymentBaseUrl = configuration["Payments:FakeCheckoutBaseUrl"] ?? "http://localhost:5173/fake-checkout/";
         if (environment.IsDevelopment())
         {

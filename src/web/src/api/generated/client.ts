@@ -672,6 +672,24 @@ export interface IndividualPurchasePlan {
   billingPeriod: 'one-time'
 }
 
+/** Anonymous landing-page plan card (GET /api/v1/public/plans). Every value comes from the DB-managed catalog. */
+export interface PublicPlanCatalogItem {
+  key: string
+  displayName: string
+  description: string | null
+  priceAmount: number
+  currency: string
+  billingPeriod: 'free' | 'one-time' | 'monthly'
+  maxPublishDays: number
+  maxActiveInvitations: number
+  maxImages: number
+  maxVideos: number
+  maxRSVPResponses: number
+  memoriesEnabled: boolean
+  giftRegistryEnabled: boolean
+  premiumTemplatesEnabled: boolean
+}
+
 export interface PaymentCheckoutResponse {
   attemptId: string
   reference: string
@@ -1108,6 +1126,10 @@ export class DavetiyeApiClient {
 
   public async listPaymentPlans(signal?: AbortSignal): Promise<IndividualPurchasePlan[]> {
     return this.sendJson<IndividualPurchasePlan[]>('/api/v1/payments/plans', { method: 'GET', signal })
+  }
+
+  public async listPublicPlans(signal?: AbortSignal): Promise<PublicPlanCatalogItem[]> {
+    return this.sendJson<PublicPlanCatalogItem[]>('/api/v1/public/plans', { method: 'GET', credentials: 'omit', signal })
   }
 
   public async getOrganizationSubscription(signal?: AbortSignal): Promise<OrganizationSubscriptionSnapshot | null> {

@@ -68,6 +68,7 @@ const requiredGetPaths = [
   '/api/v1/invitations/{invitationId}/statistics',
   '/api/v1/creator/invitations/{invitationId}/media',
   '/api/v1/payments/plans',
+  '/api/v1/public/plans',
   '/api/v1/payments/organization-subscription',
   '/api/v1/admin/overview',
   '/api/v1/admin/plans',
@@ -186,6 +187,11 @@ const publicInvitationSchemas = [
   ['CreatorMediaAssetView', ['assetId', 'kind', 'state', 'byteLength', 'durationSeconds', 'requestedPresentationRole', 'placements']],
   ['CreatorMediaPlacementView', ['role', 'sortOrder']],
   ['SetCreatorMediaPlacementRequest', ['role', 'sortOrder']],
+]
+const publicPlanCatalogFields = [
+  'key', 'displayName', 'description', 'priceAmount', 'currency', 'billingPeriod', 'maxPublishDays',
+  'maxActiveInvitations', 'maxImages', 'maxVideos', 'maxRSVPResponses', 'memoriesEnabled', 'giftRegistryEnabled',
+  'premiumTemplatesEnabled',
 ]
 const publicRsvpSchemas = [
   ['PublicRsvpConfiguration', ['status', 'questions', 'answerLimits']],
@@ -679,6 +685,18 @@ for (const [schemaName, requiredFields] of [
       `${schemaName}.${field} missing or not required`)
   }
 }
+
+// Anonymous landing-page plan cards: exactly the approved display fields, never IDs/revisions/grants.
+const publicPlansPath = '/api/v1/public/plans'
+const publicPlansResponse = spec.paths?.[publicPlansPath]?.get?.responses?.['200']?.content?.['application/json']?.schema
+assertContract(publicPlansResponse?.type === 'array' && publicPlansResponse?.items?.$ref === '#/components/schemas/PublicPlanCatalogItem',
+  `GET ${publicPlansPath} must return PublicPlanCatalogItem[]`)
+const publicPlanCatalogSchema = spec.components?.schemas?.PublicPlanCatalogItem
+assertContract(
+  JSON.stringify(Object.keys(publicPlanCatalogSchema?.properties ?? {}).sort()) === JSON.stringify([...publicPlanCatalogFields].sort())
+    && publicPlanCatalogFields.every(field => publicPlanCatalogSchema.required?.includes(field)),
+  'PublicPlanCatalogItem must require exactly the approved public plan display fields',
+)
 
 // Public response shapes are an allowlist: adding management fields is contract drift too.
 for (const [schemaName, allowedFields] of publicInvitationSchemas) {

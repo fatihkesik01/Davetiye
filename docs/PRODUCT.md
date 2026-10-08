@@ -766,6 +766,38 @@ Ana deneyim:
 Kullanıcı gereksiz seçeneklerle boğulmaz. Gelişmiş özellikler daha sonra
 Creator Panel'den eklenebilir.
 
+## 30a. Ana Sayfa (Tanıtım Sayfası)
+
+Fatih'in 2026-10-08 kararı. Ürün markası **Kutlio**'dur; alan adı
+`kutlio.com`. `/` adresi herkese açık, hesap gerektirmeyen bir tanıtım
+sayfasıdır. Bölümler bu sırayla:
+
+1. **Hero:** başlık `Davetiyeni dakikalar içinde hazırla`; alt metin
+   `Şablonunu seç, bilgilerini gir, tek linkle tüm davetlilerine ulaştır.`
+   Birincil buton `Ücretsiz başla` → kayıt (`/giris/kayit`); ikincil buton
+   `Şablonları incele` → `/sablonlar`.
+2. **Nasıl çalışır:** üç adım — şablon seç, bilgilerini doldur, linkle
+   paylaş (§1, §4, §16).
+3. **Şablon vitrini:** canlı şablon kataloğundan birkaç aktif şablon kartı ve
+   tüm şablonlara bağlantı. Şablonlar sayfaya sabit yazılmaz.
+4. **Özellikler:** yalnız gerçekten çalışan özellikler tanıtılır — RSVP ve
+   katılım takibi, Anılarımız, hediye/çeyiz listesi, QR ve paylaşım, takvime
+   ekleme/geri sayım/harita, mobil uyum, davetlinin hesap açmaması.
+   Fotoğraf/video yükleme, production medya sağlayıcısı açılana kadar
+   tanıtılmaz.
+5. **Paketler:** aktif paketlerin (Free, Standard, Premium, Organization)
+   kartları. Fiyat, ödeme dönemi ve temel limitler sayfaya sabit yazılmaz;
+   Super Admin'in yönettiği canlı paket verisinden gelir (§19, §20). Fiyat
+   tutar ve dönemle gösterilir; vergi dahil/hariç iddiası yoktur. Kart
+   butonu kayda gider; ödeme ana sayfadan başlatılmaz.
+6. **SSS:** cevapları bu belgeden türetilir; yayına açılmadan önce metinleri
+   Fatih onaylar.
+7. **Alt bilgi:** Gizlilik, Kullanım koşulları ve `destek@kutlio.com`.
+
+Ana sayfa arama motorlarına açıktır (davetiye sayfaları `noindex` kalır);
+başlık ve açıklama Kutlio markasını taşır. Responsive ve erişilebilirlik
+kuralları diğer public sayfalarla aynıdır.
+
 ## 31. Backlog / MVP Dışı
 
 İlk sürümde özellikle kapsam dışında bırakılan özellikler:

@@ -6,6 +6,7 @@ export interface RouteMatch {
 }
 
 export function matchRoute(pathname: string): RouteMatch {
+  if (pathname === '/') return { zone: 'public', title: 'Dijital davetiye' }
   if (pathname.startsWith('/davetiye/')) return { zone: 'public', title: 'Dijital davetiye' }
   if (import.meta.env.DEV && /^\/__visual\/templates\/[^/]+$/.test(pathname)) {
     return { zone: 'public', title: 'Şablon görsel doğrulaması' }

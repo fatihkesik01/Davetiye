@@ -8,6 +8,7 @@ import {
 } from '../features/auth/AuthPages'
 import { TemplateCatalogPage } from '../features/templates/catalog/TemplateCatalogPage'
 import { TemplateDemoRenderer } from '../features/templates/rendering/InvitationRenderer'
+import { LandingPage } from '../features/landing/LandingPage'
 import { PublicInvitationPage } from '../features/invitations/PublicInvitationPage'
 import { PrivacyInformationPage, TermsInformationPage } from '../features/privacy/PrivacyInformationPages'
 import { AccountDeletionConfirmationPage } from '../features/privacy/AccountDeletion'
@@ -41,6 +42,8 @@ export default function PublicRoutes() {
       <TemplateDemoRenderer templateKey={decodeURIComponent(visualTemplateKey)} rendererVersion={1} />
     </main>
   }
+
+  if (pathname === '/') return <LandingPage />
 
   if (auth) return <RouteShell title={auth.title} zone="public">{auth.content}</RouteShell>
 

@@ -2385,6 +2385,31 @@
         }
       }
     },
+    "/api/v1/public/plans": {
+      "get": {
+        "tags": [
+          "PublicPlanCatalogEndpoints"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicPlanCatalogItem"
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
     "/api/v1/webhooks/iyzico": {
       "post": {
         "tags": [
@@ -9159,6 +9184,102 @@
             "items": {
               "$ref": "#/components/schemas/PublicMemoryUploadMediaStatus"
             }
+          }
+        }
+      },
+      "PublicPlanCatalogItem": {
+        "required": [
+          "key",
+          "displayName",
+          "description",
+          "priceAmount",
+          "currency",
+          "billingPeriod",
+          "maxPublishDays",
+          "maxActiveInvitations",
+          "maxImages",
+          "maxVideos",
+          "maxRSVPResponses",
+          "memoriesEnabled",
+          "giftRegistryEnabled",
+          "premiumTemplatesEnabled"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "priceAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "billingPeriod": {
+            "type": "string"
+          },
+          "maxPublishDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "maxActiveInvitations": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "maxImages": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "maxVideos": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "maxRSVPResponses": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "memoriesEnabled": {
+            "type": "boolean"
+          },
+          "giftRegistryEnabled": {
+            "type": "boolean"
+          },
+          "premiumTemplatesEnabled": {
+            "type": "boolean"
           }
         }
       },
