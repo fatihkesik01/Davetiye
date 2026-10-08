@@ -58,12 +58,14 @@ export function AccountConsentSettingsPage({ children, profile }: { children?: R
     }
   }
 
-  return <section className="account-consent-settings" aria-labelledby="account-consent-heading">
-    <h2>{t('account.title')}</h2>
-    {children ? <section aria-labelledby="appearance-preferences-title"><h3 id="appearance-preferences-title">{t('account.appearanceTitle')}</h3>{children}</section> : null}
+  return <div className="account-settings">
+    {children ? <section className="account-card" aria-labelledby="appearance-preferences-title">
+      <header className="account-card__header"><h2 id="appearance-preferences-title">{t('account.appearanceTitle')}</h2><p>{t('account.appearanceIntro')}</p></header>
+      {children}
+    </section> : null}
     {profile}
-    <h2 id="account-consent-heading">{t('account.privacyTitle')}</h2>
-    <p>{t('consent.intro')}</p>
+    <section className="account-card account-consent-settings" aria-labelledby="account-consent-heading">
+    <header className="account-card__header"><h2 id="account-consent-heading">{t('account.privacyTitle')}</h2><p>{t('consent.intro')}</p></header>
     {state === 'loading' ? <p role="status">{t('common.loading')}</p> : null}
     {serviceNotice ? <div className="account-consent-settings__record">
       <h3>{t('consent.noticeTitle')}</h3>
@@ -89,5 +91,6 @@ export function AccountConsentSettingsPage({ children, profile }: { children?: R
     <p><InternalLink to="/gizlilik">{t('consent.privacyLink')}</InternalLink> · <InternalLink to="/kullanim-kosullari">{t('consent.termsLink')}</InternalLink></p>
     <AccountDeletionRequest />
     {error ? <p role="alert">{error}</p> : message ? <p role="status">{message}</p> : state === 'ready' ? <p role="status">{t('consent.loaded')}</p> : null}
-  </section>
+    </section>
+  </div>
 }

@@ -6,7 +6,7 @@ test('Super Admin can enroll by keyboard, save codes, re-authenticate with MFA, 
   await page.route('**/api/v1/**', async route => {
     const url = new URL(route.request().url())
     const path = url.pathname
-    if (path === '/api/v1/account/preferences') return route.fulfill({ json: { locale: 'tr', colorTheme: 'kutlio', appearance: 'system', avatar: null } })
+    if (path === '/api/v1/account/preferences') return route.fulfill({ json: { locale: 'tr', colorTheme: 'kutlio', appearance: 'light', avatar: null } })
     if (path === '/api/v1/auth/session') {
       return route.fulfill({ json: { authenticated: true, access } })
     }

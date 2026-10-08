@@ -10,7 +10,7 @@ const consents = {
 }
 const SHOT_DIR = process.env.AVATAR_SHOTS_DIR
 
-async function mockApi(page: Page, initial: Preferences = { locale: 'tr', colorTheme: 'kutlio', appearance: 'system', avatar: null }, session: unknown = creator) {
+async function mockApi(page: Page, initial: Preferences = { locale: 'tr', colorTheme: 'kutlio', appearance: 'light', avatar: null }, session: unknown = creator) {
   const state = { preferences: initial, puts: [] as Preferences[], requests: [] as string[], unexpected: [] as string[] }
   await page.route('**/api/v1/**', route => {
     const request = route.request()
@@ -68,7 +68,7 @@ test('choosing an avatar in the drawer shows it in the header, saves all four fi
   const drawer = await openDrawer(page)
   await drawer.getByRole('radio', { name: 'Mercan' }).check()
   await expect(drawer.getByRole('status')).toHaveText('Tercihleriniz kaydedildi.')
-  expect(api.puts).toEqual([{ locale: 'tr', colorTheme: 'kutlio', appearance: 'system', avatar: 'coral' }])
+  expect(api.puts).toEqual([{ locale: 'tr', colorTheme: 'kutlio', appearance: 'light', avatar: 'coral' }])
   await expect(page.locator('.site-account [data-avatar="coral"]')).toHaveCount(1)
   await expect(drawer.locator('.preferences-drawer__avatar[data-avatar="coral"]')).toHaveCount(1)
   await expect(drawer.getByRole('radio', { name: 'Mercan' })).toBeChecked()
@@ -84,13 +84,13 @@ test('choosing an avatar in the drawer shows it in the header, saves all four fi
   const again = await openDrawer(page)
   await again.getByRole('button', { name: 'Avatarı kaldır' }).click()
   await expect(again.getByRole('status')).toHaveText('Tercihleriniz kaydedildi.')
-  expect(api.puts.at(-1)).toEqual({ locale: 'tr', colorTheme: 'kutlio', appearance: 'system', avatar: null })
+  expect(api.puts.at(-1)).toEqual({ locale: 'tr', colorTheme: 'kutlio', appearance: 'light', avatar: null })
   await expect(page.locator('.site-account [data-avatar="none"]')).toHaveCount(1)
   expect(api.unexpected).toEqual([])
 })
 
 test('the drawer picker can be operated with the keyboard only', async ({ page }) => {
-  const api = await mockApi(page, { locale: 'tr', colorTheme: 'kutlio', appearance: 'system', avatar: 'sunny' })
+  const api = await mockApi(page, { locale: 'tr', colorTheme: 'kutlio', appearance: 'light', avatar: 'sunny' })
   await page.goto('/')
   const drawer = await openDrawer(page)
   await drawer.getByRole('radio', { name: 'Güneşli' }).focus()
@@ -115,7 +115,7 @@ test('the Creator settings page has a profile picture section that saves and sho
   await expect(section.getByRole('radio')).toHaveCount(12)
   await section.getByRole('radio', { name: 'Gece' }).check()
   await expect(section.getByRole('status')).toHaveText('Tercihleriniz kaydedildi.')
-  expect(api.puts).toEqual([{ locale: 'tr', colorTheme: 'kutlio', appearance: 'system', avatar: 'night' }])
+  expect(api.puts).toEqual([{ locale: 'tr', colorTheme: 'kutlio', appearance: 'light', avatar: 'night' }])
   await expect(page.locator('.site-account [data-avatar="night"]')).toHaveCount(1)
   await expect(section.getByRole('radio', { name: 'Gece' })).toBeChecked()
   await applyZoom(page, testInfo.project.name)
@@ -148,7 +148,7 @@ for (const { name, preferences } of matrix) {
 
     await page.getByRole('banner').getByRole('button', { name: preferences.locale === 'en' ? 'My account, theme and language' : 'Hesabım, tema ve dil' }).click()
     const drawer = page.getByRole('dialog')
-    await expect(drawer.getByRole('radio')).toHaveCount(12)
+    await expect(drawer.getByRole('group', { name: preferences.locale === 'en' ? 'Profile picture' : 'Profil resmi' }).getByRole('radio')).toHaveCount(12)
     await expectNoHorizontalOverflow(page)
     await expectAccessible(page)
     await shot(page, `drawer-${name.replace(' ', '-')}`, testInfo)
@@ -157,7 +157,7 @@ for (const { name, preferences } of matrix) {
 }
 
 test('the public invitation route shows no avatar and never asks for account preferences', async ({ page }) => {
-  const api = await mockApi(page, { locale: 'tr', colorTheme: 'kutlio', appearance: 'system', avatar: 'sunny' })
+  const api = await mockApi(page, { locale: 'tr', colorTheme: 'kutlio', appearance: 'light', avatar: 'sunny' })
   await page.goto(`/davetiye/${'a'.repeat(64)}`)
   await page.waitForLoadState('networkidle')
   await expect(page.locator('[data-avatar], .site-account, .avatar')).toHaveCount(0)
@@ -165,7 +165,7 @@ test('the public invitation route shows no avatar and never asks for account pre
 })
 
 test('an anonymous visitor sees the unchanged header without any avatar', async ({ page }) => {
-  const api = await mockApi(page, { locale: 'tr', colorTheme: 'kutlio', appearance: 'system', avatar: 'sunny' }, { authenticated: false, access: 'none' })
+  const api = await mockApi(page, { locale: 'tr', colorTheme: 'kutlio', appearance: 'light', avatar: 'sunny' }, { authenticated: false, access: 'none' })
   await page.goto('/')
   await expect(page.getByRole('banner').getByRole('link', { name: 'Giriş yap' })).toBeVisible()
   await expect(page.locator('[data-avatar], .site-account')).toHaveCount(0)
@@ -183,7 +183,7 @@ for (const spacing of ['0.08em', '0.16em']) {
     await expectNoHorizontalOverflow(page)
     await page.getByRole('banner').getByRole('button', { name: 'My account, theme and language' }).click()
     const drawer = page.getByRole('dialog')
-    await expect(drawer.getByRole('radio')).toHaveCount(12)
+    await expect(drawer.getByRole('group', { name: 'Profile picture' }).getByRole('radio')).toHaveCount(12)
     await expectNoHorizontalOverflow(page)
     const drawerBox = await drawer.evaluate(element => ({ client: element.clientWidth, scroll: element.scrollWidth }))
     expect(drawerBox.scroll).toBeLessThanOrEqual(drawerBox.client)

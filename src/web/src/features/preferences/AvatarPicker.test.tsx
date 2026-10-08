@@ -9,7 +9,7 @@ import { AccountPreferencesProvider } from './preferences'
 import { STORAGE_KEY, useAccountPreferences } from './preferencesContext'
 
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json' } })
-const base = { locale: 'tr', colorTheme: 'kutlio', appearance: 'system' }
+const base = { locale: 'tr', colorTheme: 'kutlio', appearance: 'light' }
 
 function stubApi({ server = { ...base, avatar: null } as Record<string, unknown>, session = { authenticated: true, access: 'creator' } as unknown, echoAvatar = true } = {}) {
   const puts: Record<string, unknown>[] = []
@@ -134,6 +134,6 @@ describe('SiteHeader avatar', () => {
     header('admin')
     fireEvent.click(screen.getByRole('button', { name: 'Hesabım, tema ve dil' }))
     const drawer = document.querySelector('dialog.preferences-drawer') as HTMLDialogElement
-    await waitFor(() => expect(within(drawer).getAllByRole('radio', { hidden: true })).toHaveLength(12))
+    await waitFor(() => expect(within(within(drawer).getByRole('group', { name: 'Profil resmi', hidden: true })).getAllByRole('radio', { hidden: true })).toHaveLength(12))
   })
 })

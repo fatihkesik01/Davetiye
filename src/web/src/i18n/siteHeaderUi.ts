@@ -13,7 +13,7 @@ export const siteHeaderUiTranslations = {
     accountMenu: 'Hesabım, tema ve dil',
     preferences: 'Tema ve dil',
     preferencesMenu: 'Tema ve dil ayarları',
-    accountSettings: 'Hesap ve gizlilik ayarları',
+    accountSettings: 'Hesap tercihleri',
     accountSettingsHint: 'Bildirim izinleri ve hesap silme için hesap sayfasını açın.',
   },
   en: {
@@ -30,7 +30,7 @@ export const siteHeaderUiTranslations = {
     accountMenu: 'My account, theme and language',
     preferences: 'Theme and language',
     preferencesMenu: 'Theme and language settings',
-    accountSettings: 'Account and privacy settings',
+    accountSettings: 'Account preferences',
     accountSettingsHint: 'Open the account page for communication consent and account deletion.',
   },
 } as const

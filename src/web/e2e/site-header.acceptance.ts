@@ -26,7 +26,7 @@ const creator = { authenticated: true, access: 'creator' }
 
 interface ApiOptions { session?: unknown; preferences?: Preferences | 'unauthorized' }
 
-async function mockApi(page: Page, { session = anonymous, preferences = { locale: 'tr', colorTheme: 'kutlio', appearance: 'system', avatar: null } }: ApiOptions = {}) {
+async function mockApi(page: Page, { session = anonymous, preferences = { locale: 'tr', colorTheme: 'kutlio', appearance: 'light', avatar: null } }: ApiOptions = {}) {
   const requests: string[] = []
   const unexpected: string[] = []
   await page.route('**/api/v1/**', route => {
@@ -159,9 +159,9 @@ test('a palette chosen from the account drawer on the landing persists on the ca
   await page.goto('/')
   await page.getByRole('banner').getByRole('button', { name: 'Hesabım, tema ve dil' }).click()
   const drawer = page.getByRole('dialog')
-  await expect(drawer.getByRole('button', { name: 'Okyanus' })).toBeEnabled()
-  await drawer.getByRole('button', { name: 'Okyanus' }).click()
-  await drawer.getByRole('button', { name: 'Koyu' }).click()
+  await expect(drawer.getByRole('radio', { name: 'Okyanus' })).toBeEnabled()
+  await drawer.getByRole('radio', { name: 'Okyanus' }).check()
+  await drawer.getByRole('radio', { name: 'Koyu' }).check()
   await expect(page.locator('html')).toHaveAttribute('data-color-theme', 'ocean')
   await expect(page.locator('html')).toHaveAttribute('data-appearance', 'dark')
   await expect(drawer.getByRole('status')).toHaveText('Tercihleriniz kaydedildi.')
@@ -179,7 +179,7 @@ test('an expired session clears the previous user preference from the browser', 
   const { unexpected } = await mockApi(page, { session: creator, preferences: 'unauthorized' })
   await page.goto('/')
   await expect(page.locator('html')).toHaveAttribute('data-color-theme', 'kutlio')
-  await expect(page.locator('html')).toHaveAttribute('data-appearance', 'system')
+  await expect(page.locator('html')).toHaveAttribute('data-appearance', 'light')
   expect(await page.evaluate(() => localStorage.getItem('kutlio:account-preferences'))).toBeNull()
   expect(unexpected).toEqual([])
 })
@@ -205,7 +205,7 @@ test('the public invitation page has no site header, no session lookup and no ac
   await expect(page.locator('[data-site-header]')).toHaveCount(0)
   await expect(page.getByRole('link', { name: 'Kutlio ana sayfa' })).toHaveCount(0)
   await expect(page.locator('html')).toHaveAttribute('data-color-theme', 'kutlio')
-  await expect(page.locator('html')).toHaveAttribute('data-appearance', 'system')
+  await expect(page.locator('html')).toHaveAttribute('data-appearance', 'light')
   expect(requests).not.toContain('/api/v1/auth/session')
   expect(requests).not.toContain('/api/v1/account/preferences')
 })

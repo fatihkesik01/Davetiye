@@ -46,3 +46,45 @@ for (const { path, session } of pages) {
     expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth)
   })
 }
+
+// The account drawer and the settings cards use the new choice controls: they must also hold up with wide glyphs, in
+// every palette (long names wrap) and in the drawer's scrolling body.
+for (const { path, session } of [{ path: '/panel/hesap', session: creator }, { path: '/', session: creator }, { path: '/admin', session: admin }]) {
+  for (const spacing of ['0.08em', '0.16em']) {
+    test(`the account drawer on ${path} (${session === admin ? 'admin' : 'creator'}) does not overflow with wider font metrics (${spacing})`, async ({ page }, testInfo) => {
+      await mock(page, session)
+      await page.goto(path)
+      await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible()
+      if (testInfo.project.name === 'chromium-200pct') await page.evaluate(() => { document.documentElement.style.zoom = '2' })
+      await page.addStyleTag({ content: `* { letter-spacing: ${spacing} !important; }` })
+      await page.getByRole('banner').getByRole('button', { name: /My account|Hesabım/ }).click()
+      const drawer = page.getByRole('dialog')
+      await expect(drawer.getByRole('radio', { name: 'Berry' })).toBeEnabled()
+      const box = await drawer.evaluate(element => {
+        const body = element.querySelector('.preferences-drawer__body') as HTMLElement
+        const footer = element.querySelector('.preferences-drawer__footer') as HTMLElement
+        return { client: element.clientWidth, scroll: element.scrollWidth, bodyClient: body.clientWidth, bodyScroll: body.scrollWidth, footerScroll: footer.scrollWidth, footerClient: footer.clientWidth }
+      })
+      expect(box.scroll).toBeLessThanOrEqual(box.client)
+      expect(box.bodyScroll).toBeLessThanOrEqual(box.bodyClient)
+      expect(box.footerScroll).toBeLessThanOrEqual(box.footerClient)
+      const metrics = await page.evaluate(() => ({ clientWidth: document.documentElement.clientWidth, scrollWidth: document.documentElement.scrollWidth }))
+      expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth)
+    })
+  }
+}
+
+for (const colorTheme of ['kutlio', 'sage', 'rose', 'ocean', 'plum'] as const) {
+  test(`the settings page cards and choice controls hold up with wide glyphs in the ${colorTheme} palette`, async ({ page }, testInfo) => {
+    await mock(page, creator)
+    await page.goto('/panel/hesap')
+    await expect(page.getByRole('radiogroup', { name: 'Language' })).toBeVisible()
+    await page.evaluate(theme => { document.documentElement.dataset.colorTheme = theme }, colorTheme)
+    if (testInfo.project.name === 'chromium-200pct') await page.evaluate(() => { document.documentElement.style.zoom = '2' })
+    await page.addStyleTag({ content: `* { letter-spacing: ${SPACING} !important; }` })
+    const overflowing = await page.evaluate(() => [...document.querySelectorAll('.account-card, .choice-group__options, .choice-group__face')].filter(element => element.scrollWidth > element.clientWidth + 1).map(element => element.className))
+    expect(overflowing).toEqual([])
+    const metrics = await page.evaluate(() => ({ clientWidth: document.documentElement.clientWidth, scrollWidth: document.documentElement.scrollWidth }))
+    expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth)
+  })
+}

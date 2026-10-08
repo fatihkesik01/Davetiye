@@ -1,10 +1,20 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { AVATAR_KEYS, DEFAULT_PREFERENCES, parsePreferences, readLocal, STORAGE_KEY } from './preferencesContext'
 
-const base = { locale: 'tr', colorTheme: 'kutlio', appearance: 'system' }
+const base = { locale: 'tr', colorTheme: 'kutlio', appearance: 'light' }
 
 describe('parsePreferences avatar handling', () => {
   afterEach(() => localStorage.clear())
+
+  it('defaults to Light but keeps every saved appearance choice', () => {
+    expect(DEFAULT_PREFERENCES.appearance).toBe('light')
+    expect(readLocal()).toEqual({ locale: 'tr', colorTheme: 'kutlio', appearance: 'light', avatar: null })
+    for (const appearance of ['light', 'dark', 'system']) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...base, appearance }))
+      expect(readLocal().appearance).toBe(appearance)
+    }
+    expect(parsePreferences({ ...base, appearance: 'auto' })).toBeNull()
+  })
 
   it('accepts every allow-listed avatar key and null', () => {
     expect(AVATAR_KEYS).toHaveLength(12)

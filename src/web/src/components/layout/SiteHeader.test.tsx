@@ -76,7 +76,13 @@ describe('SiteHeader', () => {
     const drawer = document.querySelector('dialog.preferences-drawer') as HTMLDialogElement
     expect(drawer).not.toBeNull()
     expect(within(drawer).getByText('Renk teması')).toBeTruthy()
-    expect(within(drawer).getByRole('link', { name: 'Hesap ve gizlilik ayarları', hidden: true }).getAttribute('href')).toBe('/panel/hesap')
+    for (const group of ['Dil', 'Renk teması', 'Görünüm']) expect(within(drawer).getByRole('radiogroup', { name: group, hidden: true })).toBeTruthy()
+    expect(within(drawer).getByRole('group', { name: 'Profil resmi', hidden: true })).toBeTruthy()
+    const footer = drawer.querySelector('.preferences-drawer__footer') as HTMLElement
+    expect(within(footer).getByRole('link', { name: 'Hesap tercihleri', hidden: true })).toBeTruthy()
+    expect(within(footer).getByRole('button', { name: 'Güvenli çıkış yap', hidden: true })).toBeTruthy()
+    expect(drawer.querySelector('.preferences-drawer__body')?.contains(footer)).toBe(false)
+    expect(within(drawer).getByRole('link', { name: 'Hesap tercihleri', hidden: true }).getAttribute('href')).toBe('/panel/hesap')
     expect(within(drawer).getByRole('button', { name: 'Güvenli çıkış yap', hidden: true })).toBeTruthy()
   })
 
@@ -85,7 +91,7 @@ describe('SiteHeader', () => {
     renderHeader()
     expect((await screen.findByRole('link', { name: 'Yönetim paneli' })).getAttribute('href')).toBe('/admin')
     expect(screen.queryByRole('link', { name: 'Panele git' })).toBeNull()
-    expect(screen.queryByRole('link', { name: 'Hesap ve gizlilik ayarları', hidden: true })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Hesap tercihleri', hidden: true })).toBeNull()
   })
 
   it('points an admin who still has to finish MFA enrollment at the setup page', async () => {
@@ -115,7 +121,7 @@ describe('SiteHeader', () => {
     renderHeader()
     await waitFor(() => expect(localStorage.getItem(STORAGE_KEY)).toBeNull())
     await waitFor(() => expect(document.documentElement.dataset.colorTheme).toBe('kutlio'))
-    expect(document.documentElement.dataset.appearance).toBe('system')
+    expect(document.documentElement.dataset.appearance).toBe('light')
     expect(document.documentElement.lang).toBe('tr')
   })
 

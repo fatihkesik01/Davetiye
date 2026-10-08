@@ -9,13 +9,13 @@ import { AVATAR_KEYS, type AvatarKey, useAccountPreferences } from './preference
  * selected-state semantics come from the browser). The selected tile also shows a check badge and a
  * thick ring so selection is not conveyed by colour alone. "Remove" sets the choice back to none.
  */
-export function AvatarPicker({ compact = false }: { compact?: boolean }) {
+export function AvatarPicker({ compact = false, hideLegend = false }: { compact?: boolean; hideLegend?: boolean }) {
   const { t } = useTranslation()
   const { preferences, ready, save } = useAccountPreferences()
   const name = useId()
   const choose = (avatar: AvatarKey | null) => { if (avatar !== preferences.avatar) void save({ ...preferences, avatar }) }
   return <fieldset className={`avatar-picker${compact ? ' avatar-picker--compact' : ''}`} disabled={!ready}>
-    <legend>{t('avatar.legend')}</legend>
+    <legend className={hideLegend ? 'visually-hidden' : undefined}>{compact ? t('avatar.title') : t('avatar.legend')}</legend>
     <div className="avatar-picker__grid">
       {AVATAR_KEYS.map(key => <label key={key} className="avatar-picker__option">
         <input type="radio" name={name} value={key} checked={preferences.avatar === key} onChange={() => choose(key)} />
@@ -27,13 +27,12 @@ export function AvatarPicker({ compact = false }: { compact?: boolean }) {
   </fieldset>
 }
 
-/** Settings-page section: the picker plus its own live region. */
+/** Settings-page card: heading, description, the picker (its legend is read by assistive technology only) and its own live region. */
 export function AvatarPreferenceSection() {
   const { t } = useTranslation()
-  return <section aria-labelledby="avatar-preferences-title" className="avatar-section">
-    <h3 id="avatar-preferences-title">{t('avatar.title')}</h3>
-    <p>{t('avatar.description')}</p>
-    <AvatarPicker />
+  return <section aria-labelledby="avatar-preferences-title" className="avatar-section account-card">
+    <header className="account-card__header"><h2 id="avatar-preferences-title">{t('avatar.title')}</h2><p>{t('avatar.description')}</p></header>
+    <AvatarPicker hideLegend />
     <PreferenceStatus />
   </section>
 }

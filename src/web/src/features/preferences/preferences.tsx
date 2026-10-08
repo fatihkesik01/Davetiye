@@ -1,7 +1,9 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ApiRequestError, DavetiyeApiClient } from '../../api/generated/client'
+import { ChoiceGroup } from '../../components/ui/ChoiceGroup'
 import { AvatarPicker } from './AvatarPicker'
+import { appearanceIcons } from './preferenceIcons'
 import { PreferenceStatus } from './PreferenceStatus'
 import {
   type AccountPreferences, applyPreferences, clearLocalAccountPreferences, DEFAULT_PREFERENCES, parsePreferences,
@@ -86,33 +88,31 @@ export function AccountPreferencesProvider({ children }: { children: ReactNode }
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>
 }
 
-export function AccountPreferenceControls({ showAvatar = false }: { showAvatar?: boolean }) {
+const themes = ['kutlio', 'sage', 'rose', 'ocean', 'plum'] as const
+const appearances = ['light', 'dark', 'system'] as const
+const locales = ['tr', 'en'] as const
+
+interface AccountPreferenceControlsProps {
+  /** Adds the compact avatar picker (account drawer). The settings page renders its own profile-picture card. */
+  showAvatar?: boolean
+  /** `drawer`: small group labels and tight spacing; `page`: the roomier settings-card layout. */
+  variant?: 'drawer' | 'page'
+  /** The drawer shows the save status in its footer so it stays visible while the body scrolls. */
+  showStatus?: boolean
+}
+
+export function AccountPreferenceControls({ showAvatar = false, variant = 'page', showStatus = true }: AccountPreferenceControlsProps) {
   const { t } = useTranslation()
   const { preferences, ready, save } = useAccountPreferences()
   const update = (change: Partial<AccountPreferences>) => { void save({ ...preferences, ...change }) }
-  return <div className="preference-controls" aria-busy={!ready}>
-    <fieldset disabled={!ready}>
-      <legend>{t('preferences.language')}</legend>
-      <div className="preference-controls__choices">
-        <button type="button" aria-pressed={preferences.locale === 'tr'} onClick={() => update({ locale: 'tr' })}>Türkçe</button>
-        <button type="button" aria-pressed={preferences.locale === 'en'} onClick={() => update({ locale: 'en' })}>English</button>
-      </div>
-    </fieldset>
-    <fieldset disabled={!ready}>
-      <legend>{t('preferences.colorTheme')}</legend>
-      <div className="preference-controls__themes">
-        {(['kutlio', 'sage', 'rose', 'ocean', 'plum'] as const).map(theme => <button key={theme} type="button" className={`preference-theme preference-theme--${theme}`} aria-pressed={preferences.colorTheme === theme} onClick={() => update({ colorTheme: theme })}>
-          <span aria-hidden="true" />{t(`preferences.themes.${theme}`)}
-        </button>)}
-      </div>
-    </fieldset>
-    <fieldset disabled={!ready}>
-      <legend>{t('preferences.appearance')}</legend>
-      <div className="preference-controls__choices">
-        {(['system', 'light', 'dark'] as const).map(appearance => <button key={appearance} type="button" aria-pressed={preferences.appearance === appearance} onClick={() => update({ appearance })}>{t(`preferences.appearances.${appearance}`)}</button>)}
-      </div>
-    </fieldset>
+  return <div className={`preference-controls preference-controls--${variant}`} aria-busy={!ready}>
+    <ChoiceGroup variant="segmented" legend={t('preferences.language')} disabled={!ready} value={preferences.locale} onChange={locale => update({ locale })}
+      options={locales.map(locale => ({ value: locale, label: t(`preferences.languages.${locale}`), lang: locale, badge: locale.toUpperCase() }))} />
+    <ChoiceGroup variant="swatches" legend={t('preferences.colorTheme')} disabled={!ready} value={preferences.colorTheme} onChange={colorTheme => update({ colorTheme })}
+      options={themes.map(theme => ({ value: theme, label: t(`preferences.themes.${theme}`), swatch: <span className="preference-swatch" data-swatch={theme} aria-hidden="true" /> }))} />
+    <ChoiceGroup variant="segmented" legend={variant === 'drawer' ? t('preferences.appearance') : t('preferences.appearanceMode')} disabled={!ready} value={preferences.appearance} onChange={appearance => update({ appearance })}
+      options={appearances.map(appearance => ({ value: appearance, label: t(`preferences.appearances.${appearance}`), icon: appearanceIcons[appearance] }))} />
     {showAvatar ? <AvatarPicker compact /> : null}
-    <PreferenceStatus />
+    {showStatus ? <PreferenceStatus /> : null}
   </div>
 }

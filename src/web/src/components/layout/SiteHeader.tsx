@@ -4,6 +4,7 @@ import { InternalLink } from '../ui/InternalLink'
 import { LogoutButton } from '../../features/auth/AuthPages'
 import { AccountPreferenceControls } from '../../features/preferences/preferences'
 import { Avatar } from '../../features/preferences/avatars'
+import { PreferenceStatus } from '../../features/preferences/PreferenceStatus'
 import { useOptionalAccountPreferences } from '../../features/preferences/preferencesContext'
 import { useSessionAccess } from '../../features/session/sessionAccess'
 
@@ -90,15 +91,23 @@ export function SiteHeader({ zone, sectionLinks, sectionLabel }: SiteHeaderProps
       </div>
     </div>
     {authenticated && hydrate ? <dialog ref={drawerReference} className="preferences-drawer" aria-labelledby="preferences-drawer-title" aria-describedby="preferences-drawer-description" onClose={() => setDrawerOpen(false)} onClick={(event) => { if (event.target === drawerReference.current) setDrawerOpen(false) }}>
-      <div className="preferences-drawer__content">
-        <div className="preferences-drawer__heading">
+      <div className="preferences-drawer__panel">
+        <header className="preferences-drawer__heading">
           <Avatar className="preferences-drawer__avatar" avatarKey={avatarKey} size={48} />
           <div><h2 id="preferences-drawer-title">{t('navigation.drawerTitle')}</h2><p id="preferences-drawer-description">{t('navigation.drawerDescription')}</p></div>
-          <button className="preferences-drawer__close" type="button" aria-label={t('common.close')} onClick={() => setDrawerOpen(false)}>×</button>
-        </div>
-        <AccountPreferenceControls showAvatar />
-        {showAccountSettings ? <p className="preferences-drawer__account-link"><InternalLink to="/panel/hesap" onClick={() => setDrawerOpen(false)}>{t('siteHeader.accountSettings')}</InternalLink><small>{t('siteHeader.accountSettingsHint')}</small></p> : null}
-        <div className="preferences-drawer__logout"><LogoutButton /></div>
+          <button className="preferences-drawer__close" type="button" aria-label={t('common.close')} onClick={() => setDrawerOpen(false)}>
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+          </button>
+        </header>
+        <div className="preferences-drawer__body"><AccountPreferenceControls variant="drawer" showAvatar showStatus={false} /></div>
+        <footer className="preferences-drawer__footer">
+          <PreferenceStatus />
+          {showAccountSettings ? <div className="preferences-drawer__account">
+            <InternalLink className="preferences-drawer__account-link" to="/panel/hesap" onClick={() => setDrawerOpen(false)}>{t('siteHeader.accountSettings')}<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></InternalLink>
+            <small>{t('siteHeader.accountSettingsHint')}</small>
+          </div> : null}
+          <div className="preferences-drawer__logout"><LogoutButton /></div>
+        </footer>
       </div>
     </dialog> : null}
   </header>

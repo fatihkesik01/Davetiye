@@ -13,7 +13,8 @@ export function isAvatarKey(value: unknown): value is AvatarKey {
   return typeof value === 'string' && (AVATAR_KEYS as readonly string[]).includes(value)
 }
 
-export const DEFAULT_PREFERENCES: AccountPreferences = { locale: 'tr', colorTheme: 'kutlio', appearance: 'system', avatar: null }
+/** Light is the default; "system" and "dark" stay valid saved choices that are always respected. */
+export const DEFAULT_PREFERENCES: AccountPreferences = { locale: 'tr', colorTheme: 'kutlio', appearance: 'light', avatar: null }
 export const STORAGE_KEY = 'kutlio:account-preferences'
 const validLocales = ['tr', 'en']
 const validThemes = ['kutlio', 'sage', 'rose', 'ocean', 'plum']
