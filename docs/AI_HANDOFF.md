@@ -13,8 +13,10 @@ checks before trusting it (`docs/AI_WORKFLOW.md` §1/§11).
 - **Phase 11 — Production Readiness & Business Launch: IN PROGRESS** (Fatih
   approved 2026-10-08). Ordered tracker: `docs/PHASE_11_PLAN.md`.
 - Deployed to the VPS and live (unannounced) at `https://kutlio.com`; see
-  `docs/DEPLOYMENT.md`. Email sending (Resend key), Google, media and payments
-  are not enabled yet.
+  `docs/DEPLOYMENT.md`. Brand is "Kutlio"; transactional email via Resend is
+  live (2026-10-08). Google, media and payments are not enabled yet. Secrets
+  are entered by Fatih on the server via `/opt/davetiye/set-secret.sh`; an
+  agent never handles live secret values.
 
 ## Latest Verification (2026-10-07, local)
 
@@ -39,7 +41,6 @@ checks before trusting it (`docs/AI_WORKFLOW.md` §1/§11).
 
 ## Deferred to Phase 11 (mandatory gates)
 
-- VPS deployment (`docs/DEPLOYMENT.md`; never touch Lora).
 - Real provider acceptance: Cloudflare R2/Images/Stream (incl. in-flight
   upload at expiry and legacy 15-min capability grace), iyzico (incl.
   refund/dispute/chargeback source verification), Resend, Google OAuth.
@@ -83,8 +84,7 @@ open alongside 22222, stale ufw allow rules for 8080/5050.
 ## Next Action
 
 Resume from `docs/PHASE_11_PLAN.md` ("İş Takip Listesi"). Agreed next steps
-(Fatih, 2026-10-08): 25c (check Resend verification, add API key on the
-server, test registration email), 25a (rename brand to "Kutlio"), 25b (real
+(Fatih, 2026-10-08): 25a and 25c are done; next is 25b (real
 landing page for `/` — agree its content with Fatih first and record it in
 `docs/PRODUCT.md`; do not invent sections). Company/tax/legal/iyzico live stay
 last. Never touch Lora, including its backups.

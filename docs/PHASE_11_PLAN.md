@@ -78,7 +78,7 @@ Bir satır tamamlandığında agent durumu ve kısa notu burada günceller.
 | 9 | Nginx sitesi + HTTPS (Let's Encrypt), production URL/CORS/cookie ayarları | 🤖 | 3, 8 | M2 | ✅ 2026-10-08 nginx site `/etc/nginx/sites-available/kutlio.com`, Let's Encrypt (bitiş 2027-01-05, otomatik yenileme), HTTP→HTTPS 301, HSTS. Açık: `/` için ana sayfa ürün kararı bekliyor |
 | 10 | Destek/gönderici adreslerini belirle (`destek@`, `noreply@`) ve posta kutusu çözümü seç (ör. Cloudflare Email Routing veya Zoho/Google Workspace) | 👤 | 7 | M5 | ✅ 2026-10-07 Cloudflare Email Routing: `destek@` ve `noreply@kutlio.com` → 01fatihkesik@gmail.com; diğerleri Drop |
 | 11 | Resend hesabı aç, domain'i ekle | 👤 | 7 | M5 | ✅ 2026-10-07 Resend hesabı (01fatihkesik), `kutlio.com` eklendi, bölge Ireland (eu-west-1), tracking kapalı |
-| 12 | SPF/DKIM/DMARC kayıtları, Resend production anahtarı, teslim testi | 🤝 | 9, 10, 11 | M5 | 🔄 DKIM/SPF(`send`,`rsend` CNAME)/DMARC `p=none` Cloudflare'e girildi; Resend doğrulaması bekleniyor. Gönderme-yetkili API anahtarı deploy sırasında doğrudan sunucu `.env`'ine üretilecek |
+| 12 | SPF/DKIM/DMARC kayıtları, Resend production anahtarı, teslim testi | 🤝 | 9, 10, 11 | M5 | ✅ 2026-10-08 Resend `kutlio.com` Verified (EU); Sending-only anahtar sunucu `.env`'inde (Fatih girdi, `/opt/davetiye/set-secret.sh`) |
 | 13 | Google Cloud projesi + OAuth onay ekranı + domain doğrulama (Search Console) | 👤 | 9 | M3 | ⬜ |
 | 14 | Google OAuth production ayarı ve smoke testi | 🤖 | 13 | M3 | ⬜ |
 | 15 | Cloudflare R2 / Images / Stream'i etkinleştir (kart gerekir), hesaba özel limitleri incele | 👤 (limit incelemesi 🤝) | 7 | M6 | ⬜ |
@@ -92,9 +92,9 @@ Bir satır tamamlandığında agent durumu ve kısa notu burada günceller.
 | 23 | Gerçek tarayıcı %200 zoom (otomatik kısım) | 🤖 | 9 | M8 | ⬜ |
 | 24 | Ekran okuyucu + kontrast elle test turu | 👤 (veya tester) | 9 | M8 | ⬜ |
 | 25 | OG/paylaşım önizlemesi kişiselleştirme seviyesi kararı | 👤 karar → 🤖 | — | M9 | ⬜ |
-| 25a | **Marka adı "Kutlio"** (Fatih kararı 2026-10-08): uygulama başlığı/logo metni, sayfa başlıkları, e-posta gönderen adı (`RESEND_FROM_NAME`) ve ürün dokümanları | 👤 karar ✅ → 🤖 | — | M9 | ⬜ |
+| 25a | **Marka adı "Kutlio"** (Fatih kararı 2026-10-08): uygulama başlığı/logo metni, sayfa başlıkları, e-posta gönderen adı (`RESEND_FROM_NAME`) ve ürün dokümanları | 👤 karar ✅ → 🤖 | — | M9 | ✅ 2026-10-08 commit `a90e56d` deploy edildi: başlıklar, logo metni, gizlilik/hizmet metinleri, ICS, e-posta gönderen adı "Kutlio" |
 | 25b | **Gerçek ana sayfa (`/`)** — ürünü anlatan tanıtım sayfası (Fatih kararı 2026-10-08). Önce içerik/bölümler birlikte kararlaştırılır ve `docs/PRODUCT.md`'ye eklenir, sonra tasarım + uygulama. Şu an `/` "Sayfa bulunamadı" gösteriyor | 👤 içerik kararı → 🤖 | 25a | M9 | ⬜ |
-| 25c | Resend doğrulamasını kontrol et, gönderme-yetkili API anahtarını sunucu `.env`'ine ekle, kayıt doğrulama e-postasını uçtan uca test et | 🤖 | 12 | M5 | ⬜ |
+| 25c | Resend doğrulamasını kontrol et, gönderme-yetkili API anahtarını sunucu `.env`'ine ekle, kayıt doğrulama e-postasını uçtan uca test et | 🤖 | 12 | M5 | ✅ 2026-10-08 kayıt doğrulama e-postası Resend'de `delivered`, gönderen Kutlio <noreply@kutlio.com> |
 
 ### Aşama 2 — Şirket, hukuk ve ödeme (en son)
 
