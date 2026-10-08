@@ -695,8 +695,8 @@ başlıklar, mesajlar ve özel alan etiketleri olduğu gibi gösterilir. Mevcut
 hukuki metinler ve e-posta şablonları bu arayüz dili tercihinin kapsamına
 girmez.
 
-Giriş yapan kullanıcılar görünümünü beş renk paletinden seçebilir: **Kutlio**,
-**Adaçayı**, **Gül**, **Okyanus** ve **Erik**. Açık/koyu görünüm tercihi bu
+Giriş yapan kullanıcılar görünümünü altı renk paletinden seçebilir: **Kutlio**,
+**Adaçayı**, **Gül**, **Okyanus**, **Erik** ve **Altın**. Açık/koyu görünüm tercihi bu
 paletlerden bağımsızdır ve **Cihaz ayarı**, **Açık** veya **Koyu** olarak
 seçilebilir. Varsayılan görünüm Kutlio paleti ve **Açık** görünümdür (Fatih'in
 2026-10-08 kararı); kayıtlı seçimi olmayan yeni hesaplar ve ziyaretçiler açık

@@ -34,7 +34,7 @@ checks before trusting it (`docs/AI_WORKFLOW.md` §1/§11).
 
 Implemented: shared `SiteHeader` on landing, catalog, auth, legal and the
 Creator/Admin shell (not on `/davetiye/*`); session-aware header (anonymous /
-Creator / Admin / MFA-setup); tr/en UI language, five palettes and
+Creator / Admin / MFA-setup); tr/en UI language, six palettes (incl. gold) and
 system/light/dark appearance stored per account (`GET/PUT /api/v1/account/preferences`,
 migration `P11UiPreferences`) and applied on public pages; theme tokens for
 landing/catalog/auth/legal; landing 200%-zoom overflow fixed. Preset avatars
