@@ -57,7 +57,7 @@ for (const { path, session } of [{ path: '/panel/hesap', session: creator }, { p
       await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible()
       if (testInfo.project.name === 'chromium-200pct') await page.evaluate(() => { document.documentElement.style.zoom = '2' })
       await page.addStyleTag({ content: `* { letter-spacing: ${spacing} !important; }` })
-      await page.getByRole('banner').getByRole('button', { name: /My account|Hesabım/ }).click()
+      await page.getByRole('banner').getByRole('button', { name: /My Account|Hesabım/ }).click()
       const drawer = page.getByRole('dialog')
       await expect(drawer.getByRole('radio', { name: 'Berry' })).toBeEnabled()
       const box = await drawer.evaluate(element => {
@@ -99,7 +99,7 @@ for (const { path, session, name } of [{ path: '/panel/hesap', session: creator,
     await page.waitForLoadState('networkidle')
     if (testInfo.project.name === 'chromium-200pct') await page.evaluate(() => { document.documentElement.style.zoom = '2' })
     await page.addStyleTag({ content: `* { letter-spacing: ${SPACING} !important; }` })
-    await page.getByRole('banner').getByRole('button', { name: /My account|Hesabım/ }).click()
+    await page.getByRole('banner').getByRole('button', { name: /My Account|Hesabım/ }).click()
     const drawer = page.getByRole('dialog')
     const controls = drawer.locator('.preferences-drawer__quick-actions .drawer-icon-action')
     await expect(controls.first()).toBeVisible()

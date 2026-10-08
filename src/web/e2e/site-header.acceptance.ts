@@ -90,7 +90,7 @@ test('anonymous visitors see the same bar everywhere with a sign-in link and no 
     const banner = page.getByRole('banner')
     await expect(banner.getByRole('link', { name: 'Giriş yap' })).toHaveAttribute('href', '/giris')
     // The only button an anonymous visitor may see is the narrow-screen menu disclosure; never an account control.
-    await expect(banner.getByRole('button', { name: /Hesabım|My account/ })).toHaveCount(0)
+    await expect(banner.getByRole('button', { name: /Hesabım|My Account/ })).toHaveCount(0)
     expect(await banner.getByRole('button').allTextContents()).toEqual((await page.locator('.site-menu-button').isVisible()) ? ['Menü'] : [])
     await expect(banner.getByRole('link', { name: 'Panele git' })).toHaveCount(0)
     const brand = banner.getByRole('link', { name: 'Kutlio ana sayfa' })
@@ -239,7 +239,7 @@ for (const { name, preferences } of themeMatrix) {
         await expect(page.locator('html')).toHaveAttribute('data-color-theme', preferences.colorTheme, { timeout: 20_000 })
         await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible()
         if (path === '/' || path === '/sablonlar') await expect(page.locator('img[src^="/template-previews/"]').first()).toBeVisible()
-        if (authenticated) await expect(page.getByRole('banner').getByRole('button', { name: /Hesabım|My account/ })).toBeVisible()
+        if (authenticated) await expect(page.getByRole('banner').getByRole('button', { name: /Hesabım|My Account/ })).toBeVisible()
         else await expect(page.getByRole('banner').getByRole('link', { name: /Giriş yap|Sign in/ })).toBeVisible()
         await expectNoHorizontalOverflow(page)
         await expectAccessible(page)

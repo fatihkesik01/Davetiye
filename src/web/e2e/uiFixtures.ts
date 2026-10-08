@@ -156,7 +156,7 @@ export interface Scenario {
 }
 
 async function openDrawer(page: Page) {
-  await page.getByRole('banner').getByRole('button', { name: /Hesabım|My account/ }).click()
+  await page.getByRole('banner').getByRole('button', { name: /Hesabım|My Account/ }).click()
   await page.getByRole('dialog').getByRole('radio', { name: 'Güneşli' }).waitFor()
 }
 async function wizardStep(page: Page, index: number) {

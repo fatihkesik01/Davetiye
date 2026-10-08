@@ -148,7 +148,7 @@ for (const { name, preferences } of matrix) {
     await expectAccessible(page)
     await shot(page, `settings-${name.replace(' ', '-')}`, testInfo)
 
-    await page.getByRole('banner').getByRole('button', { name: preferences.locale === 'en' ? 'My account, theme and language' : 'Hesabım, tema ve dil' }).click()
+    await page.getByRole('banner').getByRole('button', { name: preferences.locale === 'en' ? 'My Account, theme and language' : 'Hesabım, tema ve dil' }).click()
     const drawer = page.getByRole('dialog')
     await expect(drawer.getByRole('group', { name: preferences.locale === 'en' ? 'Profile picture' : 'Profil resmi' }).getByRole('radio')).toHaveCount(12)
     await expectNoHorizontalOverflow(page)
@@ -183,7 +183,7 @@ for (const spacing of ['0.08em', '0.16em']) {
     await page.addStyleTag({ content: `* { letter-spacing: ${spacing} !important; }` })
     await expect(page.getByRole('region', { name: 'Profile picture' }).getByRole('radio').first()).toBeEnabled()
     await expectNoHorizontalOverflow(page)
-    await page.getByRole('banner').getByRole('button', { name: 'My account, theme and language' }).click()
+    await page.getByRole('banner').getByRole('button', { name: 'My Account, theme and language' }).click()
     const drawer = page.getByRole('dialog')
     await expect(drawer.getByRole('group', { name: 'Profile picture' }).getByRole('radio')).toHaveCount(12)
     await expectNoHorizontalOverflow(page)
