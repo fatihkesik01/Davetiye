@@ -97,6 +97,8 @@ docker logs --tail 80 davetiye-api-prod
 
 ## Backups
 
+- Before any release that includes an EF migration, take a Davetiye-only dump on the VPS: `docker exec davetiye-postgres-prod pg_dump -U davetiye -d davetiye -Fc > /opt/davetiye/backups/<name>.dump` (directory mode 700), then check it with `pg_restore --list`. These dumps stay on the VPS until the off-site backup (P11-M7) exists. Never include or touch Lora.
+
 - Start with a daily PostgreSQL logical backup copied to encrypted
   off-site storage. A backup that remains only on this VPS does not meet
   the off-site requirement.

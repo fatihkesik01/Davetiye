@@ -30,7 +30,7 @@ checks before trusting it (`docs/AI_WORKFLOW.md` §1/§11).
 - Security: public plan catalog ACCEPT (endpoint is always `no-store`); account
   UI preferences endpoint ACCEPT with its integration tests added.
 
-## UI workstream (Fatih request 2026-10-08)
+## UI workstream (Fatih request 2026-10-08) — deployed to production at `fe62945`
 
 Implemented: shared `SiteHeader` on landing, catalog, auth, legal and the
 Creator/Admin shell (not on `/davetiye/*`); session-aware header (anonymous /
@@ -59,8 +59,11 @@ backend/DB changes must be deployed for his local UI to see them.
 
 ## VPS
 
-Davetiye deployed 2026-10-08 (`/opt/davetiye`, ports 5052/8082). Lora healthy
-after every step. Host-level items reported to Fatih, not changed because
+Davetiye deployed 2026-10-08 (`/opt/davetiye`, ports 5052/8082; release `fe62945`
+incl. migrations `P11UiPreferences` and `P11AvatarPreference`). Pre-migration
+backup: `/opt/davetiye/backups/davetiye-pre-ui-prefs-20261008T170023Z.dump`
+(Davetiye DB only, local to the VPS until the off-site backup in P11-M7). Lora
+healthy after every step. Host-level items reported to Fatih, not changed because
 the host is shared with Lora: reboot pending (newer kernel installed), 5
 pending security updates, sshd password authentication enabled and port 22
 open alongside 22222, stale ufw allow rules for 8080/5050.
@@ -88,8 +91,9 @@ open alongside 22222, stale ufw allow rules for 8080/5050.
 
 ## Next Action
 
-Resume from `docs/PHASE_11_PLAN.md` ("İş Takip Listesi"). Order: deploy the
-verified UI/preferences release (backup Davetiye DB first; migration
-`P11UiPreferences` is additive), then avatar presets (backend column +
-migration + settings UI), then the remaining owner items. Company/tax/legal/
+Resume from `docs/PHASE_11_PLAN.md` ("İş Takip Listesi"). The UI/preferences/
+avatar release is live. Open product questions for Fatih: an on-device language/
+dark-mode toggle for anonymous visitors, a header "Ücretsiz başla" CTA, the
+duplicated "Hesap tercihleri" heading on `/panel/hesap`. Then the remaining
+owner items (Google OAuth, Cloudflare media, off-site backup, iyzico sandbox). Company/tax/legal/
 iyzico live stay last. Never touch Lora, including its backups.
