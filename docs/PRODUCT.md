@@ -698,7 +698,9 @@ girmez.
 Giriş yapan kullanıcılar görünümünü beş renk paletinden seçebilir: **Kutlio**,
 **Adaçayı**, **Gül**, **Okyanus** ve **Erik**. Açık/koyu görünüm tercihi bu
 paletlerden bağımsızdır ve **Cihaz ayarı**, **Açık** veya **Koyu** olarak
-seçilebilir. Varsayılan görünüm Kutlio paleti ve cihaz ayarıdır. Palet ve
+seçilebilir. Varsayılan görünüm Kutlio paleti ve **Açık** görünümdür (Fatih'in
+2026-10-08 kararı); kayıtlı seçimi olmayan yeni hesaplar ve ziyaretçiler açık
+başlar, mevcut hesapların kayıtlı seçimi korunur. Palet ve
 görünüm tercihleri de hesapta saklanır.
 
 Giriş sonrası Creator ve Super Admin alanları rolüne uygun ana navigasyon

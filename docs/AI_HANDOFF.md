@@ -30,7 +30,7 @@ checks before trusting it (`docs/AI_WORKFLOW.md` §1/§11).
 - Security: public plan catalog ACCEPT (endpoint is always `no-store`); account
   UI preferences endpoint ACCEPT with its integration tests added.
 
-## UI workstream (Fatih request 2026-10-08) — deployed to production at `fe62945`
+## UI workstream (Fatih request 2026-10-08) — deployed to production at `fe62945`; UI-6 polish committed, awaiting Fatih's local review before deploy
 
 Implemented: shared `SiteHeader` on landing, catalog, auth, legal and the
 Creator/Admin shell (not on `/davetiye/*`); session-aware header (anonymous /
