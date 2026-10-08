@@ -7,7 +7,7 @@ import { installApi, palettes, scenarios, seedPreferences, sessions, type Appear
 // matrix stays cheap. Violations are fixed in the design tokens, never by relaxing the requirement.
 type Combo = [Palette, Exclude<Appearance, 'system'>]
 const full: Combo[] = palettes.flatMap(palette => (['light', 'dark'] as const).map((appearance): Combo => [palette, appearance]))
-const reduced: Combo[] = [['kutlio', 'light'], ['rose', 'dark'], ['plum', 'dark'], ['sage', 'light']]
+const reduced: Combo[] = [['kutlio', 'light'], ['rose', 'dark'], ['plum', 'dark'], ['sage', 'light'], ['gold', 'light'], ['gold', 'dark']]
 
 for (const scenario of scenarios) {
   test(`${scenario.name} keeps text, borders and controls legible in every palette and appearance`, async ({ page }, testInfo) => {

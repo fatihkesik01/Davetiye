@@ -204,7 +204,7 @@ export type AvatarKey = 'sunny' | 'mint' | 'berry' | 'sky' | 'coral' | 'lilac' |
 
 export interface AccountPreferences {
   locale: 'tr' | 'en'
-  colorTheme: 'kutlio' | 'sage' | 'rose' | 'ocean' | 'plum'
+  colorTheme: 'kutlio' | 'sage' | 'rose' | 'ocean' | 'plum' | 'gold'
   appearance: 'system' | 'light' | 'dark'
   avatar: AvatarKey | null
 }

@@ -6,12 +6,12 @@ import { publicationStatus } from './publicationFixtures'
  * catalog screen is rendered with realistic (non-empty) data so badges, chips, tables and status messages
  * exist in the DOM when the colour checks run.
  */
-export type Palette = 'kutlio' | 'sage' | 'rose' | 'ocean' | 'plum'
+export type Palette = 'kutlio' | 'sage' | 'rose' | 'ocean' | 'plum' | 'gold'
 export type Appearance = 'system' | 'light' | 'dark'
 export interface Preferences { locale: 'tr' | 'en'; colorTheme: Palette; appearance: Appearance; avatar: string | null }
 
 export const STORAGE_KEY = 'kutlio:account-preferences'
-export const palettes: readonly Palette[] = ['kutlio', 'sage', 'rose', 'ocean', 'plum']
+export const palettes: readonly Palette[] = ['kutlio', 'sage', 'rose', 'ocean', 'plum', 'gold']
 export const sessions = {
   anonymous: { authenticated: false, access: 'none' },
   creator: { authenticated: true, access: 'creator' },

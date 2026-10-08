@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 
-type Preferences = { locale: 'tr' | 'en'; colorTheme: 'kutlio' | 'sage' | 'rose' | 'ocean' | 'plum'; appearance: 'system' | 'light' | 'dark'; avatar: string | null }
+type Preferences = { locale: 'tr' | 'en'; colorTheme: 'kutlio' | 'sage' | 'rose' | 'ocean' | 'plum' | 'gold'; appearance: 'system' | 'light' | 'dark'; avatar: string | null }
 const creator = { authenticated: true, access: 'creator' }
 const consents = {
   serviceNotice: { acknowledged: true, acknowledgedAt: '2026-10-01T10:00:00Z', noticeVersion: 'v1', textStatus: 'draft' },
@@ -132,6 +132,8 @@ const matrix: { name: string; preferences: Preferences }[] = [
   { name: 'kutlio dark', preferences: { locale: 'tr', colorTheme: 'kutlio', appearance: 'dark', avatar: 'night' } },
   { name: 'ocean light', preferences: { locale: 'en', colorTheme: 'ocean', appearance: 'light', avatar: null } },
   { name: 'plum dark', preferences: { locale: 'en', colorTheme: 'plum', appearance: 'dark', avatar: 'peach' } },
+  { name: 'gold light', preferences: { locale: 'tr', colorTheme: 'gold', appearance: 'light', avatar: 'amber' } },
+  { name: 'gold dark', preferences: { locale: 'en', colorTheme: 'gold', appearance: 'dark', avatar: 'night' } },
 ]
 for (const { name, preferences } of matrix) {
   test(`the picker is accessible with no overflow on the settings page and in the drawer (${name})`, async ({ page }, testInfo) => {

@@ -571,6 +571,10 @@ assertContract(
 )
 {
   const preferencesSchema = spec.components?.schemas?.AccountPreferences
+  assertContract(
+    JSON.stringify(preferencesSchema?.properties?.colorTheme?.enum) === JSON.stringify(['kutlio', 'sage', 'rose', 'ocean', 'plum', 'gold']),
+    'AccountPreferences.colorTheme must be exactly kutlio, sage, rose, ocean, plum, gold',
+  )
   const avatarKeys = ['sunny', 'mint', 'berry', 'sky', 'coral', 'lilac', 'amber', 'forest', 'night', 'rose', 'slate', 'peach']
   const avatarVariants = preferencesSchema?.properties?.avatar?.oneOf ?? []
   const avatarEnum = avatarVariants.find((variant) => variant.type === 'string')?.enum

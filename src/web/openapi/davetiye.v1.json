@@ -4843,7 +4843,7 @@
         "type": "object",
         "properties": {
           "locale": { "type": "string", "enum": ["tr", "en"] },
-          "colorTheme": { "type": "string", "enum": ["kutlio", "sage", "rose", "ocean", "plum"] },
+          "colorTheme": { "type": "string", "enum": ["kutlio", "sage", "rose", "ocean", "plum", "gold"] },
           "appearance": { "type": "string", "enum": ["system", "light", "dark"] },
           "avatar": {
             "oneOf": [

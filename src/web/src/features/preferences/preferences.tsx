@@ -88,7 +88,7 @@ export function AccountPreferencesProvider({ children }: { children: ReactNode }
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>
 }
 
-const themes = ['kutlio', 'sage', 'rose', 'ocean', 'plum'] as const
+const themes = ['kutlio', 'sage', 'rose', 'ocean', 'plum', 'gold'] as const
 const appearances = ['light', 'dark', 'system'] as const
 const locales = ['tr', 'en'] as const
 

@@ -75,8 +75,8 @@ describe('SiteHeader', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Hesabım, tema ve dil' }))
     const drawer = document.querySelector('dialog.preferences-drawer') as HTMLDialogElement
     expect(drawer).not.toBeNull()
-    expect(within(drawer).getByText('Renk teması')).toBeTruthy()
-    for (const group of ['Dil', 'Renk teması', 'Görünüm']) expect(within(drawer).getByRole('radiogroup', { name: group, hidden: true })).toBeTruthy()
+    expect(within(drawer).getByText('Tema')).toBeTruthy()
+    for (const group of ['Dil', 'Tema', 'Görünüm']) expect(within(drawer).getByRole('radiogroup', { name: group, hidden: true })).toBeTruthy()
     expect(within(drawer).getByRole('group', { name: 'Profil resmi', hidden: true })).toBeTruthy()
     const footer = drawer.querySelector('.preferences-drawer__footer') as HTMLElement
     expect(within(footer).getByRole('link', { name: 'Hesap tercihleri', hidden: true })).toBeTruthy()

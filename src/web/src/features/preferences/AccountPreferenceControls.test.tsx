@@ -43,9 +43,9 @@ describe('AccountPreferenceControls', () => {
     expect(within(language).getByRole('radio', { name: 'Türkçe' })).toBeTruthy()
     expect(within(language).getByRole('radio', { name: 'English' })).toBeTruthy()
 
-    const themes = screen.getByRole('radiogroup', { name: 'Renk teması' })
-    expect(within(themes).getAllByRole('radio').map(radio => (radio as HTMLInputElement).value)).toEqual(['kutlio', 'sage', 'rose', 'ocean', 'plum'])
-    expect(themes.querySelectorAll('.preference-swatch[data-swatch]')).toHaveLength(5)
+    const themes = screen.getByRole('radiogroup', { name: 'Tema' })
+    expect(within(themes).getAllByRole('radio').map(radio => (radio as HTMLInputElement).value)).toEqual(['kutlio', 'sage', 'rose', 'ocean', 'plum', 'gold'])
+    expect(themes.querySelectorAll('.preference-swatch[data-swatch]')).toHaveLength(6)
     expect(themes.querySelector('[style]')).toBeNull()
 
     const appearance = screen.getByRole('radiogroup', { name: 'Görünüm' })

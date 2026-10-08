@@ -20,7 +20,7 @@ const plans = [
   { ...basePlan, key: 'premium', displayName: 'Premium', priceAmount: 1199, billingPeriod: 'one-time', maxPublishDays: 90, maxRSVPResponses: 1000, memoriesEnabled: true, giftRegistryEnabled: true, premiumTemplatesEnabled: true },
 ]
 
-type Preferences = { locale: 'tr' | 'en'; colorTheme: 'kutlio' | 'sage' | 'rose' | 'ocean' | 'plum'; appearance: 'system' | 'light' | 'dark'; avatar: string | null }
+type Preferences = { locale: 'tr' | 'en'; colorTheme: 'kutlio' | 'sage' | 'rose' | 'ocean' | 'plum' | 'gold'; appearance: 'system' | 'light' | 'dark'; avatar: string | null }
 const anonymous = { authenticated: false, access: 'none' }
 const creator = { authenticated: true, access: 'creator' }
 
@@ -217,6 +217,8 @@ const themeMatrix: { name: string; preferences: Preferences }[] = [
   { name: 'rose dark', preferences: { locale: 'tr', colorTheme: 'rose', appearance: 'dark', avatar: null } },
   { name: 'ocean light', preferences: { locale: 'en', colorTheme: 'ocean', appearance: 'light', avatar: null } },
   { name: 'plum dark', preferences: { locale: 'en', colorTheme: 'plum', appearance: 'dark', avatar: null } },
+  { name: 'gold light', preferences: { locale: 'tr', colorTheme: 'gold', appearance: 'light', avatar: null } },
+  { name: 'gold dark', preferences: { locale: 'en', colorTheme: 'gold', appearance: 'dark', avatar: null } },
 ]
 
 for (const { name, preferences } of themeMatrix) {

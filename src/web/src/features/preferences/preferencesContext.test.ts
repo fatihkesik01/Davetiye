@@ -16,6 +16,15 @@ describe('parsePreferences avatar handling', () => {
     expect(parsePreferences({ ...base, appearance: 'auto' })).toBeNull()
   })
 
+  it('accepts every allow-listed colour theme including gold and rejects padded or wrong-case values', () => {
+    for (const colorTheme of ['kutlio', 'sage', 'rose', 'ocean', 'plum', 'gold']) expect(parsePreferences({ ...base, colorTheme })?.colorTheme).toBe(colorTheme)
+    for (const colorTheme of ['Gold', ' gold', 'gold ', 'GOLD', 'amber', '', 5, null]) expect(parsePreferences({ ...base, colorTheme })).toBeNull()
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...base, colorTheme: 'gold' }))
+    expect(readLocal().colorTheme).toBe('gold')
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...base, colorTheme: 'Gold' }))
+    expect(readLocal()).toEqual(DEFAULT_PREFERENCES)
+  })
+
   it('accepts every allow-listed avatar key and null', () => {
     expect(AVATAR_KEYS).toHaveLength(12)
     for (const avatar of AVATAR_KEYS) expect(parsePreferences({ ...base, avatar })?.avatar).toBe(avatar)

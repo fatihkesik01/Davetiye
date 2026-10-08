@@ -1282,6 +1282,7 @@ a {
   --palette-rose-accent: #a94365; --palette-rose-page: #fff2f5;
   --palette-ocean-accent: #246b8a; --palette-ocean-page: #edf6fa;
   --palette-plum-accent: #73528d; --palette-plum-page: #f5f0f8;
+  --palette-gold-accent: #946500; --palette-gold-page: #fbf6e8;
   --account-accent: var(--palette-kutlio-accent);
   --account-accent-ink: #5f2718;
   --account-accent-ink-dark: #f0b8a3;
@@ -1314,6 +1315,7 @@ a {
 :root[data-color-theme="rose"] { --account-accent: var(--palette-rose-accent); --account-accent-ink: #782b48; --account-accent-ink-dark: #f2a9bf; --account-page: var(--palette-rose-page); --account-border: #ead1d8; }
 :root[data-color-theme="ocean"] { --account-accent: var(--palette-ocean-accent); --account-accent-ink: #164e68; --account-accent-ink-dark: #8fcbe3; --account-page: var(--palette-ocean-page); --account-border: #c8dce5; }
 :root[data-color-theme="plum"] { --account-accent: var(--palette-plum-accent); --account-accent-ink: #503666; --account-accent-ink-dark: #cfb0e6; --account-page: var(--palette-plum-page); --account-border: #ddd1e7; }
+:root[data-color-theme="gold"] { --account-accent: var(--palette-gold-accent); --account-accent-ink: #5e4000; --account-accent-ink-dark: #e8c66e; --account-page: var(--palette-gold-page); --account-border: #e3d7b0; }
 :root[data-appearance="dark"] { color-scheme: dark; --account-page: #15181d; --account-surface: #20252c; --account-ink: #edf0f3; --account-border: #3a424d; --account-accent-ink: var(--account-accent-ink-dark); --account-danger: #ffb4ab; --account-danger-bg: #3d1f1c; --account-success: #9fe0b8; --account-success-bg: #16301f; --account-warning: #f5d27a; --account-warning-bg: #3a2f10; --account-footer-base: #0b0d10; }
 @media (prefers-color-scheme: dark) {
   :root[data-appearance="system"] { color-scheme: dark; --account-page: #15181d; --account-surface: #20252c; --account-ink: #edf0f3; --account-border: #3a424d; --account-accent-ink: var(--account-accent-ink-dark); --account-danger: #ffb4ab; --account-danger-bg: #3d1f1c; --account-success: #9fe0b8; --account-success-bg: #16301f; --account-warning: #f5d27a; --account-warning-bg: #3a2f10; --account-footer-base: #0b0d10; }
@@ -1903,7 +1905,7 @@ a {
 .choice-group--segmented .choice-group__face:has(.choice-group__icon) .choice-group__check { position: absolute; inset-block-start: .3rem; inset-inline-end: .35rem; }
 
 /* Swatch cards: a two-tone circle (accent + page tint, read from the palette tokens) with the name beneath. */
-.choice-group--swatches .choice-group__options { grid-template-columns: repeat(auto-fill, minmax(min(7.25rem, 100%), 1fr)); }
+.choice-group--swatches .choice-group__options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .choice-group--swatches .choice-group__face { min-height: 5.5rem; padding: .85rem .5rem .7rem; flex-direction: column; gap: .5rem; border: 2px solid var(--account-border); border-radius: .95rem; background: var(--account-surface); font-size: .88rem; }
 .choice-group--swatches .choice-group__option:hover input:not(:checked) + .choice-group__face { border-color: var(--account-border-strong); background: color-mix(in srgb, var(--account-accent) 6%, var(--account-surface)); }
 .choice-group--swatches .choice-group__option input:checked + .choice-group__face { border-color: var(--account-accent-ink); box-shadow: 0 0 0 1px var(--account-accent-ink); background: color-mix(in srgb, var(--account-accent) 9%, var(--account-surface)); }
@@ -1914,7 +1916,9 @@ a {
 .preference-swatch[data-swatch="rose"] { --swatch-accent: var(--palette-rose-accent); --swatch-tint: var(--palette-rose-page); }
 .preference-swatch[data-swatch="ocean"] { --swatch-accent: var(--palette-ocean-accent); --swatch-tint: var(--palette-ocean-page); }
 .preference-swatch[data-swatch="plum"] { --swatch-accent: var(--palette-plum-accent); --swatch-tint: var(--palette-plum-page); }
-.preference-controls--drawer .choice-group--swatches .choice-group__options { grid-template-columns: repeat(auto-fill, minmax(min(6.5rem, 100%), 1fr)); gap: .45rem; }
+.preference-swatch[data-swatch="gold"] { --swatch-accent: var(--palette-gold-accent); --swatch-tint: var(--palette-gold-page); }
+.preference-controls--drawer .choice-group--swatches .choice-group__options { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .45rem; }
+@media (max-width: 21rem) { .choice-group--swatches .choice-group__options, .preference-controls--drawer .choice-group--swatches .choice-group__options { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .preference-controls--drawer .choice-group--swatches .choice-group__face { min-height: 4.75rem; padding: .7rem .4rem .55rem; gap: .4rem; font-size: .82rem; }
 .preference-controls--drawer .preference-swatch { width: 2rem; height: 2rem; }
 
@@ -1945,3 +1949,14 @@ a {
   .preferences-drawer__panel { height: auto; min-height: 100%; }
   .preferences-drawer__body { overflow: visible; }
 }
+
+/* Account drawer: centred section headings and a little more space between and inside groups. */
+.preference-controls--drawer { gap: 1.75rem; }
+.preference-controls--drawer .choice-group { gap: .85rem; }
+.preference-controls--drawer .choice-group__legend,
+.preference-controls--drawer .avatar-picker legend { width: 100%; text-align: center; margin-block-end: 0; }
+.preference-controls--drawer .avatar-picker { gap: .85rem; }
+.preference-controls--drawer .avatar-picker__grid { gap: .75rem; }
+.preference-controls--drawer .choice-group--swatches .choice-group__options { gap: .65rem; }
+.preference-controls--drawer .avatar-picker__remove { justify-self: center; }
+.preferences-drawer__body { padding-block: 1.5rem 2rem; }

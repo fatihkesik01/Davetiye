@@ -74,7 +74,7 @@ for (const { path, session } of [{ path: '/panel/hesap', session: creator }, { p
   }
 }
 
-for (const colorTheme of ['kutlio', 'sage', 'rose', 'ocean', 'plum'] as const) {
+for (const colorTheme of ['kutlio', 'sage', 'rose', 'ocean', 'plum', 'gold'] as const) {
   test(`the settings page cards and choice controls hold up with wide glyphs in the ${colorTheme} palette`, async ({ page }, testInfo) => {
     await mock(page, creator)
     await page.goto('/panel/hesap')

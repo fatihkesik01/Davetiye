@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react'
 import type { AvatarKey } from '../../api/generated/client'
 
 export type Locale = 'tr' | 'en'
-export type ColorTheme = 'kutlio' | 'sage' | 'rose' | 'ocean' | 'plum'
+export type ColorTheme = 'kutlio' | 'sage' | 'rose' | 'ocean' | 'plum' | 'gold'
 export type Appearance = 'system' | 'light' | 'dark'
 export type { AvatarKey }
 export interface AccountPreferences { locale: Locale; colorTheme: ColorTheme; appearance: Appearance; avatar: AvatarKey | null }
@@ -17,7 +17,7 @@ export function isAvatarKey(value: unknown): value is AvatarKey {
 export const DEFAULT_PREFERENCES: AccountPreferences = { locale: 'tr', colorTheme: 'kutlio', appearance: 'light', avatar: null }
 export const STORAGE_KEY = 'kutlio:account-preferences'
 const validLocales = ['tr', 'en']
-const validThemes = ['kutlio', 'sage', 'rose', 'ocean', 'plum']
+const validThemes = ['kutlio', 'sage', 'rose', 'ocean', 'plum', 'gold']
 const validAppearances = ['system', 'light', 'dark']
 
 /**
