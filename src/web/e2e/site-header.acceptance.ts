@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
+import { openSiteMenuIfCollapsed } from './siteMenu'
 
 const STORAGE_KEY = 'kutlio:account-preferences'
 const templates = ['zamansiz-dugun', 'romantik-nisan', 'gece-kina'].map((key, index) => ({
@@ -88,9 +89,12 @@ test('anonymous visitors see the same bar everywhere with a sign-in link and no 
     await waitForPage(page, ready)
     const banner = page.getByRole('banner')
     await expect(banner.getByRole('link', { name: 'Giriş yap' })).toHaveAttribute('href', '/giris')
-    await expect(banner.getByRole('button')).toHaveCount(0)
+    // The only button an anonymous visitor may see is the narrow-screen menu disclosure; never an account control.
+    await expect(banner.getByRole('button', { name: /Hesabım|My account/ })).toHaveCount(0)
+    expect(await banner.getByRole('button').allTextContents()).toEqual((await page.locator('.site-menu-button').isVisible()) ? ['Menü'] : [])
     await expect(banner.getByRole('link', { name: 'Panele git' })).toHaveCount(0)
     const brand = banner.getByRole('link', { name: 'Kutlio ana sayfa' })
+    await openSiteMenuIfCollapsed(page)
     const box = await brand.boundingBox()
     bars.push({
       brand: await brand.textContent(),
@@ -139,6 +143,7 @@ test('the theme and language follow client-side navigation between the landing, 
   await expect(page.getByRole('banner').getByRole('link', { name: 'Go to dashboard' })).toBeVisible()
   await expect(page.locator('html')).toHaveAttribute('data-color-theme', 'rose')
 
+  await openSiteMenuIfCollapsed(page)
   await page.getByRole('banner').getByRole('link', { name: 'Templates' }).click()
   await expect(page).toHaveURL(/\/sablonlar$/)
   await expect(page.getByRole('banner').getByRole('link', { name: 'Go to dashboard' })).toBeVisible()
@@ -167,6 +172,7 @@ test('a palette chosen from the account drawer on the landing persists on the ca
   await expect(drawer.getByRole('status')).toHaveText('Tercihleriniz kaydedildi.')
   await drawer.getByRole('button', { name: 'Kapat' }).click()
 
+  await openSiteMenuIfCollapsed(page)
   await page.getByRole('banner').getByRole('link', { name: 'Şablonlar' }).click()
   await expect(page).toHaveURL(/\/sablonlar$/)
   await expect(page.locator('html')).toHaveAttribute('data-color-theme', 'ocean')

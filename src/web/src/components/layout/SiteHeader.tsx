@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { InternalLink } from '../ui/InternalLink'
 import { LogoutButton } from '../../features/auth/AuthPages'
@@ -41,7 +41,41 @@ export function SiteHeader({ zone, sectionLinks, sectionLabel }: SiteHeaderProps
   // The key comes only from hydrated account preferences; the PII-free session projection never carries it.
   const avatarKey = accountPreferences?.ready ? accountPreferences.preferences.avatar : null
   const drawerReference = useRef<HTMLDialogElement>(null)
+  const headerReference = useRef<HTMLElement>(null)
+  const menuButtonReference = useRef<HTMLButtonElement>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const closeMenu = useCallback((returnFocus: boolean) => {
+    setMenuOpen(false)
+    if (returnFocus) menuButtonReference.current?.focus()
+  }, [])
+
+  // The soft shadow appears only once the page has scrolled under the sticky bar.
+  useEffect(() => {
+    const update = () => setScrolled(window.scrollY > 4)
+    update()
+    window.addEventListener('scroll', update, { passive: true })
+    return () => window.removeEventListener('scroll', update)
+  }, [])
+
+  // Client-side navigation (and back/forward) dispatches popstate; the disclosure menu never outlives a route change.
+  useEffect(() => {
+    const close = () => setMenuOpen(false)
+    window.addEventListener('popstate', close)
+    return () => window.removeEventListener('popstate', close)
+  }, [])
+
+  // A press outside the open (non-modal) menu dismisses it without stealing focus from what was pressed.
+  useEffect(() => {
+    if (!menuOpen) return
+    const dismiss = (event: PointerEvent) => {
+      if (event.target instanceof Node && headerReference.current?.querySelector('.site-header__inner')?.contains(event.target)) return
+      setMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', dismiss)
+    return () => document.removeEventListener('pointerdown', dismiss)
+  }, [menuOpen])
 
   const authenticated = zone !== 'public' || session.status === 'authenticated'
   const access = session.status === 'authenticated' ? session.access : zone === 'admin' ? 'mfa-complete-super-admin' : zone === 'creator' ? 'creator' : null
@@ -70,10 +104,25 @@ export function SiteHeader({ zone, sectionLinks, sectionLabel }: SiteHeaderProps
     : null
   const showAccountSettings = access === 'creator'
 
-  return <header className="site-header" data-site-header={zone}>
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key === 'Escape' && menuOpen && !drawerOpen) {
+      event.stopPropagation()
+      closeMenu(true)
+    }
+  }
+
+  return <header ref={headerReference} className="site-header" data-site-header={zone} data-scrolled={scrolled ? 'true' : 'false'} onKeyDown={handleKeyDown}>
     <div className="site-header__inner">
+      <button className="site-menu-button" type="button" aria-expanded={menuOpen} aria-controls="site-menu" ref={menuButtonReference} onClick={() => setMenuOpen(open => !open)}>
+        <svg className="site-menu-button__icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+          <path className="site-menu-button__bar site-menu-button__bar--top" d="M4 7h16" />
+          <path className="site-menu-button__bar site-menu-button__bar--middle" d="M4 12h16" />
+          <path className="site-menu-button__bar site-menu-button__bar--bottom" d="M4 17h16" />
+        </svg>
+        <span className="site-menu-button__label">{t('siteHeader.menu')}</span>
+      </button>
       <InternalLink className="site-brand" to="/" aria-label={t('siteHeader.brandLabel')}>{t('siteHeader.brand')}</InternalLink>
-      <div className="site-header__nav">
+      <div className="site-header__nav" id="site-menu" data-open={menuOpen ? 'true' : 'false'} onClick={(event) => { if (event.target instanceof Element && event.target.closest('a')) setMenuOpen(false) }}>
         <nav className="site-nav" aria-label={navLabel}>
           {items.map(([href, label]) => <InternalLink key={href} to={href} aria-current={isCurrent(href) ? 'page' : undefined}>{t(label)}</InternalLink>)}
         </nav>

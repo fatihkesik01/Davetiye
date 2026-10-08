@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { AccountPreferencesProvider } from '../../features/preferences/preferences'
@@ -19,7 +19,10 @@ function stubApi({ session, preferences = json(serverPreferences) }: { session: 
   return fetch
 }
 
-const renderHeader = (zone: 'public' | 'creator' | 'admin' = 'public') => render(<AccountPreferencesProvider><SiteHeader zone={zone} /></AccountPreferencesProvider>)
+const sectionLinks = [{ href: '#how-it-works', label: 'Nasıl çalışır?' }, { href: '#faq', label: 'SSS' }]
+const renderHeader = (zone: 'public' | 'creator' | 'admin' = 'public', withSections = false) => render(<AccountPreferencesProvider>
+  <SiteHeader zone={zone} {...(withSections ? { sectionLinks, sectionLabel: 'Sayfa bölümleri' } : {})} />
+</AccountPreferencesProvider>)
 const requestedUrls = (fetch: ReturnType<typeof stubApi>) => fetch.mock.calls.map(([url]) => String(url))
 
 describe('SiteHeader', () => {
@@ -132,5 +135,117 @@ describe('SiteHeader', () => {
     renderHeader()
     await waitFor(() => expect(document.documentElement.dataset.colorTheme).toBe('plum'))
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null')).toEqual(stored)
+  })
+
+  describe('navigation menu and sticky behaviour', () => {
+    const menuButton = () => screen.getByRole('button', { name: 'Menü' })
+    const menu = () => document.getElementById('site-menu') as HTMLElement
+
+    afterEach(() => { window.history.pushState({}, '', '/'); Object.defineProperty(window, 'scrollY', { value: 0, configurable: true }) })
+
+    it('exposes a disclosure button that controls the navigation panel and toggles aria-expanded', async () => {
+      stubApi({ session: { authenticated: false, access: 'none' } })
+      renderHeader()
+      expect(menuButton().getAttribute('aria-controls')).toBe('site-menu')
+      expect(menuButton().getAttribute('aria-expanded')).toBe('false')
+      expect(menu().dataset.open).toBe('false')
+      fireEvent.click(menuButton())
+      expect(menuButton().getAttribute('aria-expanded')).toBe('true')
+      expect(menu().dataset.open).toBe('true')
+      expect(within(menu()).getByRole('link', { name: 'Şablonlar' })).toBeTruthy()
+      fireEvent.click(menuButton())
+      expect(menuButton().getAttribute('aria-expanded')).toBe('false')
+      await waitFor(() => expect(screen.getByRole('link', { name: 'Giriş yap' })).toBeTruthy())
+    })
+
+    it('puts the menu button before the brand and the links in the tab order, with the sign-in action staying outside the panel', () => {
+      stubApi({ session: { authenticated: false, access: 'none' } })
+      renderHeader()
+      const order = Array.from(document.querySelectorAll('.site-header__inner > *'))
+      expect(order[0]).toBe(menuButton())
+      expect(order[1]).toBe(screen.getByRole('link', { name: 'Kutlio ana sayfa' }))
+      expect(order[2]).toBe(menu())
+      expect(menu().contains(screen.getByRole('link', { name: 'Giriş yap' }))).toBe(false)
+    })
+
+    it('closes on Escape and returns focus to the menu button', () => {
+      stubApi({ session: { authenticated: false, access: 'none' } })
+      renderHeader()
+      fireEvent.click(menuButton())
+      const link = within(menu()).getByRole('link', { name: 'Şablonlar' })
+      link.focus()
+      fireEvent.keyDown(link, { key: 'Escape' })
+      expect(menuButton().getAttribute('aria-expanded')).toBe('false')
+      expect(document.activeElement).toBe(menuButton())
+    })
+
+    it('closes when a menu link is chosen and when the route changes', () => {
+      stubApi({ session: { authenticated: false, access: 'none' } })
+      renderHeader()
+      fireEvent.click(menuButton())
+      fireEvent.click(within(menu()).getByRole('link', { name: 'Şablonlar' }))
+      expect(menuButton().getAttribute('aria-expanded')).toBe('false')
+      expect(window.location.pathname).toBe('/sablonlar')
+
+      fireEvent.click(menuButton())
+      expect(menuButton().getAttribute('aria-expanded')).toBe('true')
+      act(() => { window.history.pushState({}, '', '/gizlilik'); window.dispatchEvent(new PopStateEvent('popstate')) })
+      expect(menuButton().getAttribute('aria-expanded')).toBe('false')
+    })
+
+    it('closes when something outside the bar is pressed', () => {
+      stubApi({ session: { authenticated: false, access: 'none' } })
+      renderHeader()
+      fireEvent.click(menuButton())
+      fireEvent.pointerDown(document.body)
+      expect(menuButton().getAttribute('aria-expanded')).toBe('false')
+    })
+
+    it('includes the landing in-page section anchors in the same panel, after the site links', () => {
+      stubApi({ session: { authenticated: false, access: 'none' } })
+      renderHeader('public', true)
+      const links = within(menu()).getAllByRole('link').map(link => [link.textContent, link.getAttribute('href')])
+      expect(links).toEqual([['Şablonlar', '/sablonlar'], ['Nasıl çalışır?', '#how-it-works'], ['SSS', '#faq']])
+      expect(within(menu()).getByRole('navigation', { name: 'Sayfa bölümleri' })).toBeTruthy()
+    })
+
+    it('keeps the account button and the primary action outside the collapsible panel for a signed-in Creator', async () => {
+      stubApi({ session: { authenticated: true, access: 'creator' } })
+      renderHeader()
+      const panel = await screen.findByRole('link', { name: 'Panele git' })
+      const account = screen.getByRole('button', { name: 'Hesabım, tema ve dil' })
+      expect(menu().contains(panel)).toBe(false)
+      expect(menu().contains(account)).toBe(false)
+      expect(menuButton()).toBeTruthy()
+    })
+
+    it('lists the Creator and Admin zone links inside the menu', () => {
+      stubApi({ session: { authenticated: true, access: 'creator' } })
+      const creator = renderHeader('creator')
+      expect(within(menu()).getAllByRole('link')).toHaveLength(4)
+      creator.unmount()
+      renderHeader('admin')
+      expect(within(menu()).getAllByRole('link')).toHaveLength(7)
+    })
+
+    it('marks only the current page link with aria-current', () => {
+      stubApi({ session: { authenticated: true, access: 'creator' } })
+      window.history.pushState({}, '', '/panel/cop-kutusu')
+      renderHeader('creator')
+      const current = within(menu()).getAllByRole('link').filter(link => link.getAttribute('aria-current') === 'page')
+      expect(current.map(link => link.textContent)).toEqual(['Çöp kutusu'])
+    })
+
+    it('adds the shadow state only after the page scrolls, via a data attribute', () => {
+      stubApi({ session: { authenticated: false, access: 'none' } })
+      const { container } = renderHeader()
+      const header = container.querySelector('header.site-header') as HTMLElement
+      expect(header.dataset.scrolled).toBe('false')
+      act(() => { Object.defineProperty(window, 'scrollY', { value: 120, configurable: true }); window.dispatchEvent(new Event('scroll')) })
+      expect(header.dataset.scrolled).toBe('true')
+      act(() => { Object.defineProperty(window, 'scrollY', { value: 0, configurable: true }); window.dispatchEvent(new Event('scroll')) })
+      expect(header.dataset.scrolled).toBe('false')
+      expect(header.getAttribute('style')).toBeNull()
+    })
   })
 })

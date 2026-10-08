@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
+import { openSiteMenuIfCollapsed } from './siteMenu'
 
 const entitlementKeys = [
   'maxPublishDays', 'maxActiveInvitations', 'maxImages', 'maxVideos', 'maxImageSizeMb', 'maxVideoSizeMb',
@@ -71,9 +72,11 @@ test('MFA-complete Admin can navigate overview and read-only operational/configu
   ]
 
   for (const item of routes) {
+    await openSiteMenuIfCollapsed(page)
     await page.getByRole('link', { name: item.link, exact: true }).click()
     await expect(page.getByRole('heading', { name: item.heading, exact: true })).toBeVisible()
     await expect(page.getByText(item.content, { exact: false }).first()).toBeVisible()
+    await openSiteMenuIfCollapsed(page)
     await expect(page.getByRole('link', { name: item.link, exact: true })).toHaveAttribute('aria-current', 'page')
     await expectAccessibleAndResponsive(page)
   }

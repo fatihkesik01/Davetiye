@@ -106,16 +106,38 @@ test('landing page is keyboard reachable in logical order and FAQ disclosures to
   await page.keyboard.press('Shift+Tab')
   await page.keyboard.press('Shift+Tab')
   await expect(page.getByRole('link', { name: 'Giriş yap' })).toBeFocused()
-  // The header's in-page section navigation sits between the skip link and the login link, in reading order.
-  for (const name of ['SSS', 'Paketler', 'Özellikler', 'Nasıl çalışır?']) {
+  const menuButton = page.getByRole('button', { name: 'Menü' })
+  const collapsed = await menuButton.isVisible()
+  if (!collapsed) {
+    // The header's in-page section navigation sits between the skip link and the login link, in reading order.
+    for (const name of ['SSS', 'Paketler', 'Özellikler', 'Nasıl çalışır?']) {
+      await page.keyboard.press('Shift+Tab')
+      await expect(page.getByRole('navigation', { name: 'Sayfa bölümleri' }).getByRole('link', { name })).toBeFocused()
+    }
+    // The shared site header puts its own template link before the in-page section navigation.
     await page.keyboard.press('Shift+Tab')
-    await expect(page.getByRole('navigation', { name: 'Sayfa bölümleri' }).getByRole('link', { name })).toBeFocused()
+    await expect(page.getByRole('navigation', { name: 'Ana gezinme' }).getByRole('link', { name: 'Şablonlar' })).toBeFocused()
+    await page.keyboard.press('Shift+Tab')
+    await expect(page.getByRole('link', { name: 'Kutlio ana sayfa' })).toBeFocused()
+  } else {
+    // Collapsed bar: the closed panel is out of the tab order, so the sign-in link follows the brand, which follows the menu button.
+    await page.keyboard.press('Shift+Tab')
+    await expect(page.getByRole('link', { name: 'Kutlio ana sayfa' })).toBeFocused()
+    await page.keyboard.press('Shift+Tab')
+    await expect(menuButton).toBeFocused()
+    await expect(menuButton).toHaveAttribute('aria-expanded', 'false')
+    // Opening it reveals the same links in reading order: brand, site link, in-page sections, then the sign-in link.
+    await page.keyboard.press('Enter')
+    await expect(menuButton).toHaveAttribute('aria-expanded', 'true')
+    for (const name of ['Kutlio ana sayfa', 'Şablonlar', 'Nasıl çalışır?', 'Özellikler', 'Paketler', 'SSS', 'Giriş yap']) {
+      await page.keyboard.press('Tab')
+      await expect(page.getByRole('banner').getByRole('link', { name })).toBeFocused()
+    }
+    await page.keyboard.press('Escape')
+    await expect(menuButton).toHaveAttribute('aria-expanded', 'false')
+    await expect(menuButton).toBeFocused()
+    // The menu button precedes the brand, so the shared tail (Shift+Tab to the skip link) continues from here.
   }
-  // The shared site header puts its own template link before the in-page section navigation.
-  await page.keyboard.press('Shift+Tab')
-  await expect(page.getByRole('navigation', { name: 'Ana gezinme' }).getByRole('link', { name: 'Şablonlar' })).toBeFocused()
-  await page.keyboard.press('Shift+Tab')
-  await expect(page.getByRole('link', { name: 'Kutlio ana sayfa' })).toBeFocused()
   await page.keyboard.press('Shift+Tab')
   await expect(page.getByRole('link', { name: 'Ana içeriğe geç' })).toBeFocused()
   await page.keyboard.press('Enter')
