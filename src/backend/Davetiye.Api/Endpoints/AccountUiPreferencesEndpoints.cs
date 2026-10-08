@@ -10,7 +10,7 @@ namespace Davetiye.Api.Endpoints;
 public static class AccountUiPreferencesEndpoints
 {
     private static readonly HashSet<string> Locales = ["tr", "en"];
-    private static readonly HashSet<string> ColorThemes = ["kutlio", "sage", "rose", "ocean", "plum"];
+    private static readonly HashSet<string> ColorThemes = ["kutlio", "sage", "rose", "ocean", "plum", "gold"];
     private static readonly HashSet<string> Appearances = ["system", "light", "dark"];
     private static readonly HashSet<string> Avatars =
         ["sunny", "mint", "berry", "sky", "coral", "lilac", "amber", "forest", "night", "rose", "slate", "peach"];

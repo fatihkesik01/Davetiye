@@ -33,7 +33,7 @@ public sealed class ApplicationUser : IdentityUser<Guid>
             throw new ArgumentOutOfRangeException(nameof(locale), locale, "Locale must be 'tr' or 'en'.");
         }
 
-        if (colorTheme is not ("kutlio" or "sage" or "rose" or "ocean" or "plum"))
+        if (colorTheme is not ("kutlio" or "sage" or "rose" or "ocean" or "plum" or "gold"))
         {
             throw new ArgumentOutOfRangeException(nameof(colorTheme), colorTheme, "Color theme is not supported.");
         }

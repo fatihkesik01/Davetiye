@@ -32,7 +32,7 @@ internal sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<Ap
                 "preferred_locale IN ('tr', 'en')");
             table.HasCheckConstraint(
                 "ck_asp_net_users_preferred_color_theme",
-                "preferred_color_theme IN ('kutlio', 'sage', 'rose', 'ocean', 'plum')");
+                "preferred_color_theme IN ('kutlio', 'sage', 'rose', 'ocean', 'plum', 'gold')");
             table.HasCheckConstraint(
                 "ck_asp_net_users_preferred_appearance",
                 "preferred_appearance IN ('system', 'light', 'dark')");

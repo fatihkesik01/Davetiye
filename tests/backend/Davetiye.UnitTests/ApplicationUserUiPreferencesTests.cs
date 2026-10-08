@@ -1,4 +1,4 @@
-using Davetiye.Infrastructure.Modules.IdentityAndAccounts;
+﻿using Davetiye.Infrastructure.Modules.IdentityAndAccounts;
 using Xunit;
 
 namespace Davetiye.UnitTests;
@@ -29,6 +29,44 @@ public sealed class ApplicationUserUiPreferencesTests
         user.UpdateUiPreferences("tr", "kutlio", appearance, null);
 
         Assert.Equal(appearance, user.PreferredAppearance);
+    }
+
+    [Theory]
+    [InlineData("kutlio")]
+    [InlineData("sage")]
+    [InlineData("rose")]
+    [InlineData("ocean")]
+    [InlineData("plum")]
+    [InlineData("gold")]
+    public void Every_color_theme_in_the_six_key_allow_list_is_accepted(string theme)
+    {
+        var user = new ApplicationUser();
+
+        user.UpdateUiPreferences("tr", theme, "light", null);
+
+        Assert.Equal(theme, user.PreferredColorTheme);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("Gold")]
+    [InlineData("GOLD")]
+    [InlineData(" gold")]
+    [InlineData("gold ")]
+    [InlineData("goldx")]
+    [InlineData("Plum")]
+    [InlineData("purple")]
+    public void Unsupported_color_themes_are_rejected_without_changing_a_stored_gold_theme(string theme)
+    {
+        var user = new ApplicationUser();
+        user.UpdateUiPreferences("en", "gold", "dark", "mint");
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => user.UpdateUiPreferences("tr", theme, "light", null));
+
+        Assert.Equal("en", user.PreferredLocale);
+        Assert.Equal("gold", user.PreferredColorTheme);
+        Assert.Equal("dark", user.PreferredAppearance);
+        Assert.Equal("mint", user.PreferredAvatar);
     }
 
     [Fact]

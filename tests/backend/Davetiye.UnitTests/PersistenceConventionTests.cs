@@ -90,6 +90,7 @@ public sealed class PersistenceConventionTests
                 "20261008130723_P11UiPreferences",
                 "20261008153057_P11AvatarPreference",
                 "20261008191425_P11DefaultAppearanceLight",
+                "20261008212129_P11GoldColorTheme",
             ],
             context.Database.GetMigrations());
     }

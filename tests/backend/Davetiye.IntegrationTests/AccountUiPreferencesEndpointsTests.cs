@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
@@ -182,6 +182,11 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
             ["null locale"] = """{"locale":null,"colorTheme":"kutlio","appearance":"system","avatar":null}""",
             ["missing locale"] = """{"colorTheme":"kutlio","appearance":"system","avatar":null}""",
             ["unknown theme"] = """{"locale":"tr","colorTheme":"purple","appearance":"system","avatar":null}""",
+            ["wrong-case gold theme"] = """{"locale":"tr","colorTheme":"Gold","appearance":"system","avatar":null}""",
+            ["upper-case gold theme"] = """{"locale":"tr","colorTheme":"GOLD","appearance":"system","avatar":null}""",
+            ["leading-space gold theme"] = """{"locale":"tr","colorTheme":" gold","appearance":"system","avatar":null}""",
+            ["trailing-space gold theme"] = """{"locale":"tr","colorTheme":"gold ","appearance":"system","avatar":null}""",
+            ["gold-prefixed theme"] = """{"locale":"tr","colorTheme":"goldx","appearance":"system","avatar":null}""",
             ["empty theme"] = """{"locale":"tr","colorTheme":"","appearance":"system","avatar":null}""",
             ["null theme"] = """{"locale":"tr","colorTheme":null,"appearance":"system","avatar":null}""",
             ["missing theme"] = """{"locale":"tr","appearance":"system","avatar":null}""",
@@ -241,8 +246,15 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
         await using (var clearedAvatar = new NpgsqlCommand("UPDATE asp_net_users SET preferred_avatar = NULL", connection))
             Assert.True(await clearedAvatar.ExecuteNonQueryAsync() >= 1);
 
+        // The sixth theme is valid at the database level too (the control for the bad variants below).
+        await using (var gold = new NpgsqlCommand("UPDATE asp_net_users SET preferred_color_theme = 'gold'", connection))
+            Assert.True(await gold.ExecuteNonQueryAsync() >= 1);
+
         var cases = new (string Sql, string Constraint)[]
         {
+            ("UPDATE asp_net_users SET preferred_color_theme = 'Gold'", "ck_asp_net_users_preferred_color_theme"),
+            ("UPDATE asp_net_users SET preferred_color_theme = 'goldx'", "ck_asp_net_users_preferred_color_theme"),
+            ("UPDATE asp_net_users SET preferred_color_theme = ' gold'", "ck_asp_net_users_preferred_color_theme"),
             ("UPDATE asp_net_users SET preferred_locale = 'fr'", "ck_asp_net_users_preferred_locale"),
             ("UPDATE asp_net_users SET preferred_color_theme = 'purple'", "ck_asp_net_users_preferred_color_theme"),
             ("UPDATE asp_net_users SET preferred_appearance = 'bright'", "ck_asp_net_users_preferred_appearance"),
@@ -414,6 +426,51 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
         using var overwrite = await SendPutAsync(client, new { locale = "tr", colorTheme = "plum", appearance = "light", avatar = (string?)null }, token);
         Assert.Equal(HttpStatusCode.OK, overwrite.StatusCode);
         await AssertStoredAsync(creator.UserId, "tr", "plum", "light");
+    }
+
+    [Fact]
+    public async Task Every_one_of_the_six_color_themes_including_gold_is_accepted_stored_and_round_trips()
+    {
+        await using var factory = CreateFactory(new Dictionary<string, string?>
+        {
+            ["AuthRateLimits:UiPreferencesWrite:PermitLimit"] = "1000",
+        });
+        var creator = await SeedCreatorAsync(acknowledged: true);
+        using var client = await LoginAsync(factory, creator.Email);
+        var token = await GetCsrfTokenAsync(client);
+        string[] themes = ["kutlio", "sage", "rose", "ocean", "plum", "gold"];
+
+        foreach (var theme in themes)
+        {
+            using var response = await SendPutAsync(client, new { locale = "tr", colorTheme = theme, appearance = "dark", avatar = (string?)null }, token);
+            Assert.True(response.StatusCode == HttpStatusCode.OK, $"{theme}: expected 200 but was {(int)response.StatusCode}.");
+            Assert.Equal(("tr", theme, "dark"), await ReadPreferencesAsync(response));
+            using var reread = await client.GetAsync(Route);
+            Assert.Equal(("tr", theme, "dark"), await ReadPreferencesAsync(reread));
+            await AssertStoredAsync(creator.UserId, "tr", theme, "dark");
+        }
+    }
+
+    [Fact]
+    public async Task A_rejected_gold_variant_leaves_a_stored_gold_theme_unchanged()
+    {
+        await using var factory = CreateFactory();
+        var creator = await SeedCreatorAsync(acknowledged: true);
+        using var client = await LoginAsync(factory, creator.Email);
+        var token = await GetCsrfTokenAsync(client);
+
+        using var ok = await SendPutAsync(client, new { locale = "en", colorTheme = "gold", appearance = "dark", avatar = (string?)null }, token);
+        Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+
+        foreach (var bad in new[] { "Gold", " gold", "goldx" })
+        {
+            using var rejected = await SendPutAsync(client, new { locale = "tr", colorTheme = bad, appearance = "light", avatar = (string?)null }, token);
+            Assert.True(rejected.StatusCode == HttpStatusCode.BadRequest, $"'{bad}': expected 400 but was {(int)rejected.StatusCode}.");
+        }
+
+        await AssertStoredAsync(creator.UserId, "en", "gold", "dark");
+        using var get = await client.GetAsync(Route);
+        Assert.Equal(("en", "gold", "dark"), await ReadPreferencesAsync(get));
     }
 
     [Fact]
