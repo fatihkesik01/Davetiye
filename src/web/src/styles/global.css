@@ -1990,3 +1990,46 @@ html { scroll-padding-block-start: 5rem; }
 .preference-controls--drawer .choice-group--swatches .choice-group__options { gap: .65rem; }
 .preference-controls--drawer .avatar-picker__remove { justify-self: center; }
 .preferences-drawer__body { padding-block: 1.5rem 2rem; }
+
+/* Account drawer: slide in from the right with a fading backdrop (open and close).
+   Pure CSS on the native <dialog>: @starting-style animates the open, and the discrete
+   display/overlay transitions keep the dialog rendered while it animates out.
+   Browsers without support simply open and close instantly, as before. */
+.preferences-drawer {
+  opacity: 0;
+  transform: translateX(2.5rem);
+  transition:
+    opacity .2s ease,
+    transform .32s cubic-bezier(.22, 1, .36, 1),
+    overlay .32s allow-discrete,
+    display .32s allow-discrete;
+}
+.preferences-drawer[open] { opacity: 1; transform: translateX(0); }
+@starting-style {
+  .preferences-drawer[open] { opacity: 0; transform: translateX(2.5rem); }
+}
+.preferences-drawer::backdrop {
+  background: rgb(17 24 39 / 0%);
+  transition:
+    background-color .32s ease,
+    overlay .32s allow-discrete,
+    display .32s allow-discrete;
+}
+.preferences-drawer[open]::backdrop { background: rgb(17 24 39 / 48%); }
+@starting-style {
+  .preferences-drawer[open]::backdrop { background: rgb(17 24 39 / 0%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .preferences-drawer,
+  .preferences-drawer::backdrop { transition: none; }
+}
+
+/* Account drawer: "Hesap tercihleri" and "Güvenli çıkış yap" sit under the title in the header. */
+.preferences-drawer__heading { align-items: flex-start; }
+.preferences-drawer__heading-main { display: grid; gap: .7rem; }
+.preferences-drawer__quick-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; min-width: 0; }
+.preferences-drawer__quick-actions .preferences-drawer__account-link { display: inline-flex; min-height: 2.5rem; justify-content: center; padding: .35rem .85rem; border-radius: .65rem; font-size: .9rem; }
+.preferences-drawer__quick-actions .preferences-drawer__logout { min-width: 0; }
+.preferences-drawer__quick-actions .preferences-drawer__logout .session-actions { width: auto; margin: 0; }
+.preferences-drawer__quick-actions .preferences-drawer__logout .button { width: auto; min-height: 2.5rem; padding: .35rem .85rem; border-radius: .65rem; font-size: .9rem; overflow-wrap: anywhere; }
+.preferences-drawer__footer { min-height: 0; }
