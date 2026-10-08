@@ -49,7 +49,7 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
         using var client = factory.CreateClient();
 
         using var get = await client.GetAsync(Route);
-        using var put = await SendPutAsync(client, new { locale = "en", colorTheme = "sage", appearance = "dark" }, token: null);
+        using var put = await SendPutAsync(client, new { locale = "en", colorTheme = "sage", appearance = "dark", avatar = (string?)null }, token: null);
 
         Assert.Equal(HttpStatusCode.Unauthorized, get.StatusCode);
         Assert.True(get.Headers.CacheControl?.NoStore);
@@ -64,7 +64,7 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
         var creator = await SeedCreatorAsync(acknowledged: true);
         using var client = await LoginAsync(factory, creator.Email);
         var validToken = await GetCsrfTokenAsync(client);
-        var body = new { locale = "en", colorTheme = "ocean", appearance = "dark" };
+        var body = new { locale = "en", colorTheme = "ocean", appearance = "dark", avatar = (string?)null };
 
         using var missing = await SendPutAsync(client, body, token: null);
         using var bad = await SendPutAsync(client, body, token: "not-a-valid-antiforgery-token");
@@ -99,6 +99,7 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
                 locale = "en",
                 colorTheme = "plum",
                 appearance = "dark",
+                avatar = "coral",
                 identityUserId = userB.UserId,
                 userId = userB.UserId,
                 id = userB.UserId,
@@ -110,7 +111,7 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
         // A forged identifier in the route addresses no endpoint at all.
         using var forgedRoute = await SendPutAsync(
             clientA,
-            new { locale = "en", colorTheme = "rose", appearance = "light" },
+            new { locale = "en", colorTheme = "rose", appearance = "light", avatar = (string?)null },
             tokenA,
             $"{Route}/{userB.UserId}");
         Assert.False(forgedRoute.IsSuccessStatusCode);
@@ -153,7 +154,7 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
         Assert.Equal(("tr", "kutlio", "system"), await ReadPreferencesAsync(before));
 
         var token = await GetCsrfTokenAsync(client);
-        using var update = await SendPutAsync(client, new { locale = "en", colorTheme = "rose", appearance = "light" }, token);
+        using var update = await SendPutAsync(client, new { locale = "en", colorTheme = "rose", appearance = "light", avatar = (string?)null }, token);
         Assert.Equal(HttpStatusCode.OK, update.StatusCode);
         Assert.Equal(("en", "rose", "light"), await ReadPreferencesAsync(update));
 
@@ -173,26 +174,38 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
 
         var invalidBodies = new Dictionary<string, string>
         {
-            ["unknown locale"] = """{"locale":"fr","colorTheme":"kutlio","appearance":"system"}""",
-            ["wrong-case locale"] = """{"locale":"TR","colorTheme":"kutlio","appearance":"system"}""",
-            ["empty locale"] = """{"locale":"","colorTheme":"kutlio","appearance":"system"}""",
-            ["whitespace locale"] = """{"locale":" ","colorTheme":"kutlio","appearance":"system"}""",
-            ["padded locale"] = """{"locale":"tr ","colorTheme":"kutlio","appearance":"system"}""",
-            ["null locale"] = """{"locale":null,"colorTheme":"kutlio","appearance":"system"}""",
-            ["missing locale"] = """{"colorTheme":"kutlio","appearance":"system"}""",
-            ["unknown theme"] = """{"locale":"tr","colorTheme":"purple","appearance":"system"}""",
-            ["empty theme"] = """{"locale":"tr","colorTheme":"","appearance":"system"}""",
-            ["null theme"] = """{"locale":"tr","colorTheme":null,"appearance":"system"}""",
-            ["missing theme"] = """{"locale":"tr","appearance":"system"}""",
-            ["unknown appearance"] = """{"locale":"tr","colorTheme":"kutlio","appearance":"bright"}""",
-            ["empty appearance"] = """{"locale":"tr","colorTheme":"kutlio","appearance":""}""",
-            ["null appearance"] = """{"locale":"tr","colorTheme":"kutlio","appearance":null}""",
-            ["missing appearance"] = """{"locale":"tr","colorTheme":"kutlio"}""",
+            ["unknown locale"] = """{"locale":"fr","colorTheme":"kutlio","appearance":"system","avatar":null}""",
+            ["wrong-case locale"] = """{"locale":"TR","colorTheme":"kutlio","appearance":"system","avatar":null}""",
+            ["empty locale"] = """{"locale":"","colorTheme":"kutlio","appearance":"system","avatar":null}""",
+            ["whitespace locale"] = """{"locale":" ","colorTheme":"kutlio","appearance":"system","avatar":null}""",
+            ["padded locale"] = """{"locale":"tr ","colorTheme":"kutlio","appearance":"system","avatar":null}""",
+            ["null locale"] = """{"locale":null,"colorTheme":"kutlio","appearance":"system","avatar":null}""",
+            ["missing locale"] = """{"colorTheme":"kutlio","appearance":"system","avatar":null}""",
+            ["unknown theme"] = """{"locale":"tr","colorTheme":"purple","appearance":"system","avatar":null}""",
+            ["empty theme"] = """{"locale":"tr","colorTheme":"","appearance":"system","avatar":null}""",
+            ["null theme"] = """{"locale":"tr","colorTheme":null,"appearance":"system","avatar":null}""",
+            ["missing theme"] = """{"locale":"tr","appearance":"system","avatar":null}""",
+            ["unknown appearance"] = """{"locale":"tr","colorTheme":"kutlio","appearance":"bright","avatar":null}""",
+            ["empty appearance"] = """{"locale":"tr","colorTheme":"kutlio","appearance":"","avatar":null}""",
+            ["null appearance"] = """{"locale":"tr","colorTheme":"kutlio","appearance":null,"avatar":null}""",
+            ["missing appearance"] = """{"locale":"tr","colorTheme":"kutlio","avatar":null}""",
+            ["missing avatar"] = """{"locale":"tr","colorTheme":"kutlio","appearance":"system"}""",
+            ["wrong-case avatar"] = """{"locale":"tr","colorTheme":"kutlio","appearance":"system","avatar":"Sunny"}""",
+            ["leading-space avatar"] = """{"locale":"tr","colorTheme":"kutlio","appearance":"system","avatar":" sunny"}""",
+            ["trailing-space avatar"] = """{"locale":"tr","colorTheme":"kutlio","appearance":"system","avatar":"sunny "}""",
+            ["unknown avatar"] = """{"locale":"tr","colorTheme":"kutlio","appearance":"system","avatar":"unknown"}""",
+            ["empty avatar"] = """{"locale":"tr","colorTheme":"kutlio","appearance":"system","avatar":""}""",
+            ["numeric avatar"] = """{"locale":"tr","colorTheme":"kutlio","appearance":"system","avatar":1}""",
+            ["object avatar"] = """{"locale":"tr","colorTheme":"kutlio","appearance":"system","avatar":{"key":"sunny"}}""",
+            ["array avatar"] = """{"locale":"tr","colorTheme":"kutlio","appearance":"system","avatar":["sunny"]}""",
+            ["boolean avatar"] = """{"locale":"tr","colorTheme":"kutlio","appearance":"system","avatar":true}""",
+            ["oversized avatar"] = JsonSerializer.Serialize(new { locale = "tr", colorTheme = "kutlio", appearance = "system", avatar = oversized }),
+            ["sql-shaped avatar"] = JsonSerializer.Serialize(new { locale = "tr", colorTheme = "kutlio", appearance = "system", avatar = "sunny'; DROP TABLE asp_net_users;--" }),
             ["empty object"] = "{}",
-            ["oversized locale"] = JsonSerializer.Serialize(new { locale = oversized, colorTheme = "kutlio", appearance = "system" }),
-            ["oversized theme"] = JsonSerializer.Serialize(new { locale = "tr", colorTheme = oversized, appearance = "system" }),
-            ["oversized appearance"] = JsonSerializer.Serialize(new { locale = "tr", colorTheme = "kutlio", appearance = oversized }),
-            ["sql-shaped value"] = JsonSerializer.Serialize(new { locale = "tr'; DROP TABLE asp_net_users;--", colorTheme = "kutlio", appearance = "system" }),
+            ["oversized locale"] = JsonSerializer.Serialize(new { locale = oversized, colorTheme = "kutlio", appearance = "system", avatar = (string?)null }),
+            ["oversized theme"] = JsonSerializer.Serialize(new { locale = "tr", colorTheme = oversized, appearance = "system", avatar = (string?)null }),
+            ["oversized appearance"] = JsonSerializer.Serialize(new { locale = "tr", colorTheme = "kutlio", appearance = oversized, avatar = (string?)null }),
+            ["sql-shaped value"] = JsonSerializer.Serialize(new { locale = "tr'; DROP TABLE asp_net_users;--", colorTheme = "kutlio", appearance = "system", avatar = (string?)null }),
         };
 
         foreach (var (name, json) in invalidBodies)
@@ -223,12 +236,19 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
         // Control: a valid statement succeeds, so the failures below are caused by the constraints.
         await using (var valid = new NpgsqlCommand("UPDATE asp_net_users SET preferred_locale = 'en'", connection))
             Assert.True(await valid.ExecuteNonQueryAsync() >= 1);
+        await using (var validAvatar = new NpgsqlCommand("UPDATE asp_net_users SET preferred_avatar = 'peach'", connection))
+            Assert.True(await validAvatar.ExecuteNonQueryAsync() >= 1);
+        await using (var clearedAvatar = new NpgsqlCommand("UPDATE asp_net_users SET preferred_avatar = NULL", connection))
+            Assert.True(await clearedAvatar.ExecuteNonQueryAsync() >= 1);
 
         var cases = new (string Sql, string Constraint)[]
         {
             ("UPDATE asp_net_users SET preferred_locale = 'fr'", "ck_asp_net_users_preferred_locale"),
             ("UPDATE asp_net_users SET preferred_color_theme = 'purple'", "ck_asp_net_users_preferred_color_theme"),
             ("UPDATE asp_net_users SET preferred_appearance = 'bright'", "ck_asp_net_users_preferred_appearance"),
+            ("UPDATE asp_net_users SET preferred_avatar = 'unknown'", "ck_asp_net_users_preferred_avatar"),
+            ("UPDATE asp_net_users SET preferred_avatar = 'Sunny'", "ck_asp_net_users_preferred_avatar"),
+            ("UPDATE asp_net_users SET preferred_avatar = ''", "ck_asp_net_users_preferred_avatar"),
         };
 
         foreach (var (sql, constraint) in cases)
@@ -255,9 +275,9 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
         var tokenA = await GetCsrfTokenAsync(clientA);
         var tokenB = await GetCsrfTokenAsync(clientB);
 
-        using var first = await SendPutAsync(clientA, new { locale = "en", colorTheme = "sage", appearance = "light" }, tokenA);
-        using var second = await SendPutAsync(clientA, new { locale = "en", colorTheme = "rose", appearance = "dark" }, tokenA);
-        using var third = await SendPutAsync(clientA, new { locale = "tr", colorTheme = "plum", appearance = "system" }, tokenA);
+        using var first = await SendPutAsync(clientA, new { locale = "en", colorTheme = "sage", appearance = "light", avatar = (string?)null }, tokenA);
+        using var second = await SendPutAsync(clientA, new { locale = "en", colorTheme = "rose", appearance = "dark", avatar = (string?)null }, tokenA);
+        using var third = await SendPutAsync(clientA, new { locale = "tr", colorTheme = "plum", appearance = "system", avatar = (string?)null }, tokenA);
 
         Assert.Equal(HttpStatusCode.OK, first.StatusCode);
         Assert.Equal(HttpStatusCode.OK, second.StatusCode);
@@ -266,7 +286,7 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
         await AssertStoredAsync(userA.UserId, "en", "rose", "dark");
 
         // The limiter is partitioned per Identity user, so B still has its own budget.
-        using var otherUser = await SendPutAsync(clientB, new { locale = "en", colorTheme = "ocean", appearance = "light" }, tokenB);
+        using var otherUser = await SendPutAsync(clientB, new { locale = "en", colorTheme = "ocean", appearance = "light", avatar = (string?)null }, tokenB);
         Assert.Equal(HttpStatusCode.OK, otherUser.StatusCode);
         await AssertStoredAsync(userB.UserId, "en", "ocean", "light");
     }
@@ -280,7 +300,7 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
         var token = await GetCsrfTokenAsync(client);
 
         using var get = await client.GetAsync(Route);
-        using var put = await SendPutAsync(client, new { locale = "en", colorTheme = "sage", appearance = "dark" }, token);
+        using var put = await SendPutAsync(client, new { locale = "en", colorTheme = "sage", appearance = "dark", avatar = (string?)null }, token);
 
         Assert.Equal((HttpStatusCode)428, get.StatusCode);
         Assert.True(get.Headers.CacheControl?.NoStore);
@@ -311,7 +331,7 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
         Assert.Equal(("tr", "kutlio", "system"), await ReadPreferencesAsync(initial));
 
         var token = await GetCsrfTokenAsync(client);
-        using var update = await SendPutAsync(client, new { locale = "en", colorTheme = "sage", appearance = "dark" }, token);
+        using var update = await SendPutAsync(client, new { locale = "en", colorTheme = "sage", appearance = "dark", avatar = (string?)null }, token);
         Assert.Equal(HttpStatusCode.OK, update.StatusCode);
         Assert.True(update.Headers.CacheControl?.NoStore);
         Assert.Equal(("en", "sage", "dark"), await ReadPreferencesAsync(update));
@@ -322,9 +342,138 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
         Assert.Equal(("en", "sage", "dark"), await ReadPreferencesAsync(reread));
         await AssertStoredAsync(creator.UserId, "en", "sage", "dark");
 
-        using var overwrite = await SendPutAsync(client, new { locale = "tr", colorTheme = "plum", appearance = "light" }, token);
+        using var overwrite = await SendPutAsync(client, new { locale = "tr", colorTheme = "plum", appearance = "light", avatar = (string?)null }, token);
         Assert.Equal(HttpStatusCode.OK, overwrite.StatusCode);
         await AssertStoredAsync(creator.UserId, "tr", "plum", "light");
+    }
+
+    [Fact]
+    public async Task Avatar_defaults_to_null_and_set_and_clear_round_trip_through_get_and_the_database()
+    {
+        await using var factory = CreateFactory();
+        var creator = await SeedCreatorAsync(acknowledged: true);
+        using var client = await LoginAsync(factory, creator.Email);
+
+        using var initial = await client.GetAsync(Route);
+        Assert.Equal(HttpStatusCode.OK, initial.StatusCode);
+        Assert.Null(await ReadAvatarAsync(initial));
+        await AssertStoredAvatarAsync(creator.UserId, null);
+
+        var token = await GetCsrfTokenAsync(client);
+        using var set = await SendPutAsync(client, new { locale = "en", colorTheme = "sage", appearance = "dark", avatar = "berry" }, token);
+        Assert.Equal(HttpStatusCode.OK, set.StatusCode);
+        Assert.Equal("berry", await ReadAvatarAsync(set));
+
+        using var reread = await client.GetAsync(Route);
+        Assert.Equal("berry", await ReadAvatarAsync(reread));
+        Assert.Equal(("en", "sage", "dark"), await ReadPreferencesAsync(reread));
+        await AssertStoredAvatarAsync(creator.UserId, "berry");
+
+        using var clear = await SendPutAsync(client, new { locale = "en", colorTheme = "sage", appearance = "dark", avatar = (string?)null }, token);
+        Assert.Equal(HttpStatusCode.OK, clear.StatusCode);
+        Assert.Null(await ReadAvatarAsync(clear));
+        using var afterClear = await client.GetAsync(Route);
+        Assert.Null(await ReadAvatarAsync(afterClear));
+        await AssertStoredAvatarAsync(creator.UserId, null);
+    }
+
+    [Fact]
+    public async Task Every_one_of_the_twelve_preset_avatar_keys_is_accepted_and_stored()
+    {
+        await using var factory = CreateFactory(new Dictionary<string, string?>
+        {
+            ["AuthRateLimits:UiPreferencesWrite:PermitLimit"] = "1000",
+        });
+        var creator = await SeedCreatorAsync(acknowledged: true);
+        using var client = await LoginAsync(factory, creator.Email);
+        var token = await GetCsrfTokenAsync(client);
+        string[] keys = ["sunny", "mint", "berry", "sky", "coral", "lilac", "amber", "forest", "night", "rose", "slate", "peach"];
+
+        foreach (var key in keys)
+        {
+            using var response = await SendPutAsync(client, new { locale = "tr", colorTheme = "kutlio", appearance = "system", avatar = key }, token);
+            Assert.True(response.StatusCode == HttpStatusCode.OK, $"{key}: expected 200 but was {(int)response.StatusCode}.");
+            Assert.Equal(key, await ReadAvatarAsync(response));
+            await AssertStoredAvatarAsync(creator.UserId, key);
+        }
+    }
+
+    [Fact]
+    public async Task A_rejected_avatar_leaves_the_previously_stored_preferences_unchanged()
+    {
+        await using var factory = CreateFactory();
+        var creator = await SeedCreatorAsync(acknowledged: true);
+        using var client = await LoginAsync(factory, creator.Email);
+        var token = await GetCsrfTokenAsync(client);
+
+        using var set = await SendPutAsync(client, new { locale = "en", colorTheme = "ocean", appearance = "light", avatar = "night" }, token);
+        Assert.Equal(HttpStatusCode.OK, set.StatusCode);
+
+        using var bad = await SendPutAsync(client, new { locale = "tr", colorTheme = "plum", appearance = "dark", avatar = "Night" }, token);
+        using var missing = await SendPutAsync(client, new { locale = "tr", colorTheme = "plum", appearance = "dark" }, token);
+        Assert.Equal(HttpStatusCode.BadRequest, bad.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, missing.StatusCode);
+
+        await AssertStoredAsync(creator.UserId, "en", "ocean", "light");
+        await AssertStoredAvatarAsync(creator.UserId, "night");
+    }
+
+    [Fact]
+    public async Task One_users_avatar_is_never_visible_to_another_user()
+    {
+        await using var factory = CreateFactory();
+        var userA = await SeedCreatorAsync(acknowledged: true);
+        var userB = await SeedCreatorAsync(acknowledged: true);
+        using var clientA = await LoginAsync(factory, userA.Email);
+        using var clientB = await LoginAsync(factory, userB.Email);
+        var tokenA = await GetCsrfTokenAsync(clientA);
+
+        using var update = await SendPutAsync(
+            clientA,
+            new { locale = "en", colorTheme = "plum", appearance = "dark", avatar = "lilac", identityUserId = userB.UserId },
+            tokenA,
+            $"{Route}?identityUserId={userB.UserId}");
+        Assert.Equal(HttpStatusCode.OK, update.StatusCode);
+
+        using var getB = await clientB.GetAsync(Route);
+        Assert.Null(await ReadAvatarAsync(getB));
+        using var getA = await clientA.GetAsync(Route);
+        Assert.Equal("lilac", await ReadAvatarAsync(getA));
+        await AssertStoredAvatarAsync(userA.UserId, "lilac");
+        await AssertStoredAvatarAsync(userB.UserId, null);
+    }
+
+    [Fact]
+    public async Task Super_admin_without_a_domain_account_can_set_and_clear_an_avatar()
+    {
+        await using var factory = CreateFactory();
+        const string email = "ui-prefs-avatar-admin@example.test";
+        Guid adminUserId;
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var db = scope.ServiceProvider.GetRequiredService<DavetiyeDbContext>();
+            Assert.Equal(
+                AdminBootstrapOutcome.Created,
+                await new AdminBootstrapRunner(users, db).RunAsync(email, Password, CancellationToken.None));
+            adminUserId = (await users.FindByEmailAsync(email))!.Id;
+        }
+
+        await using (var db = CreateDbContext())
+            Assert.False(await db.Accounts.AnyAsync(account => account.IdentityUserId == adminUserId));
+
+        using var client = factory.CreateClient();
+        await CompleteAdminMfaAsync(client, email, Password);
+        var token = await GetCsrfTokenAsync(client);
+
+        using var set = await SendPutAsync(client, new { locale = "tr", colorTheme = "kutlio", appearance = "system", avatar = "slate" }, token);
+        Assert.Equal(HttpStatusCode.OK, set.StatusCode);
+        Assert.Equal("slate", await ReadAvatarAsync(set));
+        await AssertStoredAvatarAsync(adminUserId, "slate");
+
+        using var clear = await SendPutAsync(client, new { locale = "tr", colorTheme = "kutlio", appearance = "system", avatar = (string?)null }, token);
+        Assert.Equal(HttpStatusCode.OK, clear.StatusCode);
+        await AssertStoredAvatarAsync(adminUserId, null);
     }
 
     [Fact]
@@ -365,7 +514,7 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
         // rejection is the HTTPS one, not the antiforgery one.
         using var rawPut = new HttpRequestMessage(HttpMethod.Put, Route)
         {
-            Content = JsonContent.Create(new { locale = "en", colorTheme = "sage", appearance = "dark" }),
+            Content = JsonContent.Create(new { locale = "en", colorTheme = "sage", appearance = "dark", avatar = (string?)null }),
         };
         rawPut.Headers.Add("Cookie", cookieHeader);
         using var rawPutResponse = await raw.SendAsync(rawPut);
@@ -389,6 +538,20 @@ public sealed class AccountUiPreferencesEndpointsTests(PostgreSqlFixture postgre
             root.GetProperty("locale").GetString()!,
             root.GetProperty("colorTheme").GetString()!,
             root.GetProperty("appearance").GetString()!);
+    }
+
+    private static async Task<string?> ReadAvatarAsync(HttpResponseMessage response)
+    {
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var avatar = json.RootElement.GetProperty("avatar");
+        return avatar.ValueKind == JsonValueKind.Null ? null : avatar.GetString();
+    }
+
+    private async Task AssertStoredAvatarAsync(Guid identityUserId, string? avatar)
+    {
+        await using var db = CreateDbContext();
+        var user = await db.Users.AsNoTracking().SingleAsync(candidate => candidate.Id == identityUserId);
+        Assert.Equal(avatar, user.PreferredAvatar);
     }
 
     private async Task AssertStoredAsync(Guid identityUserId, string locale, string colorTheme, string appearance)

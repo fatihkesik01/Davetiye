@@ -24,7 +24,9 @@ public sealed class ApplicationUser : IdentityUser<Guid>
 
     public string PreferredAppearance { get; private set; } = "system";
 
-    public void UpdateUiPreferences(string locale, string colorTheme, string appearance)
+    public string? PreferredAvatar { get; private set; }
+
+    public void UpdateUiPreferences(string locale, string colorTheme, string appearance, string? avatar)
     {
         if (locale is not ("tr" or "en"))
         {
@@ -41,8 +43,15 @@ public sealed class ApplicationUser : IdentityUser<Guid>
             throw new ArgumentOutOfRangeException(nameof(appearance), appearance, "Appearance must be 'system', 'light', or 'dark'.");
         }
 
+        if (avatar is not null and not ("sunny" or "mint" or "berry" or "sky" or "coral" or "lilac" or
+            "amber" or "forest" or "night" or "rose" or "slate" or "peach"))
+        {
+            throw new ArgumentOutOfRangeException(nameof(avatar), avatar, "Avatar is not supported.");
+        }
+
         PreferredLocale = locale;
         PreferredColorTheme = colorTheme;
         PreferredAppearance = appearance;
+        PreferredAvatar = avatar;
     }
 }

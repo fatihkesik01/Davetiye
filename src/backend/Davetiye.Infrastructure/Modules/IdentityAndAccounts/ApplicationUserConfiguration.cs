@@ -22,6 +22,9 @@ internal sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<Ap
             .HasDefaultValue("system")
             .IsRequired();
 
+        builder.Property(user => user.PreferredAvatar)
+            .HasMaxLength(16);
+
         builder.ToTable(table =>
         {
             table.HasCheckConstraint(
@@ -33,6 +36,9 @@ internal sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<Ap
             table.HasCheckConstraint(
                 "ck_asp_net_users_preferred_appearance",
                 "preferred_appearance IN ('system', 'light', 'dark')");
+            table.HasCheckConstraint(
+                "ck_asp_net_users_preferred_avatar",
+                "preferred_avatar IS NULL OR preferred_avatar IN ('sunny', 'mint', 'berry', 'sky', 'coral', 'lilac', 'amber', 'forest', 'night', 'rose', 'slate', 'peach')");
         });
     }
 }

@@ -1,6 +1,6 @@
 namespace Davetiye.Application.Modules.IdentityAndAccounts.Contracts;
 
-public sealed record AccountUiPreferences(string Locale, string ColorTheme, string Appearance);
+public sealed record AccountUiPreferences(string Locale, string ColorTheme, string Appearance, string? Avatar);
 
 public interface IAccountUiPreferencesService
 {

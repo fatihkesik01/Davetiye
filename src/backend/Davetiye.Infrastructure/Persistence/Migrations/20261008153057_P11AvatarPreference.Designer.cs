@@ -3,6 +3,7 @@ using System;
 using Davetiye.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Davetiye.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(DavetiyeDbContext))]
-    partial class DavetiyeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261008153057_P11AvatarPreference")]
+    partial class P11AvatarPreference
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

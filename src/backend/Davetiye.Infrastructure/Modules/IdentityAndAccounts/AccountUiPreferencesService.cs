@@ -15,7 +15,7 @@ public sealed class AccountUiPreferencesService(DavetiyeDbContext dbContext) : I
             .SingleOrDefaultAsync(candidate => candidate.Id == identityUserId, cancellationToken);
         return user is null
             ? null
-            : new AccountUiPreferences(user.PreferredLocale, user.PreferredColorTheme, user.PreferredAppearance);
+            : new AccountUiPreferences(user.PreferredLocale, user.PreferredColorTheme, user.PreferredAppearance, user.PreferredAvatar);
     }
 
     public async Task<AccountUiPreferences?> UpdateAsync(
@@ -32,9 +32,9 @@ public sealed class AccountUiPreferencesService(DavetiyeDbContext dbContext) : I
         if (user is null)
             return null;
 
-        user.UpdateUiPreferences(preferences.Locale, preferences.ColorTheme, preferences.Appearance);
+        user.UpdateUiPreferences(preferences.Locale, preferences.ColorTheme, preferences.Appearance, preferences.Avatar);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return new AccountUiPreferences(user.PreferredLocale, user.PreferredColorTheme, user.PreferredAppearance);
+        return new AccountUiPreferences(user.PreferredLocale, user.PreferredColorTheme, user.PreferredAppearance, user.PreferredAvatar);
     }
 }
