@@ -1,6 +1,6 @@
 # Faz 11 — Production Readiness & Business Launch Planı
 
-Durum: **TASLAK — Phase 11 başlamadı; Fatih'in açık onayını bekliyor**
+Durum: **ONAYLI — devam ediyor (Fatih onayı 2026-10-08)**
 Bağımlılık: **Faz 10'un doğrulanmış release candidate'ı; açık deploy/launch yetkilendirmesi; owner/legal/external aksiyonlar**
 
 Bu planın varlığı Faz 11'in uygulanabileceği anlamına gelmez; Fatih'in ayrıca
@@ -31,6 +31,31 @@ production smoke ve go-live.
 
 Yeni MVP feature; backlog; Lora veya başka VPS projesinde değişiklik;
 yetkisiz public traffic.
+
+### 2026-10-08 Fatih onayı — yerel uygulama arayüzü çalışması
+
+Fatih'in açık isteğiyle aşağıdaki UI kapsamı bu fazın ek workstream'i olarak
+onaylandı; P11 go-live kapılarını değiştirmez. Fatih 2026-10-08'de backend/DB
+değişikliklerinin pushlanıp deploy edilmesini istedi (yerel arayüzü canlı API'ye
+proxy ile inceliyor):
+
+- Creator ve Super Admin için giriş sonrası rol bazlı navigasyon ve ortak
+  hesap çekmecesi; mevcut CSRF korumalı güvenli çıkış akışını kullanır.
+- Hesapta saklanan Türkçe/İngilizce arayüz dili, beş renk paleti ve ayrı
+  cihaz/açık/koyu görünüm tercihi.
+- Kutlio'nun kullanıcı arayüzü metinleri çevrilir; davetiye sahibinin
+  yazdığı içerik, hukuki metinler ve e-posta şablonları bu kapsamda değildir.
+- Creator hesap tercihleri ekranında aynı dil ve görünüm ayarları bulunur.
+
+| Ek milestone | Sorumlular | Tamamlanma ölçütü | Durum |
+| --- | --- | --- | --- |
+| UI-1 — Hesap tercihleri API/veri modeli, migration ve güvenli kayıt | Database, Backend, Security | Creator ve Super Admin tercihleri authenticated Identity kullanıcısına bağlı; allowlist, antiforgery, no-store ve kullanıcı/IP rate limitleri mevcut; API build geçti; Security ACCEPT. Migration yerel dosya olarak üretildi, veritabanına uygulanmadı. | Tamamlandı |
+| UI-2 — Ortak navigasyon, tema altyapısı ve tercih çekmecesi | Frontend, UI/UX | Creator/Admin navigasyonu erişilebilir; palet ve görünüm değişimleri shell'e uygulanır; ayarlar ve drawer aynı kayıtlı tercihi kullanır | Tamamlandı (yerel build; 44 px kontroller, dialog açıklaması ve genişletilmiş koyu görünüm gözden geçirildi) |
+| UI-3 — Arayüz çevirileri | Frontend, Reviewer | Ürün arayüzündeki Kutlio metinleri TR/EN; davetiye içerikleri korunur; rota başlıkları ve durum mesajları seçili locale'ı izler | Tamamlandı (landing, auth, catalog, Creator, Admin, RSVP ve yayın durumları; creator yazdığı davetiye metni değiştirilmedi) |
+| UI-4 — Birleşik kalite ve güvenlik incelemesi | Tester/Reviewer, Security | Build ve ilgili kontroller geçer; auth/persistence/drawer için inceleme bulguları kapanır; yerel tarayıcı turuna hazır | Tamamlandı (web build, typecheck, API contract check ve diff check geçti; backend build geçti; Security ACCEPT; test suite çalıştırılmadı) |
+
+Bu ek workstream'de dosya sahipleri, doğrulama komutları ve sonuçlar milestone
+tamamlandıkça kaydedilir. VPS veya production verisine yazılmaz.
 
 ## Bağımlılıklar
 

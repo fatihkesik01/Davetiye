@@ -687,8 +687,24 @@ ve application katmanlarını etkilemez.
 -   **Türkçe**
 -   **TRY**
 
-Altyapı gelecekte çoklu dil ve para birimini destekleyebilecek şekilde
-hazırlanır.
+Kutlio arayüzü Türkçe ve İngilizce sunulur. Türkçe varsayılandır; Creator ve
+Super Admin dil seçimi hesap tercihlerine kaydedilir ve farklı cihazlarda
+korunur. Bu tercih uygulamanın kendi arayüz metinlerini ve davetli
+etkileşimlerindeki Kutlio metinlerini değiştirir. Davetiye sahibinin girdiği
+başlıklar, mesajlar ve özel alan etiketleri olduğu gibi gösterilir. Mevcut
+hukuki metinler ve e-posta şablonları bu arayüz dili tercihinin kapsamına
+girmez.
+
+Giriş yapan kullanıcılar görünümünü beş renk paletinden seçebilir: **Kutlio**,
+**Adaçayı**, **Gül**, **Okyanus** ve **Erik**. Açık/koyu görünüm tercihi bu
+paletlerden bağımsızdır ve **Cihaz ayarı**, **Açık** veya **Koyu** olarak
+seçilebilir. Varsayılan görünüm Kutlio paleti ve cihaz ayarıdır. Palet ve
+görünüm tercihleri de hesapta saklanır.
+
+Giriş sonrası Creator ve Super Admin alanları rolüne uygun ana navigasyon
+gösterir. Her iki alanda dil, palet ve görünüm tercihleri sağ üstteki hesap
+çekmecesinden; Creator ayrıca Hesap tercihleri sayfasından yönetilebilir.
+Güvenli çıkış hesap çekmecesinde yer alır.
 
 Frontend i18n uyumlu, backend/veri modeli de genişletilebilir olmalıdır.
 

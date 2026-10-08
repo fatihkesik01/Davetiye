@@ -1,6 +1,6 @@
 # AI Handoff — Current State
 
-**Last updated: 2026-10-07**
+**Last updated: 2026-10-08**
 
 Living snapshot only. History lives in Git and each `docs/PHASE_N_PLAN.md`.
 Independently verify this against `git status`/`git log`, source and real
@@ -18,26 +18,30 @@ checks before trusting it (`docs/AI_WORKFLOW.md` §1/§11).
   are entered by Fatih on the server via `/opt/davetiye/set-secret.sh`; an
   agent never handles live secret values.
 
-## Latest Verification (2026-10-07, local)
+## Latest Verification (2026-10-08, local)
 
-- Release solution build: 0 warnings / 0 errors.
-- UnitTests 491/491; ArchitectureTests 81/81.
-- EF model: no pending changes against the latest migration.
-- Web: lint, typecheck, API-client check, Vitest 269/269, `npm audit` 0.
-  A load-sensitive Vitest timeout (lazy route chunks exceeding the 1s
-  Testing Library default) was fixed by raising `asyncUtilTimeout` in
-  `src/web/src/test/setup.ts`.
-- Media-ingress Worker: 52/52, typecheck.
-- **Clean-checkout GitHub Actions CI passed** —
-  [run 37653912659](https://github.com/fatihkesik01/Davetiye/actions/runs/37653912659)
-  on `d25383f`: backend (Architecture 81, Unit 491, PostgreSQL Integration
-  527), frontend, Playwright e2e, media Worker, container smoke and
-  dependency/config/Trivy scan all green.
-- CI fixes on the way: integration tests hardcoded a `bin/Debug` migrator
-  path (now `TestBuildConfiguration`); the gift registry test's fixed
-  publication window had expired in real time (now anchored to today);
-  Vitest pins `TZ=Europe/Istanbul` and `testTimeout` 20s.
-- Phases 2–10 are committed and pushed to `main`.
+- Release solution build 0 warnings; UnitTests 493/493; ArchitectureTests 81/81;
+  EF model has no pending changes.
+- Web: lint (0 warnings), typecheck, API-client check, build; Vitest 296/296;
+  Playwright 252/252 across desktop, 320px and 200% zoom.
+- PostgreSQL integration tests cannot run locally (Docker unavailable); CI runs
+  them. The new `AccountUiPreferencesEndpointsTests` and
+  `PublicPlanCatalogEndpointsTests` have first run on CI.
+- Security: public plan catalog ACCEPT (endpoint is always `no-store`); account
+  UI preferences endpoint ACCEPT with its integration tests added.
+
+## UI workstream (Fatih request 2026-10-08)
+
+Implemented: shared `SiteHeader` on landing, catalog, auth, legal and the
+Creator/Admin shell (not on `/davetiye/*`); session-aware header (anonymous /
+Creator / Admin / MFA-setup); tr/en UI language, five palettes and
+system/light/dark appearance stored per account (`GET/PUT /api/v1/account/preferences`,
+migration `P11UiPreferences`) and applied on public pages; theme tokens for
+landing/catalog/auth/legal; landing 200%-zoom overflow fixed. Avatar slot in the
+account button is a generic icon; avatar presets are the next item (photo upload
+only after the Cloudflare media gate, P11-M6). Fatih views the frontend locally
+with a Vite proxy to the VPS API, so backend/DB changes must be deployed for
+his local UI to see them.
 
 ## Deferred to Phase 11 (mandatory gates)
 
@@ -83,8 +87,8 @@ open alongside 22222, stale ufw allow rules for 8080/5050.
 
 ## Next Action
 
-Resume from `docs/PHASE_11_PLAN.md` ("İş Takip Listesi"). Agreed next steps
-(Fatih, 2026-10-08): 25a and 25c are done; next is 25b (real
-landing page for `/` — agree its content with Fatih first and record it in
-`docs/PRODUCT.md`; do not invent sections). Company/tax/legal/iyzico live stay
-last. Never touch Lora, including its backups.
+Resume from `docs/PHASE_11_PLAN.md` ("İş Takip Listesi"). Order: deploy the
+verified UI/preferences release (backup Davetiye DB first; migration
+`P11UiPreferences` is additive), then avatar presets (backend column +
+migration + settings UI), then the remaining owner items. Company/tax/legal/
+iyzico live stay last. Never touch Lora, including its backups.
