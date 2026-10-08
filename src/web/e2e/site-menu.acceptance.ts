@@ -85,7 +85,7 @@ test.describe('narrow screens: disclosure menu', () => {
     await expect(banner.getByRole('button', { name: /Hesabım, tema ve dil/ })).toBeVisible()
     await banner.getByRole('button', { name: 'Menü' }).click()
     const menu = page.locator('#site-menu')
-    await expect(menu.getByRole('link')).toHaveText(['Davetiyeler', 'Çöp kutusu', 'Plan ve ödeme', 'Hesap tercihleri'])
+    await expect(menu.getByRole('link')).toHaveText(['Davetiyeler', 'Silinenler', 'Plan ve ödeme', 'Hesap tercihleri'])
     await expect(menu.getByRole('link', { name: 'Davetiyeler' })).toHaveAttribute('aria-current', 'page')
     await expectNoHorizontalOverflow(page)
     await expectAccessible(page)
@@ -128,11 +128,11 @@ test.describe('wide screens: inline navigation and sticky bar', () => {
     const current = banner.getByRole('link', { name: 'Davetiyeler' })
     await expect(current).toBeVisible()
     await expect(current).toHaveAttribute('aria-current', 'page')
-    await expect(banner.getByRole('link', { name: 'Çöp kutusu' })).not.toHaveAttribute('aria-current', 'page')
+    await expect(banner.getByRole('link', { name: 'Silinenler' })).not.toHaveAttribute('aria-current', 'page')
     // The active page has a tinted pill and an underline bar; other links stay transparent.
     expect(await current.evaluate(element => getComputedStyle(element).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)')
     expect(await current.evaluate(element => getComputedStyle(element, '::after').height)).not.toBe('auto')
-    expect(await banner.getByRole('link', { name: 'Çöp kutusu' }).evaluate(element => getComputedStyle(element).backgroundColor)).toBe('rgba(0, 0, 0, 0)')
+    expect(await banner.getByRole('link', { name: 'Silinenler' }).evaluate(element => getComputedStyle(element).backgroundColor)).toBe('rgba(0, 0, 0, 0)')
     for (const link of await banner.getByRole('navigation').getByRole('link').all()) {
       expect((await link.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44)
     }

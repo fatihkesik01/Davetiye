@@ -244,7 +244,7 @@ describe('SiteHeader', () => {
       window.history.pushState({}, '', '/panel/cop-kutusu')
       renderHeader('creator')
       const current = within(menu()).getAllByRole('link').filter(link => link.getAttribute('aria-current') === 'page')
-      expect(current.map(link => link.textContent)).toEqual(['Çöp kutusu'])
+      expect(current.map(link => link.textContent)).toEqual(['Silinenler'])
     })
 
     it('adds the shadow state only after the page scrolls, via a data attribute', () => {
