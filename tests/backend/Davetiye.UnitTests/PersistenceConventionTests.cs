@@ -87,6 +87,7 @@ public sealed class PersistenceConventionTests
                 "20261006192152_P10M4AccountConsentRecords",
                 "20261006195142_P10M3AccountDeletionLifecycle",
                 "20261006201318_P10M3EmailDispatchLinearization",
+                "20261008130723_P11UiPreferences",
             ],
             context.Database.GetMigrations());
     }

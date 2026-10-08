@@ -28,6 +28,7 @@ internal sealed class AuthRateLimitOptionsValidator : IValidateOptions<AuthRateL
         Validate("AdminMfaVerify", options.AdminMfaVerify, failures);
         Validate("PublicationRead", options.PublicationRead, failures);
         Validate("PublicationAction", options.PublicationAction, failures);
+        Validate("UiPreferencesWrite", options.UiPreferencesWrite, failures);
         Validate("PublicInvitationRead", options.PublicInvitationRead, failures);
         Validate("PublicRsvpSubmission", options.PublicRsvpSubmission, failures);
         Validate("CreatorMediaIntentIp", options.CreatorMediaIntentIp, failures);

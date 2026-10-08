@@ -110,6 +110,7 @@ app.Use(async (context, next) =>
 {
     if (context.GetEndpoint()?.Metadata.GetMetadata<PublicInvitationEndpointMetadata>() is not null ||
         context.Request.Path.StartsWithSegments($"{ApiRoutes.V1Prefix}/account/consents") ||
+        context.Request.Path.StartsWithSegments($"{ApiRoutes.V1Prefix}/account/preferences") ||
         context.Request.Path.StartsWithSegments($"{ApiRoutes.V1Prefix}/public/invitations") ||
         context.Request.Path.StartsWithSegments($"{ApiRoutes.V1Prefix}/admin") ||
         context.Request.Path.StartsWithSegments("/davetiye"))
@@ -166,6 +167,9 @@ apiV1.MapAuthEndpoints(
     SuperAdminClaimNames.MfaAmrValue);
 
 apiV1.MapAccountConsentEndpoints();
+apiV1.MapAccountUiPreferencesEndpoints(
+    AuthRateLimitPolicyNames.PublicationRead,
+    AuthRateLimitPolicyNames.PublicationAction);
 apiV1.MapAccountDeletionEndpoints(
     AuthRateLimitPolicyNames.PasswordResetRequest,
     AuthRateLimitPolicyNames.PasswordResetConfirm);

@@ -13,7 +13,36 @@ namespace Davetiye.Infrastructure.Modules.IdentityAndAccounts;
 /// wiring are explicitly out of this milestone (M5A) — that is Milestone M6's job. This type and
 /// its EF configuration exist only so the persistence schema Identity needs is in place.
 ///
-/// No custom members are added beyond <see cref="IdentityUser{TKey}"/> in this milestone;
-/// M6 can extend this type if the auth foundation needs additional per-user columns.
+/// UI preferences live on the authenticated Identity row so they are available to Creator and
+/// Super Admin users, including users without a Domain Account.
 /// </summary>
-public sealed class ApplicationUser : IdentityUser<Guid>;
+public sealed class ApplicationUser : IdentityUser<Guid>
+{
+    public string PreferredLocale { get; private set; } = "tr";
+
+    public string PreferredColorTheme { get; private set; } = "kutlio";
+
+    public string PreferredAppearance { get; private set; } = "system";
+
+    public void UpdateUiPreferences(string locale, string colorTheme, string appearance)
+    {
+        if (locale is not ("tr" or "en"))
+        {
+            throw new ArgumentOutOfRangeException(nameof(locale), locale, "Locale must be 'tr' or 'en'.");
+        }
+
+        if (colorTheme is not ("kutlio" or "sage" or "rose" or "ocean" or "plum"))
+        {
+            throw new ArgumentOutOfRangeException(nameof(colorTheme), colorTheme, "Color theme is not supported.");
+        }
+
+        if (appearance is not ("system" or "light" or "dark"))
+        {
+            throw new ArgumentOutOfRangeException(nameof(appearance), appearance, "Appearance must be 'system', 'light', or 'dark'.");
+        }
+
+        PreferredLocale = locale;
+        PreferredColorTheme = colorTheme;
+        PreferredAppearance = appearance;
+    }
+}

@@ -109,6 +109,8 @@ public static class DependencyInjection
 
         services.AddScoped<IAuthAccountService, AuthAccountService>();
         services.AddScoped<IAccountConsentService, AccountConsentService>();
+        services.AddScoped<IAccountUiPreferencesService, AccountUiPreferencesService>();
+        services.AddSingleton<IAccountUiPreferencesRateLimiter, AccountUiPreferencesRateLimiter>();
         services.AddScoped<IAccountDeletionService, AccountDeletionService>();
         services.AddScoped<IOrganizationSubscriptionAccountDeletionCommand, OrganizationSubscriptionAccountDeletionHandler>();
         services.AddScoped<IInvitationAccountDeletionCommand, InvitationAccountDeletionHandler>();

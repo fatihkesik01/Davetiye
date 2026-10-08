@@ -45,6 +45,9 @@ public sealed class AuthRateLimitOptions
     public RouteRateLimit AdminMfaVerify { get; init; } = new() { PermitLimit = 10, WindowSeconds = 60 };
     public RouteRateLimit PublicationRead { get; init; } = new() { PermitLimit = 60, WindowSeconds = 60 };
     public RouteRateLimit PublicationAction { get; init; } = new() { PermitLimit = 20, WindowSeconds = 60 };
+
+    /// <summary>Authenticated UI preference writes per Identity user, including Super Admin users without a Domain Account.</summary>
+    public RouteRateLimit UiPreferencesWrite { get; init; } = new() { PermitLimit = 10, WindowSeconds = 60 };
     public RouteRateLimit PublicInvitationRead { get; init; } = new() { PermitLimit = 60, WindowSeconds = 60 };
 
     /// <summary>Anonymous RSVP writes: abuse-control default, configurable with the other route classes.</summary>
