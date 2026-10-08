@@ -86,9 +86,11 @@ public sealed class DatabaseFoundationTests(PostgreSqlFixture postgreSql)
 
             var exception = await Assert.ThrowsAsync<PostgresException>(() => migrator.MigrateAsync(priorMigration));
             Assert.Contains("cannot be downgraded while account-deletion or settlement evidence exists", exception.Message);
-            // The independent dispatch-schema migration contains no dispatch evidence and can safely
-            // roll back first; the lifecycle migration then refuses to erase deletion evidence.
-            Assert.Equal(migrations[..^1], await dbContext.Database.GetAppliedMigrationsAsync());
+            // Every later migration contains no deletion evidence and rolls back first, newest to oldest;
+            // the lifecycle migration then refuses to erase deletion evidence, so everything up to and
+            // including it stays applied (independent of how many migrations follow it).
+            Assert.Equal(migrations[..(Array.IndexOf(migrations, deletionMigration) + 1)],
+                await dbContext.Database.GetAppliedMigrationsAsync());
         }
     }
 
@@ -164,7 +166,10 @@ public sealed class DatabaseFoundationTests(PostgreSqlFixture postgreSql)
 
             var exception = await Assert.ThrowsAsync<PostgresException>(() => migrator.MigrateAsync(priorMigration));
             Assert.Contains("dispatch history cannot be downgraded after external delivery was authorized", exception.Message);
-            Assert.Equal(migrations, await seedContext.Database.GetAppliedMigrationsAsync());
+            // Migrations after the dispatch migration roll back first; the dispatch migration then refuses,
+            // so everything up to and including it stays applied.
+            Assert.Equal(migrations[..(Array.IndexOf(migrations, dispatchMigration) + 1)],
+                await seedContext.Database.GetAppliedMigrationsAsync());
         }
     }
 
