@@ -85,6 +85,13 @@ describe('SiteHeader', () => {
     expect(within(heading).getByRole('heading', { name: 'Görünüm ve hesap', hidden: true })).toBeTruthy()
     expect(within(heading).getByRole('link', { name: 'Hesap tercihleri', hidden: true })).toBeTruthy()
     expect(within(heading).getByRole('button', { name: 'Güvenli çıkış yap', hidden: true })).toBeTruthy()
+    const accountLink = within(heading).getByRole('link', { name: 'Hesap tercihleri', hidden: true })
+    const logout = within(heading).getByRole('button', { name: 'Güvenli çıkış yap', hidden: true })
+    for (const [control, label] of [[accountLink, 'Hesap tercihleri'], [logout, 'Güvenli çıkış yap']] as const) {
+      expect(control.textContent).toBe('')
+      expect(control.getAttribute('data-tooltip')).toBe(label)
+      expect(control.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true')
+    }
     const footer = drawer.querySelector('.preferences-drawer__footer') as HTMLElement
     expect(within(footer).queryByRole('link', { name: 'Hesap tercihleri', hidden: true })).toBeNull()
     expect(within(footer).queryByRole('button', { name: 'Güvenli çıkış yap', hidden: true })).toBeNull()

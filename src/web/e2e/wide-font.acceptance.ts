@@ -88,3 +88,46 @@ for (const colorTheme of ['kutlio', 'sage', 'rose', 'ocean', 'plum', 'gold'] as 
     expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth)
   })
 }
+
+// The drawer's icon buttons show their label in a CSS tooltip on hover and on keyboard focus. The tooltip is an absolutely
+// positioned pseudo-element: with wide glyphs it must stay inside the drawer instead of widening the page.
+for (const { path, session, name } of [{ path: '/panel/hesap', session: creator, name: 'creator' }, { path: '/admin', session: admin, name: 'admin' }]) {
+  test(`the drawer icon buttons show a tooltip on hover and keyboard focus without overflow (${name})`, async ({ page }, testInfo) => {
+    await mock(page, session)
+    await page.goto(path)
+    await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible()
+    await page.waitForLoadState('networkidle')
+    if (testInfo.project.name === 'chromium-200pct') await page.evaluate(() => { document.documentElement.style.zoom = '2' })
+    await page.addStyleTag({ content: `* { letter-spacing: ${SPACING} !important; }` })
+    await page.getByRole('banner').getByRole('button', { name: /My account|Hesabım/ }).click()
+    const drawer = page.getByRole('dialog')
+    const controls = drawer.locator('.preferences-drawer__quick-actions .drawer-icon-action')
+    await expect(controls.first()).toBeVisible()
+    expect(await controls.count()).toBe(session === creator ? 2 : 1)
+    const measure = () => drawer.evaluate(element => ({ client: element.clientWidth, scroll: element.scrollWidth }))
+    const tooltip = (control: ReturnType<typeof controls.nth>) => control.evaluate(element => {
+      const style = getComputedStyle(element, '::after')
+      return { display: style.display, content: style.content.replace(/^"|"$/g, ''), label: element.getAttribute('data-tooltip') ?? '', name: element.getAttribute('aria-label') ?? '' }
+    })
+    for (let index = 0; index < await controls.count(); index += 1) {
+      const control = controls.nth(index)
+      await control.hover()
+      const hovered = await tooltip(control)
+      expect(hovered.display).toBe('block')
+      expect(hovered.label.length).toBeGreaterThan(0)
+      expect(hovered.content).toBe(hovered.label)
+      expect(hovered.name).toBe(hovered.label)
+      const hoverMetrics = await measure()
+      expect(hoverMetrics.scroll).toBeLessThanOrEqual(hoverMetrics.client)
+      await page.mouse.move(0, 0)
+      expect((await tooltip(control)).display).toBe('none')
+      await control.focus()
+      await page.keyboard.press('Shift+Tab')
+      await page.keyboard.press('Tab')
+      await expect(control).toBeFocused()
+      expect((await tooltip(control)).display).toBe('block')
+      const focusMetrics = await measure()
+      expect(focusMetrics.scroll).toBeLessThanOrEqual(focusMetrics.client)
+    }
+  })
+}

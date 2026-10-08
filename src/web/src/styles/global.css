@@ -2024,12 +2024,33 @@ html { scroll-padding-block-start: 5rem; }
   .preferences-drawer::backdrop { transition: none; }
 }
 
-/* Account drawer: "Hesap tercihleri" and "Güvenli çıkış yap" sit under the title in the header. */
+/* Account drawer: "Hesap tercihleri" and "Güvenli çıkış yap" are icon buttons under the title.
+   The label is the accessible name; a CSS tooltip shows it on hover and keyboard focus
+   (pseudo-element, so it stays hoverable; Escape closes the dialog and with it the tooltip). */
 .preferences-drawer__heading { align-items: flex-start; }
 .preferences-drawer__heading-main { display: grid; gap: .7rem; }
-.preferences-drawer__quick-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; min-width: 0; }
-.preferences-drawer__quick-actions .preferences-drawer__account-link { display: inline-flex; min-height: 2.5rem; justify-content: center; padding: .35rem .85rem; border-radius: .65rem; font-size: .9rem; }
+.preferences-drawer__quick-actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .5rem; min-width: 0; }
 .preferences-drawer__quick-actions .preferences-drawer__logout { min-width: 0; }
-.preferences-drawer__quick-actions .preferences-drawer__logout .session-actions { width: auto; margin: 0; }
-.preferences-drawer__quick-actions .preferences-drawer__logout .button { width: auto; min-height: 2.5rem; padding: .35rem .85rem; border-radius: .65rem; font-size: .9rem; overflow-wrap: anywhere; }
+.preferences-drawer__quick-actions .preferences-drawer__logout .session-actions { display: flex; width: auto; margin: 0; }
+.preferences-drawer__quick-actions .drawer-icon-action {
+  position: relative; display: inline-grid; place-items: center; box-sizing: border-box;
+  width: 2.75rem; min-width: 2.75rem; height: 2.75rem; min-height: 2.75rem; padding: 0;
+  border: 1px solid var(--account-control-border); border-radius: .75rem;
+  color: var(--account-ink) !important; background: var(--account-surface);
+  font: inherit; line-height: 1; text-decoration: none; cursor: pointer;
+}
+.preferences-drawer__quick-actions .drawer-icon-action:hover { background: color-mix(in srgb, var(--account-accent) 8%, var(--account-surface)); }
+.preferences-drawer__quick-actions .drawer-icon-action:focus-visible { outline: 3px solid var(--account-focus); outline-offset: 2px; }
+.preferences-drawer__quick-actions .drawer-icon-action:disabled { opacity: .6; cursor: default; }
+.preferences-drawer__quick-actions .drawer-icon-action svg { width: 1.25rem; height: 1.25rem; }
+.preferences-drawer__quick-actions .drawer-icon-action[data-tooltip]::after {
+  content: attr(data-tooltip); position: absolute; z-index: 5; inset-block-start: calc(100% + .45rem); inset-inline-start: 0;
+  display: none; width: max-content; max-width: min(11rem, 60vw); padding: .4rem .65rem; border-radius: .55rem;
+  color: var(--account-surface); background: var(--account-ink); box-shadow: 0 .5rem 1.25rem rgb(17 24 39 / 28%);
+  font-size: .8rem; font-weight: 600; line-height: 1.3; text-align: start; white-space: normal; pointer-events: none;
+}
+.preferences-drawer__quick-actions .drawer-icon-action:hover::after,
+.preferences-drawer__quick-actions .drawer-icon-action:focus-visible::after { display: block; }
+.preferences-drawer__quick-actions .preferences-drawer__logout .drawer-icon-action[data-tooltip]::after { inset-inline-start: auto; inset-inline-end: 0; }
+.preferences-drawer__quick-actions .preferences-drawer__logout .form-status { flex-basis: 100%; margin: .4rem 0 0; }
 .preferences-drawer__footer { min-height: 0; }
