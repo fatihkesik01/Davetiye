@@ -1,4 +1,5 @@
 import { type FormEvent, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { LogOutIcon } from '../../components/icons/lucide'
 
 import { DavetiyeApiClient, type AccountTypeInput } from '../../api/generated/client'
 import { ErrorSummary, type ErrorSummaryEntry } from '../../components/ui/ErrorSummary'
@@ -440,5 +441,5 @@ export function LogoutButton({ iconOnly = false }: { iconOnly?: boolean } = {}) 
       setState('error'); setMessage(authErrorMessage(error, 'logout'))
     }
   }
-  return <div className="session-actions"><button className={iconOnly ? 'button button--secondary drawer-icon-action' : 'button button--secondary'} type="button" aria-label={iconOnly ? t('common.secureLogout') : undefined} data-tooltip={iconOnly ? t('common.secureLogout') : undefined} onClick={() => void logout()} disabled={state === 'submitting'}>{iconOnly ? <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M10 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h4M15 8l4 4-4 4M19 12H9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg> : t('common.secureLogout')}</button><FormStatus state={state} message={message} /></div>
+  return <div className="session-actions"><button className={iconOnly ? 'button button--secondary drawer-icon-action' : 'button button--secondary'} type="button" aria-label={iconOnly ? t('common.secureLogout') : undefined} data-tooltip={iconOnly ? t('common.secureLogout') : undefined} onClick={() => void logout()} disabled={state === 'submitting'}>{iconOnly ? <LogOutIcon /> : t('common.secureLogout')}</button><FormStatus state={state} message={message} /></div>
 }

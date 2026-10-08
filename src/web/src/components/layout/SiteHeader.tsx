@@ -2,6 +2,7 @@ import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from 're
 import { useTranslation } from 'react-i18next'
 import { InternalLink } from '../ui/InternalLink'
 import { LogoutButton } from '../../features/auth/AuthPages'
+import { UserRoundCogIcon } from '../icons/lucide'
 import { AccountPreferenceControls } from '../../features/preferences/preferences'
 import { Avatar } from '../../features/preferences/avatars'
 import { PreferenceStatus } from '../../features/preferences/PreferenceStatus'
@@ -143,10 +144,19 @@ export function SiteHeader({ zone, sectionLinks, sectionLabel }: SiteHeaderProps
       <div className="preferences-drawer__panel">
         <header className="preferences-drawer__heading">
           <Avatar className="preferences-drawer__avatar" avatarKey={avatarKey} size={48} />
-          <div className="preferences-drawer__heading-main"><h2 id="preferences-drawer-title">{t('navigation.drawerTitle')}</h2><div className="preferences-drawer__quick-actions">{showAccountSettings ? <><InternalLink className="preferences-drawer__account-link drawer-icon-action" to="/panel/hesap" aria-label={t('siteHeader.accountSettings')} data-tooltip={t('siteHeader.accountSettings')} aria-describedby="preferences-drawer-account-hint" onClick={() => setDrawerOpen(false)}><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M4 7h9M17 7h3M4 17h3M11 17h9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /><circle cx="15" cy="7" r="2" fill="none" stroke="currentColor" strokeWidth="2" /><circle cx="9" cy="17" r="2" fill="none" stroke="currentColor" strokeWidth="2" /></svg></InternalLink><span id="preferences-drawer-account-hint" className="visually-hidden">{t('siteHeader.accountSettingsHint')}</span></> : null}<div className="preferences-drawer__logout"><LogoutButton iconOnly /></div></div></div>
-          <button className="preferences-drawer__close" type="button" aria-label={t('common.close')} onClick={() => setDrawerOpen(false)}>
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
-          </button>
+          <div className="preferences-drawer__heading-main"><h2 id="preferences-drawer-title">{t('navigation.drawerTitle')}</h2></div>
+          <div className="preferences-drawer__tools">
+            <div className="preferences-drawer__quick-actions">
+              {showAccountSettings ? <>
+                <InternalLink className="preferences-drawer__account-link drawer-icon-action" to="/panel/hesap" aria-label={t('siteHeader.accountSettings')} data-tooltip={t('siteHeader.accountSettings')} aria-describedby="preferences-drawer-account-hint" onClick={() => setDrawerOpen(false)}><UserRoundCogIcon /></InternalLink>
+                <span id="preferences-drawer-account-hint" className="visually-hidden">{t('siteHeader.accountSettingsHint')}</span>
+              </> : null}
+              <div className="preferences-drawer__logout"><LogoutButton iconOnly /></div>
+            </div>
+            <button className="preferences-drawer__close" type="button" aria-label={t('common.close')} onClick={() => setDrawerOpen(false)}>
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+            </button>
+          </div>
         </header>
         <div className="preferences-drawer__body"><AccountPreferenceControls variant="drawer" showAvatar showStatus={false} /></div>
         <footer className="preferences-drawer__footer"><PreferenceStatus /></footer>
