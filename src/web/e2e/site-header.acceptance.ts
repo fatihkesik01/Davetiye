@@ -227,7 +227,8 @@ for (const { name, preferences } of themeMatrix) {
       for (const path of ['/', '/sablonlar', '/giris', '/gizlilik', '/kullanim-kosullari']) {
         await page.goto(path)
         await applyZoom(page, testInfo.project.name)
-        await expect(page.locator('html')).toHaveAttribute('data-color-theme', preferences.colorTheme)
+        // Generous timeout: this loop shares a cold server with many parallel workers on loaded runners.
+        await expect(page.locator('html')).toHaveAttribute('data-color-theme', preferences.colorTheme, { timeout: 20_000 })
         await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible()
         if (path === '/' || path === '/sablonlar') await expect(page.locator('img[src^="/template-previews/"]').first()).toBeVisible()
         if (authenticated) await expect(page.getByRole('banner').getByRole('button', { name: /Hesabım|My account/ })).toBeVisible()

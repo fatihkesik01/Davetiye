@@ -1872,3 +1872,16 @@ a {
 .avatar-picker__remove { justify-self: start; min-height: 2.75rem; padding: .45rem .8rem; border: 1px solid var(--account-border); border-radius: .65rem; color: var(--account-ink); background: var(--account-surface); font: inherit; cursor: pointer; }
 .avatar-picker__remove:disabled { opacity: .6; cursor: default; }
 .avatar-picker__remove:focus-visible { outline: 3px solid var(--account-accent-ink); outline-offset: 2px; }
+
+/* Wider-font safety: the drawer heading row (avatar, title, close) must shrink instead of pushing the close button out. */
+.preferences-drawer__heading > div { min-width: 0; flex: 1 1 0; }
+.preferences-drawer__heading h2, .preferences-drawer__heading p { overflow-wrap: anywhere; }
+.preferences-drawer__heading > .avatar { flex: 0 0 auto; }
+.preference-controls__choices button, .preference-theme { max-width: 100%; overflow-wrap: anywhere; }
+.preference-controls__status { overflow-wrap: anywhere; }
+.avatar-picker__grid { grid-template-columns: repeat(auto-fill, minmax(min(4.5rem, 100%), 1fr)); }
+.avatar-picker--compact .avatar-picker__grid { grid-template-columns: repeat(auto-fill, minmax(min(3.5rem, 100%), 1fr)); }
+.avatar-picker__remove { max-width: 100%; overflow-wrap: anywhere; }
+.shell-main :is(h1, h2, h3, h4, p, legend, summary, li, dt, dd, label) { overflow-wrap: anywhere; }
+.avatar-picker__tile { width: min(3.5rem, 100%); height: auto; aspect-ratio: 1; }
+.avatar-picker__tile .avatar { width: 78%; height: auto; aspect-ratio: 1; }

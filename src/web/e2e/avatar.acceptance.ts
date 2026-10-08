@@ -171,3 +171,21 @@ test('an anonymous visitor sees the unchanged header without any avatar', async 
   await expect(page.locator('[data-avatar], .site-account')).toHaveCount(0)
   expect(api.requests.filter(request => request.includes('/account/preferences'))).toEqual([])
 })
+
+// Font metrics differ between platforms (Linux CI fonts are wider than Windows). Widen all text deterministically.
+for (const spacing of ['0.08em', '0.16em']) {
+  test(`settings page and drawer do not overflow with wider font metrics (${spacing})`, async ({ page }, testInfo) => {
+    await mockApi(page, { locale: 'en', colorTheme: 'plum', appearance: 'dark', avatar: 'peach' })
+    await page.goto('/panel/hesap')
+    await applyZoom(page, testInfo.project.name)
+    await page.addStyleTag({ content: `* { letter-spacing: ${spacing} !important; }` })
+    await expect(page.getByRole('region', { name: 'Profile picture' }).getByRole('radio').first()).toBeEnabled()
+    await expectNoHorizontalOverflow(page)
+    await page.getByRole('banner').getByRole('button', { name: 'My account, theme and language' }).click()
+    const drawer = page.getByRole('dialog')
+    await expect(drawer.getByRole('radio')).toHaveCount(12)
+    await expectNoHorizontalOverflow(page)
+    const drawerBox = await drawer.evaluate(element => ({ client: element.clientWidth, scroll: element.scrollWidth }))
+    expect(drawerBox.scroll).toBeLessThanOrEqual(drawerBox.client)
+  })
+}
