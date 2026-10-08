@@ -706,6 +706,18 @@ gösterir. Her iki alanda dil, palet ve görünüm tercihleri sağ üstteki hesa
 çekmecesinden; Creator ayrıca Hesap tercihleri sayfasından yönetilebilir.
 Güvenli çıkış hesap çekmecesinde yer alır.
 
+**Profil resmi (avatar).** Fatih'in 2026-10-08 kararı. Giriş yapan Creator ve
+Super Admin hesap tercihlerinden (Creator'da Hesap tercihleri sayfası, her iki
+rolde hesap çekmecesi) bir profil resmi seçebilir. İlk sürümde profil resmi,
+Kutlio'nun hazır avatar setinden seçilir (12 özgün, renkli, basit yüzlü
+avatar; Netflix profil seçimine benzer). Seçim hesapta saklanır, cihazlar
+arasında korunur ve hesap düğmesinde ile çekmecede gösterilir; seçim
+yapılmamışsa genel kişi simgesi görünür. Avatar seçimi kişisel veri sayılmaz;
+yalnız sabit bir anahtardır. Kullanıcının kendi fotoğrafını yüklemesi
+(Cloudflare R2 + Images) ikinci aşamadır ve production medya sağlayıcısı kabul
+edilene kadar (Phase 11 P11-M6) sunulmaz. Public sayfalarda (davetiye, ana
+sayfa) misafirlere hiçbir profil resmi gösterilmez.
+
 Frontend i18n uyumlu, backend/veri modeli de genişletilebilir olmalıdır.
 
 ## 28. Teknik Temel

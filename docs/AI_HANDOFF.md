@@ -37,11 +37,12 @@ Creator/Admin shell (not on `/davetiye/*`); session-aware header (anonymous /
 Creator / Admin / MFA-setup); tr/en UI language, five palettes and
 system/light/dark appearance stored per account (`GET/PUT /api/v1/account/preferences`,
 migration `P11UiPreferences`) and applied on public pages; theme tokens for
-landing/catalog/auth/legal; landing 200%-zoom overflow fixed. Avatar slot in the
-account button is a generic icon; avatar presets are the next item (photo upload
-only after the Cloudflare media gate, P11-M6). Fatih views the frontend locally
-with a Vite proxy to the VPS API, so backend/DB changes must be deployed for
-his local UI to see them.
+landing/catalog/auth/legal; landing 200%-zoom overflow fixed. Preset avatars
+(12 keys, nullable `preferred_avatar`, migration `P11AvatarPreference`) are
+implemented in the picker on `/panel/hesap` and the account drawer and shown in
+the header account button; photo upload only after the Cloudflare media gate
+(P11-M6). Fatih views the frontend locally with a Vite proxy to the VPS API, so
+backend/DB changes must be deployed for his local UI to see them.
 
 ## Deferred to Phase 11 (mandatory gates)
 
