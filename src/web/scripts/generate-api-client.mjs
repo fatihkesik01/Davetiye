@@ -569,6 +569,20 @@ assertContract(
     && spec.paths?.['/api/v1/account/preferences']?.put?.responses?.['200']?.content?.['application/json']?.schema?.$ref === '#/components/schemas/AccountPreferences',
   'GET/PUT /api/v1/account/preferences must use the AccountPreferences schema',
 )
+{
+  const preferencesSchema = spec.components?.schemas?.AccountPreferences
+  const avatarKeys = ['sunny', 'mint', 'berry', 'sky', 'coral', 'lilac', 'amber', 'forest', 'night', 'rose', 'slate', 'peach']
+  const avatarVariants = preferencesSchema?.properties?.avatar?.oneOf ?? []
+  const avatarEnum = avatarVariants.find((variant) => variant.type === 'string')?.enum
+  assertContract(
+    preferencesSchema?.required?.includes('avatar')
+      && avatarVariants.some((variant) => variant.type === 'null')
+      && Array.isArray(avatarEnum)
+      && avatarEnum.length === avatarKeys.length
+      && avatarKeys.every((key) => avatarEnum.includes(key)),
+    'AccountPreferences must require a nullable avatar limited to the 12 preset avatar keys',
+  )
+}
 assertContract(
   spec.paths?.['/api/v1/account/consents/marketing']?.put?.requestBody?.content?.['application/json']?.schema?.$ref === '#/components/schemas/MarketingPreferenceHttpRequest',
   'PUT /api/v1/account/consents/marketing must accept MarketingPreferenceHttpRequest',

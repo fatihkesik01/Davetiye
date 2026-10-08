@@ -20,13 +20,13 @@ const plans = [
   { ...basePlan, key: 'premium', displayName: 'Premium', priceAmount: 1199, billingPeriod: 'one-time', maxPublishDays: 90, maxRSVPResponses: 1000, memoriesEnabled: true, giftRegistryEnabled: true, premiumTemplatesEnabled: true },
 ]
 
-type Preferences = { locale: 'tr' | 'en'; colorTheme: 'kutlio' | 'sage' | 'rose' | 'ocean' | 'plum'; appearance: 'system' | 'light' | 'dark' }
+type Preferences = { locale: 'tr' | 'en'; colorTheme: 'kutlio' | 'sage' | 'rose' | 'ocean' | 'plum'; appearance: 'system' | 'light' | 'dark'; avatar: string | null }
 const anonymous = { authenticated: false, access: 'none' }
 const creator = { authenticated: true, access: 'creator' }
 
 interface ApiOptions { session?: unknown; preferences?: Preferences | 'unauthorized' }
 
-async function mockApi(page: Page, { session = anonymous, preferences = { locale: 'tr', colorTheme: 'kutlio', appearance: 'system' } }: ApiOptions = {}) {
+async function mockApi(page: Page, { session = anonymous, preferences = { locale: 'tr', colorTheme: 'kutlio', appearance: 'system', avatar: null } }: ApiOptions = {}) {
   const requests: string[] = []
   const unexpected: string[] = []
   await page.route('**/api/v1/**', route => {
@@ -115,7 +115,7 @@ test('anonymous visitors see the same bar everywhere with a sign-in link and no 
 })
 
 test('a signed-in Creator keeps the signed-in bar and the chosen theme on the landing, catalog, auth and legal pages', async ({ page }) => {
-  const { requests, unexpected } = await mockApi(page, { session: creator, preferences: { locale: 'tr', colorTheme: 'sage', appearance: 'dark' } })
+  const { requests, unexpected } = await mockApi(page, { session: creator, preferences: { locale: 'tr', colorTheme: 'sage', appearance: 'dark', avatar: null } })
 
   for (const { path, ready } of publicPages) {
     await page.goto(path)
@@ -134,7 +134,7 @@ test('a signed-in Creator keeps the signed-in bar and the chosen theme on the la
 })
 
 test('the theme and language follow client-side navigation between the landing, catalog and legal pages', async ({ page }) => {
-  const { requests, unexpected } = await mockApi(page, { session: creator, preferences: { locale: 'en', colorTheme: 'rose', appearance: 'light' } })
+  const { requests, unexpected } = await mockApi(page, { session: creator, preferences: { locale: 'en', colorTheme: 'rose', appearance: 'light', avatar: null } })
   await page.goto('/')
   await expect(page.getByRole('banner').getByRole('link', { name: 'Go to dashboard' })).toBeVisible()
   await expect(page.locator('html')).toHaveAttribute('data-color-theme', 'rose')
@@ -170,12 +170,12 @@ test('a palette chosen from the account drawer on the landing persists on the ca
   await page.getByRole('banner').getByRole('link', { name: 'Şablonlar' }).click()
   await expect(page).toHaveURL(/\/sablonlar$/)
   await expect(page.locator('html')).toHaveAttribute('data-color-theme', 'ocean')
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('kutlio:account-preferences') ?? 'null'))).toMatchObject({ colorTheme: 'ocean', appearance: 'dark' })
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('kutlio:account-preferences') ?? 'null'))).toMatchObject({ colorTheme: 'ocean', appearance: 'dark', avatar: null })
   expect(unexpected).toEqual([])
 })
 
 test('an expired session clears the previous user preference from the browser', async ({ page }) => {
-  await seedLocalPreferences(page, { locale: 'en', colorTheme: 'plum', appearance: 'dark' })
+  await seedLocalPreferences(page, { locale: 'en', colorTheme: 'plum', appearance: 'dark', avatar: null })
   const { unexpected } = await mockApi(page, { session: creator, preferences: 'unauthorized' })
   await page.goto('/')
   await expect(page.locator('html')).toHaveAttribute('data-color-theme', 'kutlio')
@@ -211,12 +211,12 @@ test('the public invitation page has no site header, no session lookup and no ac
 })
 
 const themeMatrix: { name: string; preferences: Preferences }[] = [
-  { name: 'kutlio light', preferences: { locale: 'tr', colorTheme: 'kutlio', appearance: 'light' } },
-  { name: 'kutlio dark', preferences: { locale: 'tr', colorTheme: 'kutlio', appearance: 'dark' } },
-  { name: 'sage light', preferences: { locale: 'tr', colorTheme: 'sage', appearance: 'light' } },
-  { name: 'rose dark', preferences: { locale: 'tr', colorTheme: 'rose', appearance: 'dark' } },
-  { name: 'ocean light', preferences: { locale: 'en', colorTheme: 'ocean', appearance: 'light' } },
-  { name: 'plum dark', preferences: { locale: 'en', colorTheme: 'plum', appearance: 'dark' } },
+  { name: 'kutlio light', preferences: { locale: 'tr', colorTheme: 'kutlio', appearance: 'light', avatar: null } },
+  { name: 'kutlio dark', preferences: { locale: 'tr', colorTheme: 'kutlio', appearance: 'dark', avatar: null } },
+  { name: 'sage light', preferences: { locale: 'tr', colorTheme: 'sage', appearance: 'light', avatar: null } },
+  { name: 'rose dark', preferences: { locale: 'tr', colorTheme: 'rose', appearance: 'dark', avatar: null } },
+  { name: 'ocean light', preferences: { locale: 'en', colorTheme: 'ocean', appearance: 'light', avatar: null } },
+  { name: 'plum dark', preferences: { locale: 'en', colorTheme: 'plum', appearance: 'dark', avatar: null } },
 ]
 
 for (const { name, preferences } of themeMatrix) {

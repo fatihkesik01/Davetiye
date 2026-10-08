@@ -32,7 +32,7 @@ test('MFA-complete Admin can navigate overview and read-only operational/configu
     const url = new URL(route.request().url())
     const path = url.pathname
     requested.push(`${route.request().method()} ${path}${url.search}`)
-    if (path === '/api/v1/account/preferences') return json(route, { locale: 'tr', colorTheme: 'kutlio', appearance: 'system' })
+    if (path === '/api/v1/account/preferences') return json(route, { locale: 'tr', colorTheme: 'kutlio', appearance: 'system', avatar: null })
     if (path === '/api/v1/auth/session') return json(route, { authenticated: true, access: 'mfa-complete-super-admin' })
     if (path === '/api/v1/antiforgery/token') return json(route, { token: 'admin-csrf' })
     if (path === '/api/v1/admin/overview') return json(route, overview)

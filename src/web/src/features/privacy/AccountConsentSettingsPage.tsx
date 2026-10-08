@@ -8,7 +8,7 @@ import { AccountDeletionRequest } from './AccountDeletion'
 
 type PageState = 'loading' | 'ready' | 'saving' | 'error'
 
-export function AccountConsentSettingsPage({ children }: { children?: ReactNode }) {
+export function AccountConsentSettingsPage({ children, profile }: { children?: ReactNode; profile?: ReactNode }) {
   const { t, i18n } = useTranslation()
   const tRef = useLatestT()
   const api = useMemo(() => new DavetiyeApiClient(), [])
@@ -61,6 +61,7 @@ export function AccountConsentSettingsPage({ children }: { children?: ReactNode 
   return <section className="account-consent-settings" aria-labelledby="account-consent-heading">
     <h2>{t('account.title')}</h2>
     {children ? <section aria-labelledby="appearance-preferences-title"><h3 id="appearance-preferences-title">{t('account.appearanceTitle')}</h3>{children}</section> : null}
+    {profile}
     <h2 id="account-consent-heading">{t('account.privacyTitle')}</h2>
     <p>{t('consent.intro')}</p>
     {state === 'loading' ? <p role="status">{t('common.loading')}</p> : null}

@@ -200,10 +200,13 @@ export interface AccountConsentSnapshot {
   history: Array<{ kind: 'serviceNoticeAcknowledgement' | 'marketingPreference'; granted: boolean; version: string; source: 'emailPasswordSignup' | 'googleSignup' | 'accountSettings' | 'existingAccountAcknowledgement'; recordedAt: string }>
 }
 
+export type AvatarKey = 'sunny' | 'mint' | 'berry' | 'sky' | 'coral' | 'lilac' | 'amber' | 'forest' | 'night' | 'rose' | 'slate' | 'peach'
+
 export interface AccountPreferences {
   locale: 'tr' | 'en'
   colorTheme: 'kutlio' | 'sage' | 'rose' | 'ocean' | 'plum'
   appearance: 'system' | 'light' | 'dark'
+  avatar: AvatarKey | null
 }
 
 export interface MarketingPreferenceUpdateRequest { optedIn: boolean }

@@ -5,6 +5,7 @@ import { RsvpResultsPage } from '../features/invitations/RsvpResultsPage'
 import { OrganizationSubscriptionPage } from '../features/payments/OrganizationSubscriptionPage'
 import { AccountConsentSettingsPage } from '../features/privacy/AccountConsentSettingsPage'
 import { AccountPreferenceControls } from '../features/preferences/preferences'
+import { AvatarPreferenceSection } from '../features/preferences/AvatarPicker'
 import { RouteShell } from './RouteShell'
 
 const titleKeys: Record<string, string> = {
@@ -24,7 +25,7 @@ export default function CreatorRoutes() {
   let content = <InvitationDraftDashboard />
   if (pathname === '/panel/cop-kutusu') content = <InvitationTrashPage />
   else if (pathname === '/panel/plan-odeme') content = <OrganizationSubscriptionPage />
-  else if (pathname === '/panel/hesap') content = <AccountConsentSettingsPage><AccountPreferenceControls /></AccountConsentSettingsPage>
+  else if (pathname === '/panel/hesap') content = <AccountConsentSettingsPage profile={<AvatarPreferenceSection />}><AccountPreferenceControls /></AccountConsentSettingsPage>
   else if (pathname === '/panel/davetiyeler/yeni') content = <NewInvitationPage />
   else if (editorMatch?.[1]) { title = t('creator.editor'); content = <InvitationEditorPage invitationId={editorMatch[1]} /> }
   else if (rsvpResultsMatch?.[1]) { title = t('creator.rsvp'); content = <RsvpResultsPage key={rsvpResultsMatch[1]} invitationId={rsvpResultsMatch[1]} /> }

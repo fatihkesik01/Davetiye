@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { InternalLink } from '../ui/InternalLink'
 import { LogoutButton } from '../../features/auth/AuthPages'
 import { AccountPreferenceControls } from '../../features/preferences/preferences'
+import { Avatar } from '../../features/preferences/avatars'
 import { useOptionalAccountPreferences } from '../../features/preferences/preferencesContext'
 import { useSessionAccess } from '../../features/session/sessionAccess'
 
@@ -34,7 +35,10 @@ const publicItems = [['/sablonlar', 'siteHeader.templates']] as const
 export function SiteHeader({ zone, sectionLinks, sectionLabel }: SiteHeaderProps) {
   const { t } = useTranslation()
   const session = useSessionAccess()
-  const hydrate = useOptionalAccountPreferences()?.hydrate
+  const accountPreferences = useOptionalAccountPreferences()
+  const hydrate = accountPreferences?.hydrate
+  // The key comes only from hydrated account preferences; the PII-free session projection never carries it.
+  const avatarKey = accountPreferences?.ready ? accountPreferences.preferences.avatar : null
   const drawerReference = useRef<HTMLDialogElement>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
 
@@ -80,10 +84,7 @@ export function SiteHeader({ zone, sectionLinks, sectionLabel }: SiteHeaderProps
         {authenticated ? null : <InternalLink className="site-action site-action--login" to="/giris">{t('siteHeader.login')}</InternalLink>}
         {sessionLink ? <InternalLink className="site-action site-action--session" to={sessionLink.to}>{sessionLink.label}</InternalLink> : null}
         {authenticated && hydrate ? <button className="site-account" type="button" aria-haspopup="dialog" aria-expanded={drawerOpen} aria-label={t('siteHeader.accountMenu')} onClick={() => setDrawerOpen(true)}>
-          {/* Avatar slot: a generic person icon until a profile picture feature exists. The session projection is PII-free, so nothing personal is rendered here. */}
-          <span className="site-account__avatar" data-avatar-slot aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8.5" r="3.5" /><path d="M5 20c.7-3.6 3.4-5.5 7-5.5s6.3 1.9 7 5.5" /></svg>
-          </span>
+          <span className="site-account__avatar" data-avatar-slot aria-hidden="true"><Avatar avatarKey={avatarKey} size={28} /></span>
           <span className="site-account__label">{t('siteHeader.account')}</span>
         </button> : null}
       </div>
@@ -91,10 +92,11 @@ export function SiteHeader({ zone, sectionLinks, sectionLabel }: SiteHeaderProps
     {authenticated && hydrate ? <dialog ref={drawerReference} className="preferences-drawer" aria-labelledby="preferences-drawer-title" aria-describedby="preferences-drawer-description" onClose={() => setDrawerOpen(false)} onClick={(event) => { if (event.target === drawerReference.current) setDrawerOpen(false) }}>
       <div className="preferences-drawer__content">
         <div className="preferences-drawer__heading">
+          <Avatar className="preferences-drawer__avatar" avatarKey={avatarKey} size={48} />
           <div><h2 id="preferences-drawer-title">{t('navigation.drawerTitle')}</h2><p id="preferences-drawer-description">{t('navigation.drawerDescription')}</p></div>
           <button className="preferences-drawer__close" type="button" aria-label={t('common.close')} onClick={() => setDrawerOpen(false)}>×</button>
         </div>
-        <AccountPreferenceControls />
+        <AccountPreferenceControls showAvatar />
         {showAccountSettings ? <p className="preferences-drawer__account-link"><InternalLink to="/panel/hesap" onClick={() => setDrawerOpen(false)}>{t('siteHeader.accountSettings')}</InternalLink><small>{t('siteHeader.accountSettingsHint')}</small></p> : null}
         <div className="preferences-drawer__logout"><LogoutButton /></div>
       </div>

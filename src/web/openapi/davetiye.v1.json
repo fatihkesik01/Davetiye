@@ -4839,12 +4839,18 @@
         }
       },
       "AccountPreferences": {
-        "required": ["locale", "colorTheme", "appearance"],
+        "required": ["locale", "colorTheme", "appearance", "avatar"],
         "type": "object",
         "properties": {
           "locale": { "type": "string", "enum": ["tr", "en"] },
           "colorTheme": { "type": "string", "enum": ["kutlio", "sage", "rose", "ocean", "plum"] },
-          "appearance": { "type": "string", "enum": ["system", "light", "dark"] }
+          "appearance": { "type": "string", "enum": ["system", "light", "dark"] },
+          "avatar": {
+            "oneOf": [
+              { "type": "null" },
+              { "type": "string", "enum": ["sunny", "mint", "berry", "sky", "coral", "lilac", "amber", "forest", "night", "rose", "slate", "peach"] }
+            ]
+          }
         },
         "additionalProperties": false
       },

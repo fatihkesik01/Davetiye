@@ -1,6 +1,8 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ApiRequestError, DavetiyeApiClient } from '../../api/generated/client'
+import { AvatarPicker } from './AvatarPicker'
+import { PreferenceStatus } from './PreferenceStatus'
 import {
   type AccountPreferences, applyPreferences, clearLocalAccountPreferences, DEFAULT_PREFERENCES, parsePreferences,
   PreferencesContext, type PreferencesContextValue, readLocal, STORAGE_KEY, useAccountPreferences,
@@ -55,7 +57,9 @@ export function AccountPreferencesProvider({ children }: { children: ReactNode }
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); localSaved = true } catch { /* Browser storage is optional. */ }
     const pendingSave = saveQueue.current.then(async () => {
       const token = await api.getAntiforgeryToken()
-      const saved = parsePreferences(await api.updateAccountPreferences(next, token))
+      const response: unknown = await api.updateAccountPreferences(next, token)
+      // An older API ignores the avatar field and omits it from the response: keep the chosen value instead of dropping it.
+      const saved = parsePreferences(response && typeof response === 'object' && !('avatar' in response) ? { ...response, avatar: next.avatar } : response)
       if (version === requestVersion.current && saved) {
         setPreferences(saved)
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)) } catch { /* Browser storage is optional. */ }
@@ -82,9 +86,9 @@ export function AccountPreferencesProvider({ children }: { children: ReactNode }
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>
 }
 
-export function AccountPreferenceControls() {
+export function AccountPreferenceControls({ showAvatar = false }: { showAvatar?: boolean }) {
   const { t } = useTranslation()
-  const { preferences, ready, save, saveState } = useAccountPreferences()
+  const { preferences, ready, save } = useAccountPreferences()
   const update = (change: Partial<AccountPreferences>) => { void save({ ...preferences, ...change }) }
   return <div className="preference-controls" aria-busy={!ready}>
     <fieldset disabled={!ready}>
@@ -108,6 +112,7 @@ export function AccountPreferenceControls() {
         {(['system', 'light', 'dark'] as const).map(appearance => <button key={appearance} type="button" aria-pressed={preferences.appearance === appearance} onClick={() => update({ appearance })}>{t(`preferences.appearances.${appearance}`)}</button>)}
       </div>
     </fieldset>
-    <p className="preference-controls__status" role="status" aria-live="polite">{!ready ? t('common.loading') : saveState === 'saving' ? t('preferences.saving') : saveState === 'saved' ? t('preferences.saved') : saveState === 'local' ? t('preferences.local') : saveState === 'error' ? t('error.title') : ''}</p>
+    {showAvatar ? <AvatarPicker compact /> : null}
+    <PreferenceStatus />
   </div>
 }
