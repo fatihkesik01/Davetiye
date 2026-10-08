@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import type { DraftContentInput } from '../../api/generated/client'
 import { InvitationRenderer } from '../templates/rendering/InvitationRenderer'
@@ -13,29 +14,29 @@ interface DevicePreviewProps {
   content: DraftContentInput
 }
 
-const devices: Array<{ value: PreviewDevice; label: string }> = [
-  { value: 'phone', label: 'Telefon' },
-  { value: 'tablet', label: 'Tablet' },
-  { value: 'desktop', label: 'Masaüstü' },
-]
-
 export function DevicePreview({ invitationId, templateKey, rendererVersion, content }: DevicePreviewProps) {
+  const { t } = useTranslation()
   const [device, setDevice] = useState<PreviewDevice>('phone')
+  const devices: Array<{ value: PreviewDevice; label: string }> = [
+    { value: 'phone', label: t('creatorUi.preview.phone') },
+    { value: 'tablet', label: t('creatorUi.preview.tablet') },
+    { value: 'desktop', label: t('creatorUi.preview.desktop') },
+  ]
 
   if (!templateKey || !rendererVersion) {
     return <section className="preview-empty" role="status">
-      <h3>Önizleme için şablon seçin</h3>
-      <p>Şablon adımından bir tasarım seçtiğinizde kendi bilgileriniz burada görünür.</p>
+      <h3>{t('creatorUi.preview.chooseTitle')}</h3>
+      <p>{t('creatorUi.preview.chooseBody')}</p>
     </section>
   }
 
   return <section className="device-preview" aria-labelledby="preview-heading">
     <div className="device-preview__toolbar">
       <div>
-        <h3 id="preview-heading">Davetiye önizlemesi</h3>
-        <p>Cihaz seçimi yalnızca görünüm genişliğini değiştirir.</p>
+        <h3 id="preview-heading">{t('creatorUi.preview.title')}</h3>
+        <p>{t('creatorUi.preview.deviceNote')}</p>
       </div>
-      <div className="segmented-control" role="group" aria-label="Önizleme cihazı">
+      <div className="segmented-control" role="group" aria-label={t('creatorUi.preview.devices')}>
         {devices.map(option => <button
           key={option.value}
           type="button"
@@ -48,7 +49,7 @@ export function DevicePreview({ invitationId, templateKey, rendererVersion, cont
         href={`/panel/davetiyeler/${encodeURIComponent(invitationId)}/onizleme`}
         target="_blank"
         rel="noopener noreferrer"
-      >Yeni sekmede tam önizleme</a>
+      >{t('creatorUi.preview.open')}</a>
     </div>
     <div className={`device-preview__stage device-preview__stage--${device}`}>
       <InvitationRenderer
@@ -58,6 +59,6 @@ export function DevicePreview({ invitationId, templateKey, rendererVersion, cont
         previewContext="creator"
       />
     </div>
-    <p className="device-preview__note">Bu bir taslak önizlemesidir; public bir davetiye adresi oluşturmaz.</p>
+    <p className="device-preview__note">{t('creatorUi.preview.draftNote')}</p>
   </section>
 }

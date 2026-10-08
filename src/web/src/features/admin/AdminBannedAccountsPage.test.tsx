@@ -20,6 +20,7 @@ vi.mock('../../api/generated/client', async importOriginal => {
 })
 
 import { AdminBannedAccountsPage } from './AdminBannedAccountsPage'
+import { AccountPreferencesProvider } from '../preferences/preferences'
 import AdminRoutes from '../../routes/AdminRoutes'
 
 type AccountFixture = {
@@ -123,7 +124,7 @@ describe('Admin banned accounts', () => {
 
   it('adds the accounts view to Admin navigation and selects its route', async () => {
     window.history.replaceState({}, '', '/admin/accounts')
-    render(<AdminRoutes />)
+    render(<AccountPreferencesProvider><AdminRoutes /></AccountPreferencesProvider>)
     expect(await screen.findByRole('heading', { name: 'Banlı hesaplar' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Banlı hesaplar' }).getAttribute('aria-current')).toBe('page')
   })

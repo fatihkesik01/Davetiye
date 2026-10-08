@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 
 import { ApiRequestError, normalizeRsvpNumberLexeme, type DavetiyeApiClient, type PublicRsvpAnswerInput, type PublicRsvpConfiguration, type PublicRsvpGuestAnswer, type PublicRsvpQuestion } from '../../api/generated/client'
 
@@ -14,6 +16,7 @@ interface ExactDecimal { coefficient: bigint; scale: number }
 const maxDecimalCoefficient = 79228162514264337593543950335n
 
 export function PublicRsvpForm({ api, publicCode, configuration }: Props) {
+  const { t } = useTranslation()
   const questions = useMemo(() => [...configuration.questions].sort((a, b) => a.sortOrder - b.sortOrder), [configuration.questions])
   const storageKey = `davetiye:rsvp-submission:${publicCode}`
   const [status, setStatus] = useState<FormStatus>(() => {
@@ -49,15 +52,15 @@ export function PublicRsvpForm({ api, publicCode, configuration }: Props) {
         try { window.localStorage.removeItem(storageKey) } catch { /* A stale locator is harmless if storage cannot be cleared. */ }
         setSubmissionId(null)
         setAnswers({})
-        setNotice('Önceki yanıt bu tarayıcıda artık düzenlenemiyor. Yeni bir yanıt gönderebilirsiniz.')
+        setNotice(t('guest.previousCannotEdit'))
         setStatus('new')
       } else {
-        setFormError('Önceki yanıtınız yüklenemedi. Lütfen tekrar deneyin.')
+        setFormError(t('guest.previousFailed'))
         setStatus('error')
       }
     })
     return () => controller.abort()
-  }, [api, lookupAttempt, publicCode, questions, storageKey])
+  }, [api, lookupAttempt, publicCode, questions, storageKey, t])
 
   function changeAnswer(questionId: string, value: string | boolean | string[]) {
     setAnswers(current => ({ ...current, [questionId]: value }))
@@ -71,11 +74,11 @@ export function PublicRsvpForm({ api, publicCode, configuration }: Props) {
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const validation = validateAnswers(questions, answers, configuration)
+    const validation = validateAnswers(questions, answers, configuration, t)
     setErrors(validation)
     setFormError('')
     if (Object.keys(validation).length) {
-      setFormError('Göndermeden önce işaretli alanları kontrol edin.')
+      setFormError(t('guest.validation'))
       return
     }
 
@@ -89,33 +92,33 @@ export function PublicRsvpForm({ api, publicCode, configuration }: Props) {
       try { window.localStorage.setItem(storageKey, result.submissionId) } catch { /* The cookie remains the only authority; local storage is just a locator. */ }
       setSubmissionId(result.submissionId)
       setStatus('saved')
-      setNotice('Yanıtınız kaydedildi. Bu tarayıcıdan dilediğiniz zaman güncelleyebilirsiniz.')
+      setNotice(t('guest.saved'))
     } catch (error) {
       if (submissionId && isNotFound(error)) {
         try { window.localStorage.removeItem(storageKey) } catch { /* Best effort cleanup. */ }
         setSubmissionId(null)
         setAnswers({})
         setStatus('new')
-        setNotice('Yanıtınız artık güncellenemiyor. İsterseniz yeni bir yanıt gönderebilirsiniz.')
+        setNotice(t('guest.cannotUpdate'))
         return
       }
       setStatus(submissionId ? 'editing' : 'ready')
-      setFormError('Yanıtınız gönderilemedi. Lütfen tekrar deneyin.')
+      setFormError(t('guest.submitFailed'))
     }
   }
 
   if (configuration.status !== 'available' || !questions.length) return null
-  if (status === 'loading-own') return <section className="public-rsvp" aria-labelledby="public-rsvp-heading"><h2 id="public-rsvp-heading">Katılım yanıtı</h2><p role="status">Önceki yanıtınız kontrol ediliyor…</p></section>
-  if (status === 'error') return <section className="public-rsvp" aria-labelledby="public-rsvp-heading"><h2 id="public-rsvp-heading">Katılım yanıtı</h2><p role="alert">{formError}</p><button className="button button--secondary" type="button" onClick={() => { setFormError(''); setStatus('loading-own'); setLookupAttempt(value => value + 1) }}>Tekrar dene</button></section>
+  if (status === 'loading-own') return <section className="public-rsvp" aria-labelledby="public-rsvp-heading"><h2 id="public-rsvp-heading">{t('guest.rsvp')}</h2><p role="status">{t('guest.checkingAnswer')}</p></section>
+  if (status === 'error') return <section className="public-rsvp" aria-labelledby="public-rsvp-heading"><h2 id="public-rsvp-heading">{t('guest.rsvp')}</h2><p role="alert">{formError}</p><button className="button button--secondary" type="button" onClick={() => { setFormError(''); setStatus('loading-own'); setLookupAttempt(value => value + 1) }}>{t('guest.retry')}</button></section>
   if (status === 'saved') return <section className="public-rsvp" aria-labelledby="public-rsvp-heading">
-    <h2 id="public-rsvp-heading">Katılım yanıtı</h2>
-    <p role="status">{notice || 'Daha önce yanıt verdiniz.'}</p>
-    <button className="button button--secondary" type="button" onClick={() => { setFormError(''); setNotice(''); setStatus('editing') }}>Yanıtımı Güncelle</button>
+    <h2 id="public-rsvp-heading">{t('guest.rsvp')}</h2>
+    <p role="status">{notice || t('guest.previous')}</p>
+    <button className="button button--secondary" type="button" onClick={() => { setFormError(''); setNotice(''); setStatus('editing') }}>{t('guest.update')}</button>
   </section>
 
   const formEnabled = status !== 'submitting'
   return <section className="public-rsvp" aria-labelledby="public-rsvp-heading">
-    <h2 id="public-rsvp-heading">Katılım yanıtı</h2>
+    <h2 id="public-rsvp-heading">{t('guest.rsvp')}</h2>
     {notice ? <p className="form-field__help" role="status">{notice}</p> : null}
     <form onSubmit={submit} noValidate>
       {formError ? <div id="public-rsvp-summary" ref={summaryRef} className="public-rsvp__summary" role="alert" tabIndex={-1}>
@@ -124,7 +127,7 @@ export function PublicRsvpForm({ api, publicCode, configuration }: Props) {
       </div> : null}
       {questions.map(question => <QuestionField key={question.id} question={question} value={answers[question.id]} error={errors[question.id]}
         configuration={configuration} disabled={!formEnabled} onChange={value => changeAnswer(question.id, value)} />)}
-      <button className="button button--primary" type="submit" disabled={!formEnabled}>{status === 'submitting' ? 'Gönderiliyor…' : submissionId ? 'Yanıtımı kaydet' : 'Yanıtı gönder'}</button>
+      <button className="button button--primary" type="submit" disabled={!formEnabled}>{status === 'submitting' ? t('guest.submitting') : submissionId ? t('guest.saveAnswer') : t('guest.sendAnswer')}</button>
     </form>
   </section>
 }
@@ -137,6 +140,7 @@ function QuestionField({ question, value, error, configuration, disabled, onChan
   disabled: boolean
   onChange: (value: string | boolean | string[]) => void
 }) {
+  const { t } = useTranslation()
   const inputId = `rsvp-${question.id}`
   const errorId = `${inputId}-error`
   const helpId = `${inputId}-help`
@@ -146,11 +150,11 @@ function QuestionField({ question, value, error, configuration, disabled, onChan
   const errorText = error ? <p className="form-field__error" id={errorId}>{error}</p> : null
 
   if (question.type === 'SingleChoice' || question.type === 'MultipleChoice' || question.type === 'YesNo') {
-    const choices = question.type === 'YesNo' ? [{ id: 'yes', label: 'Evet' }, { id: 'no', label: 'Hayır' }] : question.options
+    const choices = question.type === 'YesNo' ? [{ id: 'yes', label: t('guest.yes') }, { id: 'no', label: t('guest.no') }] : question.options
     const selected = question.type === 'YesNo' ? value === true ? 'yes' : value === false ? 'no' : '' : value
     return <fieldset className="form-field public-rsvp__field" aria-describedby={describedBy}>
       <legend>{label}</legend>
-      {question.isRequired ? <p className="form-field__help" id={helpId}>Bu alan zorunludur.</p> : null}
+      {question.isRequired ? <p className="form-field__help" id={helpId}>{t('guest.required')}</p> : null}
       <div className="form-field__radio-options">
         {choices.map(option => {
           const checked = question.type === 'MultipleChoice' ? Array.isArray(selected) && selected.includes(option.id) : selected === option.id
@@ -170,50 +174,50 @@ function QuestionField({ question, value, error, configuration, disabled, onChan
           </label>
         })}
       </div>
-      {question.type === 'MultipleChoice' ? <p className="form-field__help">En fazla {configuration.answerLimits.maxMultipleChoiceSelections} seçenek işaretleyebilirsiniz.</p> : null}
+      {question.type === 'MultipleChoice' ? <p className="form-field__help">{t('guest.maxOptions', { count: configuration.answerLimits.maxMultipleChoiceSelections })}</p> : null}
       {errorText}
     </fieldset>
   }
 
   return <div className="form-field public-rsvp__field">
     <label htmlFor={inputId}>{label}</label>
-    {question.isRequired ? <p className="form-field__help" id={helpId}>Bu alan zorunludur.</p> : null}
+    {question.isRequired ? <p className="form-field__help" id={helpId}>{t('guest.required')}</p> : null}
     {question.type === 'LongText'
       ? <textarea {...common} maxLength={configuration.answerLimits.maxLongTextAnswerCharacters} rows={4} value={typeof value === 'string' ? value : ''} onChange={event => onChange(event.target.value)} />
       : question.type === 'Number'
         ? <input {...common} type="number" step={question.minimumNumberValue != null || question.maximumNumberValue != null ? 1 : 'any'} min={question.minimumNumberValue ?? undefined} max={question.maximumNumberValue ?? undefined} value={typeof value === 'string' ? value : ''} onChange={event => onChange(event.target.value)} />
         : <input {...common} type="text" maxLength={configuration.answerLimits.maxShortTextAnswerCharacters} value={typeof value === 'string' ? value : ''} onChange={event => onChange(event.target.value)} />}
-    {question.type === 'ShortText' ? <p className="form-field__help">En fazla {configuration.answerLimits.maxShortTextAnswerCharacters} karakter.</p> : null}
-    {question.type === 'LongText' ? <p className="form-field__help">En fazla {configuration.answerLimits.maxLongTextAnswerCharacters} karakter.</p> : null}
+    {question.type === 'ShortText' ? <p className="form-field__help">{t('guest.maxChars', { count: configuration.answerLimits.maxShortTextAnswerCharacters })}</p> : null}
+    {question.type === 'LongText' ? <p className="form-field__help">{t('guest.maxChars', { count: configuration.answerLimits.maxLongTextAnswerCharacters })}</p> : null}
     {question.type === 'Number' && (question.minimumNumberValue != null || question.maximumNumberValue != null)
-      ? <p className="form-field__help">{question.minimumNumberValue != null ? `En az ${question.minimumNumberValue}` : ''}{question.minimumNumberValue != null && question.maximumNumberValue != null ? ' · ' : ''}{question.maximumNumberValue != null ? `En fazla ${question.maximumNumberValue}` : ''} · Tam sayı girin.</p>
+      ? <p className="form-field__help">{question.minimumNumberValue != null ? t('guest.minimum', { value: question.minimumNumberValue }) : ''}{question.minimumNumberValue != null && question.maximumNumberValue != null ? ' · ' : ''}{question.maximumNumberValue != null ? t('guest.maximum', { value: question.maximumNumberValue }) : ''} · {t('guest.integer')}</p>
       : null}
     {errorText}
   </div>
 }
 
-function validateAnswers(questions: PublicRsvpQuestion[], answers: AnswerState, configuration: PublicRsvpConfiguration) {
+function validateAnswers(questions: PublicRsvpQuestion[], answers: AnswerState, configuration: PublicRsvpConfiguration, t: TFunction) {
   const errors: Record<string, string> = {}
   for (const question of questions) {
     const value = answers[question.id]
     if (question.isRequired && isEmpty(value)) {
-      errors[question.id] = 'Bu alan zorunludur.'
+      errors[question.id] = t('guest.required')
       continue
     }
     if (isEmpty(value)) continue
-    if (question.type === 'ShortText' && String(value).length > configuration.answerLimits.maxShortTextAnswerCharacters) errors[question.id] = `En fazla ${configuration.answerLimits.maxShortTextAnswerCharacters} karakter girin.`
-    if (question.type === 'LongText' && String(value).length > configuration.answerLimits.maxLongTextAnswerCharacters) errors[question.id] = `En fazla ${configuration.answerLimits.maxLongTextAnswerCharacters} karakter girin.`
+    if (question.type === 'ShortText' && String(value).length > configuration.answerLimits.maxShortTextAnswerCharacters) errors[question.id] = t('guest.maxChars', { count: configuration.answerLimits.maxShortTextAnswerCharacters })
+    if (question.type === 'LongText' && String(value).length > configuration.answerLimits.maxLongTextAnswerCharacters) errors[question.id] = t('guest.maxChars', { count: configuration.answerLimits.maxLongTextAnswerCharacters })
     if (question.type === 'Number') {
       const parsed = parseDotNetDecimal(String(value))
       const minimum = question.minimumNumberValue ?? null
       const maximum = question.maximumNumberValue ?? null
-      if (parsed === null) errors[question.id] = 'Bu sayı desteklenen aralığın dışında.'
-      else if ((minimum !== null || maximum !== null) && parsed.scale !== 0) errors[question.id] = 'Tam sayı girin.'
+      if (parsed === null) errors[question.id] = t('guest.outOfRange')
+      else if ((minimum !== null || maximum !== null) && parsed.scale !== 0) errors[question.id] = t('guest.integer')
       else if (minimum !== null && compareDecimalToInteger(parsed, minimum) < 0 || maximum !== null && compareDecimalToInteger(parsed, maximum) > 0) {
-        errors[question.id] = `Değer ${minimum ?? '…'} ile ${maximum ?? '…'} arasında olmalıdır.`
+        errors[question.id] = t('guest.range', { minimum: minimum ?? '…', maximum: maximum ?? '…' })
       }
     }
-    if (question.type === 'MultipleChoice' && Array.isArray(value) && value.length > configuration.answerLimits.maxMultipleChoiceSelections) errors[question.id] = `En fazla ${configuration.answerLimits.maxMultipleChoiceSelections} seçenek işaretleyin.`
+    if (question.type === 'MultipleChoice' && Array.isArray(value) && value.length > configuration.answerLimits.maxMultipleChoiceSelections) errors[question.id] = t('guest.maxOptions', { count: configuration.answerLimits.maxMultipleChoiceSelections })
   }
   return errors
 }

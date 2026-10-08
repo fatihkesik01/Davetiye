@@ -55,7 +55,7 @@ describe('PublicGiftRegistrySection', () => {
       cancelPublicGiftReservation: vi.fn().mockResolvedValue(undefined),
     } as unknown as DavetiyeApiClient & Record<string, ReturnType<typeof vi.fn>>
     render(<PublicGiftRegistrySection api={api} publicCode={code} templateKey="minimal-acilis" />)
-    const cancel = await screen.findByRole('button', { name: 'Cancel my saved reservation' })
+    const cancel = await screen.findByRole('button', { name: 'Kaydedilmiş rezervasyonumu iptal et' })
     expect(localStorage.getItem(`davetiye-gift-reservations:${code}`)).toBe('[{"reservationId":"reservation-3"}]')
     fireEvent.click(cancel)
     await waitFor(() => expect(api.cancelPublicGiftReservation).toHaveBeenCalledWith(code, 'reservation-3', 'csrf'))

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import {
   ApiRequestError,
@@ -54,6 +55,7 @@ type GuestMediaApi = {
 }
 
 function MemoriesBoard({ api, publicCode, configuration }: Props & { configuration: PublicMemoriesConfiguration }) {
+  const { t, i18n } = useTranslation()
   const { limits } = configuration
   const [items, setItems] = useState<PublicMemoryItem[]>([])
   const [totalCount, setTotalCount] = useState(0)
@@ -133,10 +135,10 @@ function MemoriesBoard({ api, publicCode, configuration }: Props & { configurati
 
   function validate(): FieldErrors {
     const next: FieldErrors = {}
-    if (displayName.trim().length > limits.maxDisplayNameCharacters) next.displayName = `İsim en fazla ${limits.maxDisplayNameCharacters} birim olabilir.`
-    if (text.trim().length > limits.maxTextCharacters) next.text = `Not en fazla ${limits.maxTextCharacters} birim olabilir. Emojiler birden fazla birim sayılır.`
-    if (emoji.trim().length > limits.maxEmojiCharacters || countGraphemes(emoji.trim()) > 1) next.emoji = 'Tek bir emoji girin.'
-    if (!next.text && !next.emoji && !text.trim() && !emoji.trim() && mediaFiles.length === 0) next.text = 'Bir not yazın veya bir emoji ekleyin.'
+    if (displayName.trim().length > limits.maxDisplayNameCharacters) next.displayName = t('creatorUi.memories.nameTooLong', { limit: limits.maxDisplayNameCharacters })
+    if (text.trim().length > limits.maxTextCharacters) next.text = t('creatorUi.memories.textTooLong', { limit: limits.maxTextCharacters })
+    if (emoji.trim().length > limits.maxEmojiCharacters || countGraphemes(emoji.trim()) > 1) next.emoji = t('creatorUi.memories.emojiInvalid')
+    if (!next.text && !next.emoji && !text.trim() && !emoji.trim() && mediaFiles.length === 0) next.text = t('creatorUi.memories.emptyEntry')
     return next
   }
 
@@ -277,7 +279,7 @@ function MemoriesBoard({ api, publicCode, configuration }: Props & { configurati
     setErrors(validation)
     setFormError('')
     if (Object.keys(validation).length) {
-      setFormError('Göndermeden önce işaretli alanları kontrol edin.')
+      setFormError(t('creatorUi.memories.validation'))
       return
     }
 
@@ -318,20 +320,20 @@ function MemoriesBoard({ api, publicCode, configuration }: Props & { configurati
       if (error instanceof ApiRequestError && error.status === 400) {
         const serverErrors: FieldErrors = {}
         const keys = Object.keys(error.problem?.errors ?? {}).map(key => key.toLowerCase())
-        if (keys.includes('displayname')) serverErrors.displayName = 'İsim kabul edilmedi. Özel veya görünmeyen karakterleri kaldırıp tekrar deneyin.'
-        if (keys.includes('text')) serverErrors.text = 'Not kabul edilmedi. Boş olmadığından, uzunluğundan ve özel karakter içermediğinden emin olun.'
-        if (keys.includes('emoji')) serverErrors.emoji = 'Tek bir geçerli emoji girin.'
+        if (keys.includes('displayname')) serverErrors.displayName = t('creatorUi.memories.invalidName')
+        if (keys.includes('text')) serverErrors.text = t('creatorUi.memories.invalidText')
+        if (keys.includes('emoji')) serverErrors.emoji = t('creatorUi.memories.invalidEmoji')
         setErrors(serverErrors)
-        setFormError('Anınız kabul edilmedi. İşaretli alanları kontrol edin.')
-        if (!Object.keys(serverErrors).length) setErrors({ text: 'Girdiğiniz içerik kabul edilmedi.' })
+        setFormError(t('creatorUi.memories.rejected'))
+        if (!Object.keys(serverErrors).length) setErrors({ text: t('creatorUi.memories.rejected') })
       } else if (error instanceof ApiRequestError && error.status === 409 && ['memory_quota_reached', 'media_quota_reached'].includes(error.problem?.code ?? '')) {
         setSubmitState('quota')
       } else if (error instanceof ApiRequestError && error.status === 404) {
         setSubmitState('closed')
       } else if (error instanceof ApiRequestError && error.status === 429) {
-        setFormError('Kısa sürede çok fazla deneme yapıldı. Lütfen biraz bekleyip tekrar deneyin.')
+        setFormError(t('creatorUi.memories.tooMany'))
       } else {
-        setFormError('Anınız gönderilemedi. Lütfen tekrar deneyin.')
+        setFormError(t('creatorUi.memories.sendFailed'))
       }
     }
   }
@@ -339,25 +341,25 @@ function MemoriesBoard({ api, publicCode, configuration }: Props & { configurati
   const submitting = submitState === 'submitting' || mediaState?.phase === 'uploading' || mediaState?.phase === 'processing'
   const formClosed = submitState === 'quota' || submitState === 'closed'
   const errorList = Object.entries(errors) as Array<[FieldKey, string]>
-  const fieldLabel: Record<FieldKey, string> = { displayName: 'İsim', text: 'Notunuz', emoji: 'Emoji' }
+  const fieldLabel: Record<FieldKey, string> = { displayName: t('creatorUi.memories.name'), text: t('creatorUi.memories.text'), emoji: 'Emoji' }
   const uploadLimits = (configuration as PublicMemoriesConfiguration & { uploadLimits?: GuestMediaLimits }).uploadLimits
 
   return <section className="public-memories" aria-labelledby="public-memories-heading">
-    <h2 id="public-memories-heading">Anılarımız</h2>
+    <h2 id="public-memories-heading">{t('creatorUi.memories.title')}</h2>
 
     <div className="public-memories__list" aria-busy={listState === 'loading'}>
-      {listState === 'loading' ? <p role="status">Anılar yükleniyor…</p> : null}
+      {listState === 'loading' ? <p role="status">{t('creatorUi.memories.loading')}</p> : null}
       {listState === 'error' ? <div role="alert">
-        <p>Anılar şu anda yüklenemedi.</p>
-        <button type="button" className="button button--secondary" onClick={() => { setListState('loading'); setReloadToken(value => value + 1) }}>Tekrar dene</button>
+        <p>{t('creatorUi.memories.failed')}</p>
+        <button type="button" className="button button--secondary" onClick={() => { setListState('loading'); setReloadToken(value => value + 1) }}>{t('creatorUi.memories.retry')}</button>
       </div> : null}
-      {listState === 'ready' && items.length === 0 ? <p className="public-memories__empty">Burada paylaşılan anılar görüntülenir.</p> : null}
-      {items.length ? <ul className="public-memories__items" aria-label="Paylaşılan anılar">
+      {listState === 'ready' && items.length === 0 ? <p className="public-memories__empty">{t('creatorUi.memories.empty')}</p> : null}
+      {items.length ? <ul className="public-memories__items" aria-label={t('creatorUi.memories.shared')}>
         {items.map((item, index) => <li key={item.id} ref={element => { itemRefs.current[index] = element }} tabIndex={-1} className="public-memory">
           <div className="public-memory__head">
             {item.emoji ? <span className="public-memory__emoji">{item.emoji}</span> : null}
-            <strong className="public-memory__name">{item.displayName ?? 'Misafir'}</strong>
-            <time dateTime={item.createdAt}>{formatMinute(item.createdAt)}</time>
+            <strong className="public-memory__name">{item.displayName ?? t('creatorUi.memories.guest')}</strong>
+            <time dateTime={item.createdAt}>{formatMinute(item.createdAt, i18n.resolvedLanguage === 'en' ? 'en-US' : 'tr-TR')}</time>
           </div>
           {item.text ? <p className="public-memory__text">{item.text}</p> : null}
           {item.media.length ? <div className="public-memory__media-list" aria-label={`${item.displayName ?? 'Misafir'} taraf\u0131ndan payla\u015f\u0131lan medya`}>
@@ -367,15 +369,15 @@ function MemoriesBoard({ api, publicCode, configuration }: Props & { configurati
       </ul> : null}
       {listState !== 'loading' && items.length < totalCount
         ? <button type="button" className="button button--secondary" disabled={loadingMore} onClick={() => void loadMore()}>
-          {loadingMore ? 'Yükleniyor…' : 'Daha fazla göster'}
+          {loadingMore ? t('common.loading') : t('creatorUi.memories.more')}
         </button>
         : null}
     </div>
 
     {formClosed ? <p ref={statusRef} tabIndex={-1} role="status" className="public-memories__notice">
-      {submitState === 'quota' ? 'Bu davetiye için anı sınırına ulaşıldı; yeni anı eklenemiyor.' : 'Şu anda anı bırakılamıyor.'}
+      {submitState === 'quota' ? t('creatorUi.memories.quota') : t('creatorUi.memories.closed')}
     </p> : <form onSubmit={submit} noValidate aria-labelledby="public-memories-form-heading">
-      <h3 id="public-memories-form-heading">Bir anı bırakın</h3>
+      <h3 id="public-memories-form-heading">{t('creatorUi.memories.leave')}</h3>
       {formError ? <div ref={summaryRef} className="public-rsvp__summary" role="alert" tabIndex={-1}>
         <p>{formError}</p>
         {errorList.length ? <ul>{errorList.map(([key, message]) => <li key={key}><a href={`#memory-${key}`}>{fieldLabel[key]}: {message}</a></li>)}</ul> : null}
@@ -402,44 +404,44 @@ function MemoriesBoard({ api, publicCode, configuration }: Props & { configurati
         {mediaState.phase === 'processing' ? <button type="button" className="button button--secondary" onClick={() => { const context = uploadContext.current; if (context) void checkMediaProcessing(context) }}>Durumu kontrol et</button> : null}
       </div> : null}
       <p ref={submitState === 'success' ? statusRef : undefined} tabIndex={submitState === 'success' ? -1 : undefined} role="status" aria-live="polite" className="public-memories__notice" hidden={submitState !== 'success'}>
-        {submitState === 'success' ? 'Teşekkürler, anınız kaydedildi. Davetiye sahibine ulaştı; herkese açık sayfada görünüp görünmeyeceğini davetiye sahibi belirler.' : ''}
+        {submitState === 'success' ? t('creatorUi.memories.thanks') : ''}
       </p>
 
       <div className="form-field">
-        <label htmlFor="memory-displayName">İsim (isteğe bağlı)</label>
+        <label htmlFor="memory-displayName">{t('creatorUi.memories.displayName')}</label>
         <input id="memory-displayName" type="text" autoComplete="off" value={displayName} disabled={submitting}
           aria-invalid={Boolean(errors.displayName)} aria-describedby={describedBy('displayName', errors)}
           onChange={event => { setDisplayName(event.target.value); clearError('displayName', setErrors) }} />
-        <p className="form-field__help" id="memory-displayName-help">{displayName.length} / {limits.maxDisplayNameCharacters}. Boş bırakırsanız “Misafir” olarak görünür.</p>
+        <p className="form-field__help" id="memory-displayName-help">{t('creatorUi.memories.displayHelp', { count: displayName.length, limit: limits.maxDisplayNameCharacters })}</p>
         {errors.displayName ? <p className="form-field__error" id="memory-displayName-error">{errors.displayName}</p> : null}
       </div>
 
       <div className="form-field">
-        <label htmlFor="memory-text">Notunuz</label>
+        <label htmlFor="memory-text">{t('creatorUi.memories.text')}</label>
         <textarea id="memory-text" rows={5} value={text} disabled={submitting}
           aria-invalid={Boolean(errors.text)} aria-describedby={describedBy('text', errors)}
           onChange={event => { setText(event.target.value); clearError('text', setErrors) }} />
-        <p className="form-field__help" id="memory-text-help">{text.length} / {limits.maxTextCharacters} birim. Emojiler birden fazla birim sayılır. Satır başı kullanabilirsiniz; bağlantılar ve biçimlendirme çalışmaz.</p>
+        <p className="form-field__help" id="memory-text-help">{t('creatorUi.memories.textHelp', { count: text.length, limit: limits.maxTextCharacters })}</p>
         {errors.text ? <p className="form-field__error" id="memory-text-error">{errors.text}</p> : null}
       </div>
 
       <div className="form-field">
-        <label htmlFor="memory-emoji">Emoji (isteğe bağlı)</label>
+        <label htmlFor="memory-emoji">{t('creatorUi.memories.emoji')}</label>
         <input id="memory-emoji" type="text" autoComplete="off" value={emoji} disabled={submitting}
           aria-invalid={Boolean(errors.emoji)} aria-describedby={describedBy('emoji', errors)}
           onChange={event => { setEmoji(event.target.value); clearError('emoji', setErrors) }} />
-        <p className="form-field__help" id="memory-emoji-help">Tek bir emoji girin. {emoji.length} / {limits.maxEmojiCharacters} birim.</p>
+        <p className="form-field__help" id="memory-emoji-help">{t('creatorUi.memories.emojiHelp', { count: emoji.length, limit: limits.maxEmojiCharacters })}</p>
         {errors.emoji ? <p className="form-field__error" id="memory-emoji-error">{errors.emoji}</p> : null}
       </div>
 
       {uploadLimits?.enabled ? <div className="form-field">
-        <label htmlFor="memory-media">Fotoğraf veya video (isteğe bağlı)</label>
+        <label htmlFor="memory-media">{t('creatorUi.memories.media')}</label>
         <input id="memory-media" type="file" accept="image/*,video/*" multiple disabled={submitting || Boolean(uploadContext.current)} onChange={event => { void chooseMedia(event.target.files); event.target.value = '' }} />
-        <p className="form-field__help">En fazla {uploadLimits.maxMediaItems} dosya ekleyebilirsiniz. Her dosya güvenlik ve biçim kontrolünden geçer.</p>
+        <p className="form-field__help">{t('creatorUi.memories.mediaHelp', { count: uploadLimits.maxMediaItems })}</p>
         {mediaFiles.length ? <ul aria-label="Seçilen medya dosyaları">{mediaFiles.map((file, index) => <li key={`${file.name}-${index}`}>{file.name} ({formatBytes(file.size)})</li>)}</ul> : null}
       </div> : null}
 
-      <button type="submit" className="button button--primary" disabled={submitting}>{submitting ? 'Gönderiliyor…' : 'Anıyı gönder'}</button>
+      <button type="submit" className="button button--primary" disabled={submitting}>{submitting ? t('creatorUi.memories.submitting') : t('creatorUi.memories.submit')}</button>
     </form>}
   </section>
 }
@@ -451,6 +453,7 @@ function PublicMemoryMedia({ api, publicCode, memoryId, media, guestName }: {
   media: PublicMemoryReadyMedia
   guestName: string
 }) {
+  const { t } = useTranslation()
   const containerRef = useRef<HTMLElement>(null)
   const [visible, setVisible] = useState(false)
   const [retryToken, setRetryToken] = useState(0)
@@ -502,14 +505,14 @@ function PublicMemoryMedia({ api, publicCode, memoryId, media, guestName }: {
   }
 
   return <figure ref={containerRef} className="public-memory__media" style={{ margin: 0, minWidth: 0 }}>
-    {loading ? <p role="status">Medya yÃ¼kleniyorâ€¦</p> : null}
+    {loading ? <p role="status">{t('creatorUi.memories.loadingMedia')}</p> : null}
     {showFailure ? <div role="alert">
-      <p>Bu medya ÅŸu anda gÃ¶rÃ¼ntÃ¼lenemiyor.</p>
-      <button type="button" className="button button--secondary" aria-label={`${guestName} tarafÄ±ndan paylaÅŸÄ±lan medyayÄ± tekrar yÃ¼kle`} onClick={retry}>Tekrar dene</button>
+      <p>{t('creatorUi.memories.mediaUnavailable')}</p>
+      <button type="button" className="button button--secondary" aria-label={t('creatorUi.memories.guestMediaAlt', { name: guestName })} onClick={retry}>{t('creatorUi.memories.uploadRetry')}</button>
     </div> : null}
     {!showFailure && delivery?.kind === 'image' ? <img
       src={delivery.url}
-      alt={`${guestName} tarafÄ±ndan paylaÅŸÄ±lan fotoÄŸraf`}
+      alt={t('creatorUi.memories.guestMediaAlt', { name: guestName })}
       loading="lazy"
       referrerPolicy="no-referrer"
       onError={() => setFailed(true)}
@@ -518,7 +521,7 @@ function PublicMemoryMedia({ api, publicCode, memoryId, media, guestName }: {
     {!showFailure && delivery?.kind === 'video' ? <iframe
       className="public-invitation-media__video"
       src={delivery.url}
-      title={`${guestName} taraf\u0131ndan payla\u015f\u0131lan video`}
+      title={t('creatorUi.memories.guestMediaAlt', { name: guestName })}
       referrerPolicy="no-referrer"
       sandbox="allow-scripts allow-same-origin allow-presentation"
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
@@ -550,10 +553,10 @@ function countGraphemes(value: string): number {
   return Array.from(new Segmenter(undefined, { granularity: 'grapheme' }).segment(value)).length
 }
 
-function formatMinute(value: string): string {
+function formatMinute(value: string, locale: string): string {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
-  return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short' }).format(date)
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(date)
 }
 
 function mediaKind(file: File): GuestMediaKind | null {

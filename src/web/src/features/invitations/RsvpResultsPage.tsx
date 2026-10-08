@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 
 import {
   ApiRequestError,
@@ -13,6 +15,7 @@ import { InternalLink } from '../../components/ui/InternalLink'
 const pageSize = 25
 
 export function RsvpResultsPage({ invitationId, api: injectedApi }: { invitationId: string; api?: DavetiyeApiClient }) {
+  const { t, i18n } = useTranslation()
   const api = useMemo(() => injectedApi ?? new DavetiyeApiClient(), [injectedApi])
   const [page, setPage] = useState<CreatorRsvpSubmissionPage | null>(null)
   const [configuration, setConfiguration] = useState<InvitationRsvpConfiguration | null>(null)
@@ -121,7 +124,7 @@ export function RsvpResultsPage({ invitationId, api: injectedApi }: { invitation
     if (!deleteTarget || deleting) return
     const target = deleteTarget
     setDeleting(target.id)
-    setMessage('Yanıt siliniyor…')
+    setMessage(t('creatorEditorUi.rsvpResults.deleting'))
     setActionError('')
     try {
       const csrf = await api.getAntiforgeryToken()
@@ -137,14 +140,14 @@ export function RsvpResultsPage({ invitationId, api: injectedApi }: { invitation
       setExpanded(null)
       setPageNumber(value => Math.min(value, lastPage))
       setPage(null)
-      setMessage('Yanıt kalıcı olarak silindi. Toplamlar güncellendi.')
+      setMessage(t('creatorEditorUi.rsvpResults.deleted'))
       setDeleteTarget(null)
       requestAnimationFrame(() => pageTitleRef.current?.focus())
       setAttempt(value => value + 1)
     } catch (error) {
       const errorMessage = error instanceof ApiRequestError && error.status === 404
-        ? 'Bu yanıt artık bulunamıyor. Listeyi yenileyin.'
-        : 'Yanıt silinemedi. Bağlantınızı kontrol edip yeniden deneyin.'
+        ? t('creatorEditorUi.rsvpResults.missing')
+        : t('creatorEditorUi.rsvpResults.deleteFailed')
       setMessage(errorMessage)
       setActionError(errorMessage)
     } finally {
@@ -157,125 +160,125 @@ export function RsvpResultsPage({ invitationId, api: injectedApi }: { invitation
   return <section className="rsvp-results" aria-labelledby={titleId} aria-busy={loading || undefined}>
     <div className="rsvp-results__heading">
       <div>
-        <p className="eyebrow">Davetli yanıtları · Özel</p>
-        <h2 id={titleId} ref={pageTitleRef} tabIndex={-1}>RSVP yanıtları</h2>
-        <p>Bu yanıtları yalnızca davetiye sahibi görebilir.</p>
+        <p className="eyebrow">{t('creatorEditorUi.rsvpResults.privateEyebrow')}</p>
+        <h2 id={titleId} ref={pageTitleRef} tabIndex={-1}>{t('creatorEditorUi.rsvpResults.title')}</h2>
+        <p>{t('creatorEditorUi.rsvpResults.privacy')}</p>
       </div>
-      <InternalLink className="button button--secondary" to={`/panel/davetiyeler/${invitationId}/duzenle`}>Davetiyeye dön</InternalLink>
+      <InternalLink className="button button--secondary" to={`/panel/davetiyeler/${invitationId}/duzenle`}>{t('creatorEditorUi.rsvpResults.back')}</InternalLink>
     </div>
 
-    {loading ? <LoadingState label="RSVP yanıtları yükleniyor" /> : null}
+    {loading ? <LoadingState label={t('creatorEditorUi.rsvpResults.loading')} /> : null}
     {failed ? <div className="inline-alert" role="alert">
-      <p>RSVP yanıtları yüklenemedi veya bu davetiyeye erişilemiyor.</p>
-      <button className="button button--secondary" type="button" onClick={() => { setLoading(true); setFailed(false); setAttempt(value => value + 1) }}>Tekrar dene</button>
+      <p>{t('creatorEditorUi.rsvpResults.loadFailed')}</p>
+      <button className="button button--secondary" type="button" onClick={() => { setLoading(true); setFailed(false); setAttempt(value => value + 1) }}>{t('creatorEditorUi.rsvpResults.retry')}</button>
     </div> : null}
     {!loading && page ? <>
       <section className="rsvp-results__summary" aria-labelledby="rsvp-summary-heading">
-        <h3 id="rsvp-summary-heading">Genel görünüm</h3>
+        <h3 id="rsvp-summary-heading">{t('creatorEditorUi.rsvpResults.summary')}</h3>
         <div className="rsvp-results__summary-grid">
-          <div className="rsvp-results__metric"><span>Yanıt sayısı</span><strong>{page.summary.responseCount}</strong></div>
+          <div className="rsvp-results__metric"><span>{t('creatorEditorUi.rsvpResults.responseCount')}</span><strong>{page.summary.responseCount}</strong></div>
           {page.summary.participantCountAvailable && page.summary.totalParticipants !== null
-            ? <div className="rsvp-results__metric"><span>Toplam katılımcı</span><strong>{page.summary.totalParticipants}</strong><small>Katılımcı sayısı sorusuna verilen yanıtların toplamı.</small></div>
-            : <p className="rsvp-results__unavailable">Etkin bir katılımcı sayısı sorusu bulunmadığı için toplam hesaplanamıyor. Soru değiştirilir veya kaldırılırsa eski yanıtlar katılımcı toplamına dahil edilmeyebilir.</p>}
+            ? <div className="rsvp-results__metric"><span>{t('creatorEditorUi.rsvpResults.totalParticipants')}</span><strong>{page.summary.totalParticipants}</strong><small>{t('creatorEditorUi.rsvpResults.participantCountHelp')}</small></div>
+            : <p className="rsvp-results__unavailable">{t('creatorEditorUi.rsvpResults.participantCountUnavailable')}</p>}
         </div>
         {page.summary.questions.length ? <div className="rsvp-results__question-summaries">
           {page.summary.questions.map(question => <article className="rsvp-results__question-summary" key={`${question.questionId}:${question.prompt}:${question.type}`}>
             <h4>{question.prompt}</h4>
-            <p className="rsvp-results__muted">Yanıt biçimi: {questionTypeLabel(question.type)}</p>
-            <p>{question.answeredCount} yanıt</p>
-            {question.valueCounts.length ? <ul aria-label={`${question.prompt} yanıt dağılımı`}>
-              {question.valueCounts.map(item => <li key={`${item.value}:${item.label ?? ''}`}><span>{getAggregateLabel(question.type, item.value, item.label, configuration, question.questionId)}</span><strong>{item.count}</strong></li>)}
-            </ul> : <p className="rsvp-results__muted">Bu soru için seçenek dağılımı gösterilmiyor.</p>}
+            <p className="rsvp-results__muted">{t('creatorEditorUi.rsvpResults.answerFormat')}: {questionTypeLabel(question.type, t)}</p>
+            <p>{t('creatorEditorUi.rsvpResults.answers', { count: question.answeredCount })}</p>
+            {question.valueCounts.length ? <ul aria-label={t('creatorEditorUi.rsvpResults.distributionAria', { prompt: question.prompt })}>
+              {question.valueCounts.map(item => <li key={`${item.value}:${item.label ?? ''}`}><span>{getAggregateLabel(question.type, item.value, item.label, configuration, question.questionId, t)}</span><strong>{item.count}</strong></li>)}
+            </ul> : <p className="rsvp-results__muted">{t('creatorEditorUi.rsvpResults.noDistribution')}</p>}
           </article>)}
-        </div> : <p>Etkin RSVP sorusu bulunmuyor; soru dağılımları gösterilemiyor.</p>}
+        </div> : <p>{t('creatorEditorUi.rsvpResults.noQuestions')}</p>}
       </section>
 
       <section aria-labelledby="rsvp-submissions-heading">
-        <div className="rsvp-results__list-heading"><div><h3 id="rsvp-submissions-heading">Gönderilen yanıtlar</h3><p>{page.totalCount} kayıt</p></div></div>
-        {page.totalCount === 0 ? <div className="catalog-empty"><h4>Henüz yanıt yok</h4><p>Davetliler yanıt gönderdikçe burada listelenir.</p></div> : <ol className="rsvp-submission-list">
+        <div className="rsvp-results__list-heading"><div><h3 id="rsvp-submissions-heading">{t('creatorEditorUi.rsvpResults.submissions')}</h3><p>{t('creatorEditorUi.rsvpResults.records', { count: page.totalCount })}</p></div></div>
+        {page.totalCount === 0 ? <div className="catalog-empty"><h4>{t('creatorEditorUi.rsvpResults.emptyTitle')}</h4><p>{t('creatorEditorUi.rsvpResults.emptyBody')}</p></div> : <ol className="rsvp-submission-list">
           {page.submissions.map((submission, index) => {
             const ordinal = (page.page - 1) * page.pageSize + index + 1
             const opened = expanded === submission.submissionId
             const detailsForSubmission = details[submission.submissionId]
-            const deleteLabel = `Yanıt ${ordinal} · ${formatDate(submission.submittedAt)}`
+            const deleteLabel = t('creatorEditorUi.rsvpResults.responseNumber', { ordinal, date: formatDate(submission.submittedAt, i18n.language) })
             return <li key={submission.submissionId}>
               <article className="rsvp-submission-card">
                 <div className="rsvp-submission-card__heading">
-                  <div><h4>Yanıt {ordinal}</h4><p>Gönderildi: {formatDate(submission.submittedAt)}</p><p>Son güncelleme: {formatDate(submission.updatedAt)}</p></div>
+                  <div><h4>{t('creatorEditorUi.rsvpResults.responseNumberShort', { ordinal })}</h4><p>{t('creatorEditorUi.rsvpResults.submitted')}: {formatDate(submission.submittedAt, i18n.language)}</p><p>{t('creatorEditorUi.rsvpResults.lastUpdated')}: {formatDate(submission.updatedAt, i18n.language)}</p></div>
                   <div className="rsvp-submission-card__actions">
                     <button className="button button--secondary" type="button" aria-expanded={opened} aria-controls={`rsvp-submission-detail-${submission.submissionId}`} onClick={() => void toggleDetails(submission.submissionId)}>
-                      {opened ? 'Yanıtı gizle' : 'Yanıtı görüntüle'}
+                      {opened ? t('creatorEditorUi.rsvpResults.hideResponse') : t('creatorEditorUi.rsvpResults.showResponse')}
                     </button>
-                    <button className="button button--danger" type="button" disabled={deleting === submission.submissionId} aria-label={`${deleteLabel} kaydını kalıcı olarak sil`} onClick={event => setDeleteTarget({ id: submission.submissionId, label: deleteLabel, trigger: event.currentTarget })}>Kalıcı sil</button>
+                    <button className="button button--danger" type="button" disabled={deleting === submission.submissionId} aria-label={t('creatorEditorUi.rsvpResults.deleteAria', { label: deleteLabel })} onClick={event => setDeleteTarget({ id: submission.submissionId, label: deleteLabel, trigger: event.currentTarget })}>{t('creatorEditorUi.rsvpResults.deleteShort')}</button>
                   </div>
                 </div>
                 {opened ? <div id={`rsvp-submission-detail-${submission.submissionId}`} className="rsvp-submission-card__details">
-                  {detailLoading === submission.submissionId ? <p role="status">Yanıt ayrıntıları yükleniyor…</p> : null}
-                  {detailFailed === submission.submissionId ? <div className="inline-alert" role="alert"><p>Yanıt ayrıntıları yüklenemedi.</p><button className="button button--secondary" type="button" onClick={retryDetails}>Tekrar dene</button></div> : null}
+                  {detailLoading === submission.submissionId ? <p role="status">{t('creatorEditorUi.rsvpResults.detailsLoading')}</p> : null}
+                  {detailFailed === submission.submissionId ? <div className="inline-alert" role="alert"><p>{t('creatorEditorUi.rsvpResults.detailsFailed')}</p><button className="button button--secondary" type="button" onClick={retryDetails}>{t('creatorEditorUi.rsvpResults.retry')}</button></div> : null}
                   {detailsForSubmission && detailsForSubmission.answers.length ? <dl>{detailsForSubmission.answers.map(answer => <div key={answer.questionId}>
-                    <dt>{answer.prompt}</dt><dd>{formatAnswer(answer)}</dd>
+                    <dt>{answer.prompt}</dt><dd>{formatAnswer(answer, t)}</dd>
                   </div>)}</dl> : null}
-                  {detailsForSubmission?.answers.length === 0 ? <p>Bu kayıtta görüntülenecek yanıt ayrıntısı yok.</p> : null}
+                  {detailsForSubmission?.answers.length === 0 ? <p>{t('creatorEditorUi.rsvpResults.noDetails')}</p> : null}
                 </div> : null}
               </article>
             </li>
           })}
         </ol>}
-        {page.totalCount > 0 ? <nav className="rsvp-results__pagination" aria-label="Yanıt sayfaları">
-          <button className="button button--secondary" type="button" disabled={pageNumber <= 1 || loading} onClick={() => setPageNumber(value => Math.max(1, value - 1))}>Önceki</button>
-          <span>Sayfa {page.page} / {maxPage}</span>
-          <button className="button button--secondary" type="button" disabled={pageNumber >= maxPage || loading} onClick={() => setPageNumber(value => Math.min(maxPage, value + 1))}>Sonraki</button>
+        {page.totalCount > 0 ? <nav className="rsvp-results__pagination" aria-label={t('creatorEditorUi.rsvpResults.pagesAria')}>
+          <button className="button button--secondary" type="button" disabled={pageNumber <= 1 || loading} onClick={() => setPageNumber(value => Math.max(1, value - 1))}>{t('creatorEditorUi.rsvpResults.previous')}</button>
+          <span>{t('creatorEditorUi.rsvpResults.page', { current: page.page, total: maxPage })}</span>
+          <button className="button button--secondary" type="button" disabled={pageNumber >= maxPage || loading} onClick={() => setPageNumber(value => Math.min(maxPage, value + 1))}>{t('creatorEditorUi.rsvpResults.next')}</button>
         </nav> : null}
       </section>
     </> : null}
 
-    {actionError ? <div className="inline-alert" role="alert"><p>{actionError}</p><button className="button button--secondary" type="button" onClick={() => { setActionError(''); setLoading(true); setAttempt(value => value + 1) }}>Listeyi yenile</button></div> : null}
+    {actionError ? <div className="inline-alert" role="alert"><p>{actionError}</p><button className="button button--secondary" type="button" onClick={() => { setActionError(''); setLoading(true); setAttempt(value => value + 1) }}>{t('creatorEditorUi.rsvpResults.refreshList')}</button></div> : null}
     <p className="visually-hidden" role="status" aria-live="polite">{message}</p>
     {deleteTarget ? <div className="rsvp-delete-confirmation" role="alertdialog" aria-modal="true" aria-labelledby="rsvp-delete-title" aria-describedby="rsvp-delete-description">
       <div className="rsvp-delete-confirmation__card">
-        <h3 id="rsvp-delete-title" tabIndex={-1}>Yanıt kalıcı olarak silinsin mi?</h3>
+        <h3 id="rsvp-delete-title" tabIndex={-1}>{t('creatorEditorUi.rsvpResults.confirmDeleteTitle')}</h3>
         <p><strong>{deleteTarget.label}</strong></p>
-        <p id="rsvp-delete-description">Bu yanıt ve ona ait yanıt güncelleme yetkisi kalıcı olarak silinir. İşlem geri alınamaz; yanıt ve katılımcı toplamları değişebilir.</p>
+        <p id="rsvp-delete-description">{t('creatorEditorUi.rsvpResults.confirmDeleteBody')}</p>
         <div className="button-row">
-          <button className="button button--secondary" type="button" ref={cancelDeleteRef} disabled={deleting !== null} onClick={closeDelete}>Vazgeç</button>
-          <button className="button button--danger" type="button" ref={confirmDeleteRef} disabled={deleting !== null} onClick={() => void removeSubmission()}>{deleting ? 'Siliniyor…' : 'Kalıcı olarak sil'}</button>
+          <button className="button button--secondary" type="button" ref={cancelDeleteRef} disabled={deleting !== null} onClick={closeDelete}>{t('creatorEditorUi.rsvpResults.cancel')}</button>
+          <button className="button button--danger" type="button" ref={confirmDeleteRef} disabled={deleting !== null} onClick={() => void removeSubmission()}>{deleting ? t('creatorEditorUi.rsvpResults.deleting') : t('creatorEditorUi.rsvpResults.delete')}</button>
         </div>
       </div>
     </div> : null}
   </section>
 }
 
-function formatAnswer(answer: CreatorRsvpSubmissionDetail['answers'][number]): string {
+function formatAnswer(answer: CreatorRsvpSubmissionDetail['answers'][number], t: TFunction): string {
   if (answer.textValue !== null) return answer.textValue || '—'
   if (answer.numberValue !== null) return answer.numberValue
-  if (answer.booleanValue !== null) return answer.booleanValue ? 'Evet' : 'Hayır'
+  if (answer.booleanValue !== null) return answer.booleanValue ? t('creatorEditorUi.rsvpResults.yes') : t('creatorEditorUi.rsvpResults.no')
   if (answer.selectedOptions.length) return answer.selectedOptions.map(option => option.label).join(', ')
-  return 'Yanıt verilmedi'
+  return t('creatorEditorUi.rsvpResults.notAnswered')
 }
 
-function questionTypeLabel(type: string): string {
+function questionTypeLabel(type: string, t: TFunction): string {
   switch (type) {
-    case 'ShortText': return 'Kısa metin'
-    case 'LongText': return 'Uzun metin'
-    case 'SingleChoice': return 'Tek seçim'
-    case 'MultipleChoice': return 'Çoklu seçim'
-    case 'YesNo': return 'Evet / Hayır'
-    case 'Number': return 'Sayı'
+    case 'ShortText': return t('creatorEditorUi.rsvpResults.types.shortText')
+    case 'LongText': return t('creatorEditorUi.rsvpResults.types.longText')
+    case 'SingleChoice': return t('creatorEditorUi.rsvpResults.types.singleChoice')
+    case 'MultipleChoice': return t('creatorEditorUi.rsvpResults.types.multipleChoice')
+    case 'YesNo': return t('creatorEditorUi.rsvpResults.types.yesNo')
+    case 'Number': return t('creatorEditorUi.rsvpResults.types.number')
     default: return type
   }
 }
 
-function getAggregateLabel(type: string, value: string, label: string | null, configuration: InvitationRsvpConfiguration | null, questionId: string): string {
-  if (type === 'YesNo') return value === 'true' ? 'Evet' : value === 'false' ? 'Hayır' : 'Diğer yanıt'
+function getAggregateLabel(type: string, value: string, label: string | null, configuration: InvitationRsvpConfiguration | null, questionId: string, t: TFunction): string {
+  if (type === 'YesNo') return value === 'true' ? t('creatorEditorUi.rsvpResults.yes') : value === 'false' ? t('creatorEditorUi.rsvpResults.no') : t('creatorEditorUi.rsvpResults.otherAnswer')
   if (type === 'SingleChoice' || type === 'MultipleChoice') {
     if (label !== null) return label
     const option = configuration?.questions.find(question => question.id === questionId)?.options.find(item => item.id === value)
-    return option?.label ?? 'Önceki veya kullanılamayan seçenek'
+    return option?.label ?? t('creatorEditorUi.rsvpResults.unavailableOption')
   }
   return value
 }
 
-function formatDate(value: string): string {
-  try { return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) }
-  catch { return 'Tarih bilgisi kullanılamıyor' }
+function formatDate(value: string, language: string): string {
+  try { return new Intl.DateTimeFormat(language === 'en' ? 'en-US' : 'tr-TR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) }
+  catch { return language === 'en' ? 'Date unavailable' : 'Tarih bilgisi kullanılamıyor' }
 }

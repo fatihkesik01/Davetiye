@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useLatestT } from '../../i18n/useLatestT'
+import { useTranslation } from 'react-i18next'
 import {
   ApiRequestError,
   DavetiyeApiClient,
@@ -8,32 +10,18 @@ import {
 } from '../../api/generated/client'
 
 const entitlementFields = [
-  { key: 'maxPublishDays', label: 'En uzun yayın süresi (gün)', type: 'number' },
-  { key: 'maxActiveInvitations', label: 'Aynı anda aktif davetiye', type: 'number' },
-  { key: 'maxImages', label: 'Creator fotoğraf kotası', type: 'number' },
-  { key: 'maxVideos', label: 'Creator video kotası', type: 'number' },
-  { key: 'maxImageSizeMb', label: 'Creator fotoğraf boyutu (MB)', type: 'number' },
-  { key: 'maxVideoSizeMb', label: 'Creator video boyutu (MB)', type: 'number' },
-  { key: 'maxVideoDurationSeconds', label: 'Creator video süresi (saniye)', type: 'number' },
-  { key: 'maxGuestImages', label: 'Misafir fotoğraf kotası', type: 'number' },
-  { key: 'maxGuestVideos', label: 'Misafir video kotası', type: 'number' },
-  { key: 'maxGuestImageSizeMb', label: 'Misafir fotoğraf boyutu (MB)', type: 'number' },
-  { key: 'maxGuestVideoSizeMb', label: 'Misafir video boyutu (MB)', type: 'number' },
-  { key: 'maxGuestVideoDurationSeconds', label: 'Misafir video süresi (saniye)', type: 'number' },
-  { key: 'maxRSVPResponses', label: 'Davetiye başına RSVP yanıtı', type: 'number' },
-  { key: 'memoriesEnabled', label: 'Anı modülü', type: 'boolean' },
-  { key: 'giftRegistryEnabled', label: 'Hediye listesi', type: 'boolean' },
-  { key: 'premiumTemplatesEnabled', label: 'Premium şablonlar', type: 'boolean' },
+  { key: 'maxPublishDays', type: 'number' }, { key: 'maxActiveInvitations', type: 'number' },
+  { key: 'maxImages', type: 'number' }, { key: 'maxVideos', type: 'number' },
+  { key: 'maxImageSizeMb', type: 'number' }, { key: 'maxVideoSizeMb', type: 'number' },
+  { key: 'maxVideoDurationSeconds', type: 'number' }, { key: 'maxGuestImages', type: 'number' },
+  { key: 'maxGuestVideos', type: 'number' }, { key: 'maxGuestImageSizeMb', type: 'number' },
+  { key: 'maxGuestVideoSizeMb', type: 'number' }, { key: 'maxGuestVideoDurationSeconds', type: 'number' },
+  { key: 'maxRSVPResponses', type: 'number' }, { key: 'memoriesEnabled', type: 'boolean' },
+  { key: 'giftRegistryEnabled', type: 'boolean' }, { key: 'premiumTemplatesEnabled', type: 'boolean' },
 ] as const
 
 type EntitlementKey = typeof entitlementFields[number]['key']
 type PlanDraft = Omit<Pick<UpdateAdminPlanRequest, 'displayName' | 'description' | 'billingKind' | 'entitlements' | 'priceAmount'>, 'priceAmount'> & { priceAmount: string }
-
-const billingLabels: Record<AdminPlanBillingKind, string> = {
-  Free: 'Ücretsiz',
-  OneTime: 'Tek seferlik',
-  Monthly: 'Aylık',
-}
 
 function toDraft(plan: AdminPlanItem): PlanDraft {
   return {
@@ -45,9 +33,9 @@ function toDraft(plan: AdminPlanItem): PlanDraft {
   }
 }
 
-function priceLabel(plan: AdminPlanItem) {
-  const amount = new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 4 }).format(plan.priceAmount)
-  const period = plan.billingKind === 'Monthly' ? ' / aylık' : plan.billingKind === 'OneTime' ? ' / tek sefer' : ' / ücretsiz'
+function priceLabel(plan: AdminPlanItem, locale: string, t: (key: string) => string) {
+  const amount = new Intl.NumberFormat(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 }).format(plan.priceAmount)
+  const period = plan.billingKind === 'Monthly' ? ` / ${t('adminUi.plans.periodMonthly')}` : plan.billingKind === 'OneTime' ? ` / ${t('adminUi.plans.periodOneTime')}` : ` / ${t('adminUi.plans.periodFree')}`
   return `${amount} ${plan.currency}${period}`
 }
 
@@ -69,6 +57,10 @@ function draftIsComplete(draft: PlanDraft) {
 }
 
 export function AdminPlansPage() {
+  const { t, i18n } = useTranslation()
+  const tRef = useLatestT()
+  const translate = (key: string) => t(key)
+  const locale = i18n.resolvedLanguage === 'en' ? 'en-US' : 'tr-TR'
   const api = useMemo(() => new DavetiyeApiClient(), [])
   const [plans, setPlans] = useState<AdminPlanItem[] | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -105,14 +97,14 @@ export function AdminPlansPage() {
         if (controller.signal.aborted) return
         setLoadError(true)
         if (error instanceof ApiRequestError && (error.status === 401 || error.status === 403)) {
-          setActionError('Bu görünüm için MFA doğrulaması tamamlanmış yönetici oturumu gerekiyor.')
+          setActionError(tRef.current('adminUi.plans.authRequired'))
         }
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false)
       })
     return () => controller.abort()
-  }, [api, reloadVersion])
+  }, [api, reloadVersion, tRef])
 
   const changed = Boolean(selected && draft && (
     draft.displayName.trim() !== selected.displayName ||
@@ -157,9 +149,9 @@ export function AdminPlansPage() {
       billingKind: draft.billingKind,
       entitlements: [...draft.entitlements].sort((a, b) => a.key.localeCompare(b.key)),
     }
-    const currentPrice = priceLabel(selected)
-    const newPrice = `${new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 4 }).format(draftPrice!)} ${selected.currency}${draft.billingKind === 'Monthly' ? ' / aylık' : draft.billingKind === 'OneTime' ? ' / tek sefer' : ' / ücretsiz'}`
-    const message = `“${selected.displayName}” planı ${currentPrice} → ${newPrice} olarak güncellenecek. Fiyat ve faturalandırma değişikliği yalnızca yeni alımlara uygulanır; mevcut yayın hakları ve aboneliklerin fiyatı korunur. Hak limitleri düşerse mevcut veriler silinmez. Devam edilsin mi?`
+    const currentPrice = priceLabel(selected, locale, translate)
+    const newPrice = `${new Intl.NumberFormat(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 }).format(draftPrice!)} ${selected.currency}${draft.billingKind === 'Monthly' ? ` / ${t('adminUi.plans.periodMonthly')}` : draft.billingKind === 'OneTime' ? ` / ${t('adminUi.plans.periodOneTime')}` : ` / ${t('adminUi.plans.periodFree')}`}`
+    const message = t('adminUi.plans.confirmSave', { name: selected.displayName, oldPrice: currentPrice, newPrice })
     if (!window.confirm(message)) return
 
     setSaving(true)
@@ -172,18 +164,18 @@ export function AdminPlansPage() {
       setPlans(current => current?.map(item => item.id === updated.id ? updated : item) ?? [updated])
       setDraft(toDraft(updated))
       staleRef.current = false
-      setMessage(`${updated.displayName} planı kaydedildi.`)
+      setMessage(t('adminUi.plans.saved', { name: updated.displayName }))
     } catch (error) {
       if (error instanceof ApiRequestError && error.status === 409) {
         staleRef.current = true
         setStale(true)
-        setActionError('Plan siz düzenlerken başka bir yönetici tarafından değiştirildi. Yerel düzenlemeleriniz korunuyor; kaydetmeden önce güncel sürümü yükleyin.')
+        setActionError(t('adminUi.plans.stale'))
       } else if (error instanceof ApiRequestError && error.status === 400) {
-        setValidationErrors(['Sunucu plan değerlerini veya desteklenen sınırları kabul etmedi. Değerleri gözden geçirip yeniden deneyin.'])
+        setValidationErrors([t('adminUi.plans.invalidServer')])
       } else if (error instanceof ApiRequestError && (error.status === 401 || error.status === 403)) {
-        setActionError('Kaydetmek için MFA doğrulaması tamamlanmış yönetici oturumu gerekiyor.')
+        setActionError(t('adminUi.plans.saveAuthRequired'))
       } else {
-        setActionError('Plan kaydedilemedi. Bağlantınızı kontrol edip yeniden deneyin.')
+        setActionError(t('adminUi.plans.saveError'))
       }
     } finally {
       setSaving(false)
@@ -204,31 +196,31 @@ export function AdminPlansPage() {
     <section className="admin-plans" aria-labelledby="admin-plans-title" aria-busy={loading || saving}>
       <header className="admin-overview__heading">
         <div>
-          <h2 id="admin-plans-title">Planlar ve haklar</h2>
-          <p>Plan adını, açıklamasını, fiyatı, faturalandırma türünü ve desteklenen hak değerlerini yönetin.</p>
+          <h2 id="admin-plans-title">{t('adminUi.plans.title')}</h2>
+          <p>{t('adminUi.plans.description')}</p>
         </div>
       </header>
 
       {actionError ? <p className="admin-banned__message is-error" role="alert">{actionError}</p> : null}
       {message ? <p className="admin-banned__message" role="status">{message}</p> : null}
       {validationErrors.length ? <ul className="admin-banned__message is-error" role="alert">{validationErrors.map(error => <li key={error}>{error}</li>)}</ul> : null}
-      {loading ? <p className="admin-operational__status" role="status">Planlar yükleniyor…</p> : null}
+      {loading ? <p className="admin-operational__status" role="status">{t('adminUi.plans.loading')}</p> : null}
       {!loading && loadError ? (
         <div className="admin-overview__error" role="alert">
-          <h3>Planlar yüklenemedi</h3>
-          <p>{actionError || 'Plan listesi şu anda alınamadı. Biraz sonra yeniden deneyin.'}</p>
-          <button className="button button--secondary" type="button" onClick={retryLoad}>Yeniden dene</button>
+          <h3>{t('adminUi.plans.loadFailed')}</h3>
+          <p>{actionError || t('adminUi.plans.loadError')}</p>
+          <button className="button button--secondary" type="button" onClick={retryLoad}>{t('adminUi.plans.retry')}</button>
         </div>
       ) : null}
       {!loading && !loadError && plans?.length === 0 ? (
         <div className="admin-operational__empty" role="status">
-          <h3>Yönetilecek plan yok</h3>
-          <p>Plan tanımları eklendiğinde burada görünür.</p>
+          <h3>{t('adminUi.plans.emptyTitle')}</h3>
+          <p>{t('adminUi.plans.emptyBody')}</p>
         </div>
       ) : null}
       {!loading && !loadError && plans && plans.length > 0 ? (
         <div className="admin-plans__layout">
-          <nav className="admin-plans__list" aria-label="Düzenlenecek plan">
+          <nav className="admin-plans__list" aria-label={t('adminUi.plans.planList')}>
             {plans.map(plan => (
               <button key={plan.id} type="button"
                 className={`admin-plans__choice${plan.id === selectedId ? ' is-selected' : ''}`}
@@ -236,52 +228,52 @@ export function AdminPlansPage() {
                 disabled={saving}
                 onClick={() => selectPlan(plan)}>
                 <span className="admin-plans__choice-name">{plan.displayName}</span>
-                <span className="admin-plans__choice-meta">{plan.key} · {billingLabels[plan.billingKind]}</span>
-                <span className="admin-plans__choice-price">{priceLabel(plan)}</span>
+                <span className="admin-plans__choice-meta">{plan.key} · {t(`adminUi.plans.${plan.billingKind === 'OneTime' ? 'oneTime' : plan.billingKind === 'Monthly' ? 'monthly' : 'free'}`)}</span>
+                <span className="admin-plans__choice-price">{priceLabel(plan, locale, translate)}</span>
               </button>
             ))}
           </nav>
           {selected && draft ? (
             <form className="admin-plans__editor" onSubmit={event => void save(event)} aria-labelledby="admin-plan-editor-title">
               <div className="admin-plans__editor-heading">
-                <div><p className="eyebrow">{selected.key}</p><h3 id="admin-plan-editor-title">Plan bilgileri</h3></div>
-                <span className="admin-templates__revision">Sürüm {selected.revision}</span>
+                <div><p className="eyebrow">{selected.key}</p><h3 id="admin-plan-editor-title">{t('adminUi.plans.planDetails')}</h3></div>
+                <span className="admin-templates__revision">{t('adminUi.plans.revision', { revision: selected.revision })}</span>
               </div>
-              <label className="admin-templates__field" htmlFor="admin-plan-name"><span>Plan adı</span>
+              <label className="admin-templates__field" htmlFor="admin-plan-name"><span>{t('adminUi.plans.planName')}</span>
                 <input id="admin-plan-name" required maxLength={200} value={draft.displayName}
                   onChange={event => setDraft(current => current ? { ...current, displayName: event.target.value } : current)} />
               </label>
               <label className="admin-templates__field" htmlFor="admin-plan-description">
-                <span>Açıklama <span className="admin-templates__optional">(isteğe bağlı)</span></span>
+                <span>{t('adminUi.plans.descriptionLabel')} <span className="admin-templates__optional">{t('adminUi.plans.optional')}</span></span>
                 <textarea id="admin-plan-description" rows={3} maxLength={2000} value={draft.description ?? ''}
                   onChange={event => setDraft(current => current ? { ...current, description: event.target.value } : current)} />
-                <span className="admin-templates__hint">En çok 2.000 karakter.</span>
+                <span className="admin-templates__hint">{t('adminUi.plans.maxChars')}</span>
               </label>
               <label className="admin-templates__field" htmlFor="admin-plan-price">
-                <span>Plan tutarı ({selected.currency})</span>
+                <span>{t('adminUi.plans.amount', { currency: selected.currency })}</span>
                 <input id="admin-plan-price" type="number" min={0} step="0.0001" required inputMode="decimal"
                   value={draft.priceAmount} onChange={event => setDraft(current => current ? { ...current, priceAmount: event.target.value } : current)} />
-                <span className="admin-templates__hint">En fazla 4 ondalık basamak. Free plan 0; Tek seferlik ve Aylık planlar 0’dan büyük tutar kullanır. Para birimi salt okunurdur. Fiyat değişikliği yalnızca yeni alımlara uygulanır; mevcut yayın hakları ve abonelikler eski fiyatını korur.</span>
+                <span className="admin-templates__hint">{t('adminUi.plans.priceHint')}</span>
               </label>
               <label className="admin-templates__field" htmlFor="admin-plan-billing">
-                <span>Faturalandırma türü</span>
+                <span>{t('adminUi.plans.billing')}</span>
                 <select id="admin-plan-billing" value={draft.billingKind}
                   onChange={event => setDraft(current => current ? { ...current, billingKind: event.target.value as AdminPlanBillingKind } : current)}>
-                  <option value="Free">Ücretsiz</option><option value="OneTime">Tek seferlik</option><option value="Monthly">Aylık</option>
+                  <option value="Free">{t('adminUi.plans.free')}</option><option value="OneTime">{t('adminUi.plans.oneTime')}</option><option value="Monthly">{t('adminUi.plans.monthly')}</option>
                 </select>
               </label>
-              {draft.billingKind === 'Free' && draftPrice !== 0 ? <p className="admin-plans__notice" role="note">Ücretsiz planın tutarı sıfır olmalıdır. Tutarı 0 yapın veya başka bir faturalandırma türü seçin.</p> : null}
-              {draft.billingKind !== 'Free' && draftPrice === 0 ? <p className="admin-plans__notice" role="note">Ücretli planların tutarı sıfırdan büyük olmalıdır. Pozitif bir tutar girin.</p> : null}
+              {draft.billingKind === 'Free' && draftPrice !== 0 ? <p className="admin-plans__notice" role="note">{t('adminUi.plans.freeMustBeZero')}</p> : null}
+              {draft.billingKind !== 'Free' && draftPrice === 0 ? <p className="admin-plans__notice" role="note">{t('adminUi.plans.paidMustBePositive')}</p> : null}
               <fieldset className="admin-plans__entitlements">
-                <legend>Plan hakları</legend>
-                <p>Sayısal alanlar tam sayı kabul eder. Desteklenen üst sınırlar sunucuda doğrulanır; buradaki değerler mevcut kullanım verisini silmez.</p>
+                <legend>{t('adminUi.plans.entitlements')}</legend>
+                <p>{t('adminUi.plans.entitlementHint')}</p>
                 <div className="admin-plans__entitlement-grid">
                   {entitlementFields.map(field => {
                     const item = draft.entitlements.find(value => value.key === field.key)
-                    if (!item) return <p key={field.key} className="admin-plans__notice" role="alert">{field.label} verisi alınamadı.</p>
+                    if (!item) return <p key={field.key} className="admin-plans__notice" role="alert">{t('adminUi.plans.missingEntitlement', { name: t(`adminUi.plans.fields.${field.key}`) })}</p>
                     return field.type === 'number' ? (
                       <label className="admin-templates__field" htmlFor={`plan-entitlement-${field.key}`} key={field.key}>
-                        <span>{field.label}</span>
+                        <span>{t(`adminUi.plans.fields.${field.key}`)}</span>
                         <input id={`plan-entitlement-${field.key}`} type="number" min={0} step={1} required
                           value={item.numericValue ?? ''} onChange={event => updateEntitlement(field.key, event.target.value === '' ? null : Number(event.target.value))} />
                       </label>
@@ -289,19 +281,19 @@ export function AdminPlansPage() {
                       <label className="admin-templates__visibility" htmlFor={`plan-entitlement-${field.key}`} key={field.key}>
                         <input id={`plan-entitlement-${field.key}`} type="checkbox" checked={item.booleanValue === true}
                           onChange={event => updateEntitlement(field.key, event.target.checked)} />
-                        <span><strong>{field.label}</strong><small>{item.booleanValue ? 'Açık' : 'Kapalı'}</small></span>
+                        <span><strong>{t(`adminUi.plans.fields.${field.key}`)}</strong><small>{t(item.booleanValue ? 'adminUi.plans.enabled' : 'adminUi.plans.disabled')}</small></span>
                       </label>
                     )
                   })}
                 </div>
               </fieldset>
-              {stale ? <div className="admin-templates__conflict" role="group" aria-label="Güncel plan sürümü">
-                <p>Sunucudaki güncel değerleri yükleyin. Yerel düzenlemeler bu işlem yapılana kadar korunur.</p>
-                <button className="button button--secondary" type="button" onClick={retryLoad} disabled={loading}>Güncel sürümü yükle</button>
+              {stale ? <div className="admin-templates__conflict" role="group" aria-label={t('adminUi.plans.currentRevision')}>
+                <p>{t('adminUi.plans.refreshConflict')}</p>
+                <button className="button button--secondary" type="button" onClick={retryLoad} disabled={loading}>{t('adminUi.plans.refresh')}</button>
               </div> : null}
               <div className="admin-templates__actions">
                 <button className="button button--primary" type="submit" disabled={!changed || !valid || saving || stale}>
-                  {saving ? 'Kaydediliyor…' : 'Değişiklikleri kaydet'}
+                  {saving ? t('adminUi.plans.saving') : t('adminUi.plans.saveChanges')}
                 </button>
               </div>
             </form>

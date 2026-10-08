@@ -14,6 +14,7 @@ import { PrivacyInformationPage, TermsInformationPage } from '../features/privac
 import { AccountDeletionConfirmationPage } from '../features/privacy/AccountDeletion'
 import { InternalLink } from '../components/ui/InternalLink'
 import { RouteShell } from './RouteShell'
+import { useTranslation } from 'react-i18next'
 
 function authRoute(pathname: string) {
   if (pathname === '/giris') return { title: 'Giriş yap', content: <LoginPage /> }
@@ -29,6 +30,7 @@ function authRoute(pathname: string) {
 }
 
 export default function PublicRoutes() {
+  const { t } = useTranslation()
   const pathname = window.location.pathname
   const auth = authRoute(pathname)
   const isInvitation = pathname.startsWith('/davetiye/')
@@ -45,12 +47,20 @@ export default function PublicRoutes() {
 
   if (pathname === '/') return <LandingPage />
 
-  if (auth) return <RouteShell title={auth.title} zone="public">{auth.content}</RouteShell>
+  if (auth) {
+    const titleKey = pathname === '/giris' ? 'authUi.routeTitles.login'
+      : pathname === '/giris/kayit' ? 'authUi.routeTitles.register'
+      : pathname === '/giris/e-posta-dogrula' || pathname === '/auth/confirm-email' ? 'authUi.routeTitles.confirm'
+      : pathname === '/giris/sifremi-unuttum' ? 'authUi.routeTitles.forgot'
+      : pathname === '/giris/sifre-sifirla' || pathname === '/auth/reset-password' ? 'authUi.routeTitles.reset'
+      : ''
+    return <RouteShell title={titleKey ? t(titleKey) : auth.title} zone="public">{auth.content}</RouteShell>
+  }
 
   if (isInvitation) return <PublicInvitationPage key={pathname} pathname={pathname} />
 
   if (pathname === '/sablonlar' || catalogDemoKey) {
-    return <RouteShell title={catalogDemoKey ? 'Şablon demosu' : 'Şablonlar'} zone="public">
+    return <RouteShell title={t(catalogDemoKey ? 'templateUi.demoTitle' : 'templateUi.title')} zone="public">
       <TemplateCatalogPage demoTemplateKey={catalogDemoKey ? decodeURIComponent(catalogDemoKey) : undefined} />
     </RouteShell>
   }

@@ -13,6 +13,9 @@ import {
 } from '../../routes/navigation'
 import { authErrorMessage } from './authErrors'
 import { useGoogleSignInAvailability } from './googleAuth'
+import { useTranslation } from 'react-i18next'
+import { useOptionalAccountPreferences } from '../preferences/preferencesContext'
+import { invalidateSessionAccess } from '../session/sessionAccess'
 
 type SubmitState = 'idle' | 'submitting' | 'success' | 'error'
 
@@ -53,6 +56,7 @@ function errorsOnly(entries: Array<ErrorSummaryEntry | null>): ErrorSummaryEntry
 }
 
 export function LoginPage() {
+  const { t } = useTranslation()
   const api = useMemo(() => new DavetiyeApiClient(), [])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -104,6 +108,7 @@ export function LoginPage() {
         setMessage('Authenticator uygulamanızdaki kodu veya tek kullanımlık kurtarma kodlarından birini girin.')
         return
       }
+      invalidateSessionAccess()
       navigate(returnPath)
     } catch (error) {
       setState('error')
@@ -122,6 +127,7 @@ export function LoginPage() {
     setMessage('Ek doğrulama tamamlanıyor…')
     try {
       await api.completeAdminMfaLogin(twoFactorCode.trim(), isRecoveryCode)
+      invalidateSessionAccess()
       navigate(mfaReturnPath)
     } catch (error) {
       setState('error')
@@ -130,43 +136,43 @@ export function LoginPage() {
   }
 
   if (requiresTwoFactor) return (
-    <AuthCard intro="Yönetici hesabınız için ikinci doğrulama adımını tamamlayın.">
+    <AuthCard intro={t('authUi.login.mfaIntro')}>
       <ErrorSummary errors={errors} />
-      <div className="auth-card__alternatives" role="group" aria-label="Doğrulama yöntemi">
-        <button className={`button ${isRecoveryCode ? 'button--secondary' : 'button--primary'}`} type="button" aria-pressed={!isRecoveryCode} onClick={() => { setIsRecoveryCode(false); setTwoFactorCode(''); setErrors([]) }}>Authenticator kodu</button>
-        <button className={`button ${isRecoveryCode ? 'button--primary' : 'button--secondary'}`} type="button" aria-pressed={isRecoveryCode} onClick={() => { setIsRecoveryCode(true); setTwoFactorCode(''); setErrors([]) }}>Kurtarma kodu</button>
+      <div className="auth-card__alternatives" role="group" aria-label={t('authUi.login.mfaMethod')}>
+        <button className={`button ${isRecoveryCode ? 'button--secondary' : 'button--primary'}`} type="button" aria-pressed={!isRecoveryCode} onClick={() => { setIsRecoveryCode(false); setTwoFactorCode(''); setErrors([]) }}>{t('authUi.login.authenticator')}</button>
+        <button className={`button ${isRecoveryCode ? 'button--primary' : 'button--secondary'}`} type="button" aria-pressed={isRecoveryCode} onClick={() => { setIsRecoveryCode(true); setTwoFactorCode(''); setErrors([]) }}>{t('authUi.login.recovery')}</button>
       </div>
       <form className="auth-form" onSubmit={(event) => void submitTwoFactor(event)} noValidate>
-        <TextField id="login-two-factor-code" label={isRecoveryCode ? 'Tek kullanımlık kurtarma kodu' : 'Authenticator doğrulama kodu'} value={twoFactorCode} onChange={setTwoFactorCode} autoComplete="one-time-code" required helpText={isRecoveryCode ? 'Her kurtarma kodu yalnızca bir kez kullanılabilir.' : 'Authenticator uygulamanızdaki güncel kodu yazın.'} errorText={errors.find(error => error.fieldId === 'login-two-factor-code')?.message} />
-        <button className="button button--primary" type="submit" disabled={state === 'submitting'}>Doğrula ve devam et</button>
+        <TextField id="login-two-factor-code" label={isRecoveryCode ? t('authUi.login.recoveryCode') : t('authUi.login.verificationCode')} value={twoFactorCode} onChange={setTwoFactorCode} autoComplete="one-time-code" required helpText={isRecoveryCode ? t('authUi.login.recoveryHelp') : t('authUi.login.verificationHelp')} errorText={errors.find(error => error.fieldId === 'login-two-factor-code')?.message} />
+        <button className="button button--primary" type="submit" disabled={state === 'submitting'}>{t('authUi.login.verifyContinue')}</button>
       </form>
       <FormStatus state={state} message={message} />
-      <button className="button button--secondary" type="button" onClick={() => { setRequiresTwoFactor(false); setTwoFactorCode(''); setMessage(''); setState('idle') }}>Girişe dön</button>
+      <button className="button button--secondary" type="button" onClick={() => { setRequiresTwoFactor(false); setTwoFactorCode(''); setMessage(''); setState('idle') }}>{t('authUi.login.returnToLogin')}</button>
     </AuthCard>
   )
 
   return (
-    <AuthCard intro="Kutlio panelinize güvenli oturum çereziyle erişin.">
+    <AuthCard intro={t('authUi.login.intro')}>
       <ErrorSummary errors={errors} />
       <form className="auth-form" onSubmit={(event) => void submit(event)} noValidate>
-        <TextField id="login-email" label="E-posta" type="email" value={email} onChange={setEmail} autoComplete="email" required errorText={errors.find(error => error.fieldId === 'login-email')?.message} />
-        <TextField id="login-password" label="Şifre" type="password" value={password} onChange={setPassword} autoComplete="current-password" required errorText={errors.find(error => error.fieldId === 'login-password')?.message} />
-        <button className="button button--primary" type="submit" disabled={state === 'submitting'}>Giriş yap</button>
+        <TextField id="login-email" label={t('authUi.login.email')} type="email" value={email} onChange={setEmail} autoComplete="email" required errorText={errors.find(error => error.fieldId === 'login-email')?.message} />
+        <TextField id="login-password" label={t('authUi.login.password')} type="password" value={password} onChange={setPassword} autoComplete="current-password" required errorText={errors.find(error => error.fieldId === 'login-password')?.message} />
+        <button className="button button--primary" type="submit" disabled={state === 'submitting'}>{t('authUi.login.submit')}</button>
       </form>
       <FormStatus state={state} message={message} />
       <div className="auth-card__alternatives">
-        {googleAvailability === 'enabled' ? <form className="auth-form auth-form--google" method="post" encType="application/x-www-form-urlencoded" action="/api/v1/auth/google/challenge" aria-label="Google ile devam et">
+        {googleAvailability === 'enabled' ? <form className="auth-form auth-form--google" method="post" encType="application/x-www-form-urlencoded" action="/api/v1/auth/google/challenge" aria-label={t('authUi.login.googleContinue')}>
         <RadioGroupField
           id="google-account-type"
-          legend="Google ile devam etmek için hesap türü"
+          legend={t('authUi.login.googleAccountType')}
           name="googleAccountType"
           value={googleAccountType}
           onChange={(value) => setGoogleAccountType(value as AccountTypeInput)}
           required
           helpText="Yeni hesapta bu seçim kalıcıdır; mevcut Google bağlantılı hesabınız varsa kayıtlı hesap türünüz korunur."
           options={[
-            { value: 'Individual', label: 'Bireysel' },
-            { value: 'Organization', label: 'Organizasyon' },
+            { value: 'Individual', label: t('authUi.login.individual') },
+            { value: 'Organization', label: t('authUi.login.organization') },
           ]}
         />
         <div className="consent-choice">
@@ -185,24 +191,25 @@ export function LoginPage() {
         <input type="hidden" name="serviceNoticeAcknowledged" value={googleServiceNoticeAcknowledged ? 'true' : 'false'} />
         <input type="hidden" name="marketingOptIn" value={googleMarketingOptIn ? 'true' : 'false'} />
         <input type="hidden" name="__RequestVerificationToken" value={googleCsrfToken} />
-        <button className="button button--google" type="submit" disabled={!googleAccountType || !googleServiceNoticeAcknowledged || googleCsrfState !== 'ready'}>Google ile devam et</button>
-        {googleCsrfState === 'loading' ? <p role="status">Güvenli bağlantı hazırlanıyor…</p> : null}
-        {googleCsrfState === 'error' ? <p role="alert">Google ile güvenli bağlantı hazırlanamadı. <button className="button button--secondary" type="button" onClick={() => { setGoogleCsrfState('loading'); setGoogleCsrfToken(''); setGoogleCsrfRetry(value => value + 1) }}>Tekrar dene</button></p> : null}
-        {!googleServiceNoticeAcknowledged ? <p className="form-field__help">Devam etmek için hizmet bildirimini onaylayın.</p> : null}
+        <button className="button button--google" type="submit" disabled={!googleAccountType || !googleServiceNoticeAcknowledged || googleCsrfState !== 'ready'}>{t('authUi.login.googleContinue')}</button>
+        {googleCsrfState === 'loading' ? <p role="status">{t('authUi.login.secureGooglePreparing')}</p> : null}
+        {googleCsrfState === 'error' ? <p role="alert">{t('authUi.login.googleRetry')} <button className="button button--secondary" type="button" onClick={() => { setGoogleCsrfState('loading'); setGoogleCsrfToken(''); setGoogleCsrfRetry(value => value + 1) }}>{t('common.loading')}</button></p> : null}
+        {!googleServiceNoticeAcknowledged ? <p className="form-field__help">{t('authUi.login.consentRequired')}</p> : null}
         </form> :
           <div className="auth-card__security-note" role="status">{googleAvailability === 'checking'
             ? 'Google ile giriş kullanılabilirliği kontrol ediliyor…'
             : googleAvailability === 'disabled'
               ? 'Google ile giriş bu ortamda henüz kullanıma açık değil. E-posta ve şifrenizle devam edebilirsiniz.'
               : <>Google ile girişin kullanılabilirliği şu anda doğrulanamadı. E-posta ve şifrenizle devam edin. <button className="button button--secondary" type="button" onClick={retryGoogleAvailability}>Tekrar dene</button></>}</div>}
-        <InternalLink to="/giris/sifremi-unuttum">Şifremi unuttum</InternalLink>
-        <p>Hesabınız yok mu? <InternalLink to={`/giris/kayit?returnUrl=${encodeURIComponent(returnPath)}`}>Hesap oluşturun</InternalLink>.</p>
+        <InternalLink to="/giris/sifremi-unuttum">{t('authUi.login.forgot')}</InternalLink>
+        <p>{t('authUi.login.noAccount')} <InternalLink to={`/giris/kayit?returnUrl=${encodeURIComponent(returnPath)}`}>{t('authUi.login.createAccount')}</InternalLink>.</p>
       </div>
     </AuthCard>
   )
 }
 
 export function RegisterPage() {
+  const { t } = useTranslation()
   const api = useMemo(() => new DavetiyeApiClient(), [])
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
@@ -241,42 +248,43 @@ export function RegisterPage() {
   }
 
   if (state === 'success') {
-    return <AuthCard intro="Hesap oluşturma isteğiniz alındı."><FormStatus state={state} message={message} /><p>E-postayı doğruladıktan sonra <InternalLink to={`/giris?returnUrl=${encodeURIComponent(returnPath)}`}>giriş yapabilirsiniz</InternalLink>.</p></AuthCard>
+    return <AuthCard intro={t('authUi.register.successIntro')}><FormStatus state={state} message={message} /><p>{t('authUi.register.verifyEmail')} <InternalLink to={`/giris?returnUrl=${encodeURIComponent(returnPath)}`}>{t('authUi.register.loginAfter')}</InternalLink>.</p></AuthCard>
   }
 
   return (
-    <AuthCard intro="Bireysel veya tek sahibi olduğunuz organizasyon hesabınızı oluşturun.">
+    <AuthCard intro={t('authUi.register.intro')}>
       <ErrorSummary errors={errors} />
       <form className="auth-form" onSubmit={(event) => void submit(event)} noValidate>
-        <TextField id="register-name" label="Görünen ad" value={displayName} onChange={setDisplayName} autoComplete="name" required errorText={errors.find(error => error.fieldId === 'register-name')?.message} />
-        <TextField id="register-email" label="E-posta" type="email" value={email} onChange={setEmail} autoComplete="email" required errorText={errors.find(error => error.fieldId === 'register-email')?.message} />
-        <RadioGroupField id="register-account-type" legend="Hesap türü" name="accountType" value={accountType} onChange={(value) => setAccountType(value as AccountTypeInput)} required helpText="Bu seçim kayıt sonrasında değiştirilemez. Organizasyon hesabı MVP’de tek kişi tarafından yönetilir." errorText={errors.find(error => error.fieldId.startsWith('register-account-type'))?.message} options={[
-          { value: 'Individual', label: 'Bireysel', description: 'Kendi etkinlikleriniz ve davetiyeleriniz için.' },
-          { value: 'Organization', label: 'Organizasyon', description: 'Müşteri davetiyelerini tek hesap sahibi olarak yönetmek için.' },
+        <TextField id="register-name" label={t('authUi.register.name')} value={displayName} onChange={setDisplayName} autoComplete="name" required errorText={errors.find(error => error.fieldId === 'register-name')?.message} />
+        <TextField id="register-email" label={t('authUi.register.email')} type="email" value={email} onChange={setEmail} autoComplete="email" required errorText={errors.find(error => error.fieldId === 'register-email')?.message} />
+        <RadioGroupField id="register-account-type" legend={t('authUi.register.accountType')} name="accountType" value={accountType} onChange={(value) => setAccountType(value as AccountTypeInput)} required helpText={t('authUi.register.accountTypeHelp')} errorText={errors.find(error => error.fieldId.startsWith('register-account-type'))?.message} options={[
+          { value: 'Individual', label: t('authUi.register.individual'), description: t('authUi.register.individualHelp') },
+          { value: 'Organization', label: t('authUi.register.organization'), description: t('authUi.register.organizationHelp') },
         ]} />
-        <TextField id="register-password" label="Şifre" type="password" value={password} onChange={setPassword} autoComplete="new-password" required helpText="Uzun, benzersiz; büyük-küçük harf ve rakam içeren bir şifre kullanın." errorText={errors.find(error => error.fieldId === 'register-password')?.message} />
-        <TextField id="register-password-again" label="Şifreyi tekrar yazın" type="password" value={passwordAgain} onChange={setPasswordAgain} autoComplete="new-password" required errorText={errors.find(error => error.fieldId === 'register-password-again')?.message} />
+        <TextField id="register-password" label={t('authUi.register.password')} type="password" value={password} onChange={setPassword} autoComplete="new-password" required helpText={t('authUi.register.passwordHelp')} errorText={errors.find(error => error.fieldId === 'register-password')?.message} />
+        <TextField id="register-password-again" label={t('authUi.register.passwordAgain')} type="password" value={passwordAgain} onChange={setPasswordAgain} autoComplete="new-password" required errorText={errors.find(error => error.fieldId === 'register-password-again')?.message} />
         <div className="consent-choice">
           <label htmlFor="register-service-notice">
             <input id="register-service-notice" type="checkbox" checked={serviceNoticeAcknowledged} onChange={(event) => setServiceNoticeAcknowledged(event.target.checked)} aria-invalid={errors.some(error => error.fieldId === 'register-service-notice') || undefined} aria-describedby={errors.some(error => error.fieldId === 'register-service-notice') ? 'register-service-notice-error' : 'register-service-notice-help'} />
-            <span><strong>Hizmet bildirimini okudum.</strong></span>
+            <span><strong>{t('authUi.register.serviceNotice')}</strong></span>
           </label>
           <p id="register-service-notice-help" className="form-field__help">Bu onay hesap oluşturmak için gereklidir. <InternalLink to="/gizlilik">Hizmet bildirimi ve gizlilik bilgisi</InternalLink> ile <InternalLink to="/kullanim-kosullari">kullanım koşulları</InternalLink> taslaktır; Phase 11 hukuk incelemesi bekliyor.</p>
           {errors.find(error => error.fieldId === 'register-service-notice') ? <p id="register-service-notice-error" className="form-field__error">{errors.find(error => error.fieldId === 'register-service-notice')?.message}</p> : null}
           <label htmlFor="register-marketing-opt-in">
             <input id="register-marketing-opt-in" type="checkbox" checked={marketingOptIn} onChange={(event) => setMarketingOptIn(event.target.checked)} />
-            <span>Ürün haberleri ve kampanyalar hakkında e-posta almak istiyorum. Bu tercih isteğe bağlıdır ve daha sonra değiştirilebilir.</span>
+            <span>{t('authUi.register.marketing')}</span>
           </label>
         </div>
-        <button className="button button--primary" type="submit" disabled={state === 'submitting'}>Hesap oluştur</button>
+        <button className="button button--primary" type="submit" disabled={state === 'submitting'}>{t('authUi.register.create')}</button>
       </form>
       <FormStatus state={state} message={message} />
-      <p>Zaten hesabınız var mı? <InternalLink to={`/giris?returnUrl=${encodeURIComponent(returnPath)}`}>Giriş yapın</InternalLink>.</p>
+      <p>{t('authUi.register.existing')} <InternalLink to={`/giris?returnUrl=${encodeURIComponent(returnPath)}`}>{t('authUi.register.login')}</InternalLink>.</p>
     </AuthCard>
   )
 }
 
 export function ConfirmEmailPage() {
+  const { t } = useTranslation()
   const api = useMemo(() => new DavetiyeApiClient(), [])
   const { userId, token } = useSensitiveLinkParameters()
   const [state, setState] = useState<SubmitState>('idle')
@@ -284,24 +292,25 @@ export function ConfirmEmailPage() {
   const hasRequest = Boolean(userId && token)
 
   const confirm = async () => {
-    setState('submitting'); setMessage('E-posta adresiniz doğrulanıyor…')
+    setState('submitting'); setMessage(t('authUi.common.verifyingEmail'))
     try {
       await api.confirmEmail({ userId, token })
-      setState('success'); setMessage('E-posta adresiniz doğrulandı. Şimdi giriş yapabilirsiniz.')
+      setState('success'); setMessage(t('authUi.confirm.success'))
     } catch (error) {
       setState('error'); setMessage(authErrorMessage(error, 'confirm-email'))
     }
   }
 
-  return <AuthCard intro="Hesabınızı etkinleştirmek için e-posta doğrulamasını tamamlayın.">
-    {!hasRequest ? <p role="alert">Doğrulama bağlantısı eksik veya geçersiz. Kayıt sırasında gönderilen e-postadaki bağlantıyı açın.</p> : null}
-    {hasRequest && state !== 'success' ? <button className="button button--primary" type="button" onClick={() => void confirm()} disabled={state === 'submitting'}>E-postamı doğrula</button> : null}
+  return <AuthCard intro={t('authUi.confirm.intro')}>
+    {!hasRequest ? <p role="alert">{t('authUi.confirm.missing')}</p> : null}
+    {hasRequest && state !== 'success' ? <button className="button button--primary" type="button" onClick={() => void confirm()} disabled={state === 'submitting'}>{t('authUi.confirm.submit')}</button> : null}
     <FormStatus state={state} message={message} />
-    {state === 'success' ? <InternalLink to="/giris">Giriş sayfasına git</InternalLink> : null}
+    {state === 'success' ? <InternalLink to="/giris">{t('authUi.confirm.goToLogin')}</InternalLink> : null}
   </AuthCard>
 }
 
 export function ForgotPasswordPage() {
+  const { t } = useTranslation()
   const api = useMemo(() => new DavetiyeApiClient(), [])
   const [email, setEmail] = useState('')
   const [errors, setErrors] = useState<ErrorSummaryEntry[]>([])
@@ -312,26 +321,27 @@ export function ForgotPasswordPage() {
     event.preventDefault()
     const nextErrors = errorsOnly([emailError(email, 'forgot-email')]); setErrors(nextErrors)
     if (nextErrors.length > 0) return
-    setState('submitting'); setMessage('İstek gönderiliyor…')
+    setState('submitting'); setMessage(t('authUi.forgot.sending'))
     try {
       await api.requestPasswordReset({ email: email.trim() })
-      setState('success'); setMessage('Bu adresle eşleşen bir hesap varsa şifre sıfırlama bağlantısı gönderildi.')
+      setState('success'); setMessage(t('authUi.forgot.sent'))
     } catch (error) {
       setState('error'); setMessage(authErrorMessage(error, 'request-reset'))
     }
   }
 
-  return <AuthCard intro="Şifre sıfırlama bağlantısı istemek için e-posta adresinizi yazın.">
+  return <AuthCard intro={t('authUi.forgot.intro')}>
     <ErrorSummary errors={errors} />
     <form className="auth-form" onSubmit={(event) => void submit(event)} noValidate>
-      <TextField id="forgot-email" label="E-posta" type="email" value={email} onChange={setEmail} autoComplete="email" required errorText={errors.find(error => error.fieldId === 'forgot-email')?.message} />
-      <button className="button button--primary" type="submit" disabled={state === 'submitting'}>Sıfırlama bağlantısı gönder</button>
+      <TextField id="forgot-email" label={t('authUi.forgot.email')} type="email" value={email} onChange={setEmail} autoComplete="email" required errorText={errors.find(error => error.fieldId === 'forgot-email')?.message} />
+      <button className="button button--primary" type="submit" disabled={state === 'submitting'}>{t('authUi.forgot.submit')}</button>
     </form>
-    <FormStatus state={state} message={message} /><InternalLink to="/giris">Girişe dön</InternalLink>
+    <FormStatus state={state} message={message} /><InternalLink to="/giris">{t('authUi.forgot.back')}</InternalLink>
   </AuthCard>
 }
 
 export function ResetPasswordPage() {
+  const { t } = useTranslation()
   const api = useMemo(() => new DavetiyeApiClient(), [])
   const { userId, token } = useSensitiveLinkParameters()
   const [password, setPassword] = useState('')
@@ -349,23 +359,23 @@ export function ResetPasswordPage() {
     ])
     setErrors(nextErrors)
     if (nextErrors.length > 0 || !hasRequest) return
-    setState('submitting'); setMessage('Şifreniz yenileniyor…')
+    setState('submitting'); setMessage(t('authUi.reset.saving'))
     try {
       await api.resetPassword({ userId, token, newPassword: password })
-      setState('success'); setMessage('Şifreniz yenilendi. Diğer oturumlarınız güvenlik için kapatıldı; yeniden giriş yapın.')
+      setState('success'); setMessage(t('authUi.reset.saved'))
     } catch (error) {
       setState('error'); setMessage(authErrorMessage(error, 'reset-password'))
     }
   }
 
-  return <AuthCard intro="Hesabınız için yeni ve güçlü bir şifre belirleyin.">
-    {!hasRequest ? <p role="alert">Şifre sıfırlama bağlantısı eksik veya geçersiz.</p> : null}
+  return <AuthCard intro={t('authUi.reset.intro')}>
+    {!hasRequest ? <p role="alert">{t('authUi.reset.missing')}</p> : null}
     {hasRequest && state !== 'success' ? <><ErrorSummary errors={errors} /><form className="auth-form" onSubmit={(event) => void submit(event)} noValidate>
-      <TextField id="reset-password" label="Yeni şifre" type="password" value={password} onChange={setPassword} autoComplete="new-password" required helpText="Uzun, benzersiz; büyük-küçük harf ve rakam içeren bir şifre kullanın." errorText={errors.find(error => error.fieldId === 'reset-password')?.message} />
-      <TextField id="reset-password-again" label="Yeni şifreyi tekrar yazın" type="password" value={passwordAgain} onChange={setPasswordAgain} autoComplete="new-password" required errorText={errors.find(error => error.fieldId === 'reset-password-again')?.message} />
-      <button className="button button--primary" type="submit" disabled={state === 'submitting'}>Şifreyi yenile</button>
+      <TextField id="reset-password" label={t('authUi.reset.password')} type="password" value={password} onChange={setPassword} autoComplete="new-password" required helpText={t('authUi.reset.passwordHelp')} errorText={errors.find(error => error.fieldId === 'reset-password')?.message} />
+      <TextField id="reset-password-again" label={t('authUi.reset.passwordAgain')} type="password" value={passwordAgain} onChange={setPasswordAgain} autoComplete="new-password" required errorText={errors.find(error => error.fieldId === 'reset-password-again')?.message} />
+      <button className="button button--primary" type="submit" disabled={state === 'submitting'}>{t('authUi.reset.submit')}</button>
     </form></> : null}
-    <FormStatus state={state} message={message} />{state === 'success' ? <InternalLink to="/giris">Giriş sayfasına git</InternalLink> : null}
+    <FormStatus state={state} message={message} />{state === 'success' ? <InternalLink to="/giris">{t('authUi.reset.goToLogin')}</InternalLink> : null}
   </AuthCard>
 }
 
@@ -392,7 +402,7 @@ export function GoogleLinkPage() {
       }
       const csrfToken = await api.getAntiforgeryToken()
       await api.confirmGoogleLink({ password }, csrfToken)
-      setState('success'); setMessage('Google hesabınız mevcut hesabınıza bağlandı.')
+      invalidateSessionAccess(); setState('success'); setMessage('Google hesabınız mevcut hesabınıza bağlandı.')
     } catch (error) {
       setState('error'); setMessage(authErrorMessage(error, 'google-link'))
     }
@@ -417,16 +427,18 @@ export function GoogleLinkPage() {
 }
 
 export function LogoutButton() {
+  const { t } = useTranslation()
+  const preferences = useOptionalAccountPreferences()
   const api = useMemo(() => new DavetiyeApiClient(), [])
   const [state, setState] = useState<SubmitState>('idle')
   const [message, setMessage] = useState('')
   const logout = async () => {
-    setState('submitting'); setMessage('Oturum kapatılıyor…')
+    setState('submitting'); setMessage(t('auth.logoutInProgress'))
     try {
-      const csrfToken = await api.getAntiforgeryToken(); await api.logout(csrfToken); navigate('/giris')
+      const csrfToken = await api.getAntiforgeryToken(); await api.logout(csrfToken); preferences?.reset(); invalidateSessionAccess(); navigate('/giris')
     } catch (error) {
       setState('error'); setMessage(authErrorMessage(error, 'logout'))
     }
   }
-  return <div className="session-actions"><button className="button button--secondary" type="button" onClick={() => void logout()} disabled={state === 'submitting'}>Güvenli çıkış yap</button><FormStatus state={state} message={message} /></div>
+  return <div className="session-actions"><button className="button button--secondary" type="button" onClick={() => void logout()} disabled={state === 'submitting'}>{t('common.secureLogout')}</button><FormStatus state={state} message={message} /></div>
 }

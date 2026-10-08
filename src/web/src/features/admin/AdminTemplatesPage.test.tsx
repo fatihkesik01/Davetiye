@@ -20,6 +20,7 @@ vi.mock('../../api/generated/client', async importOriginal => {
 })
 
 import { AdminTemplatesPage } from './AdminTemplatesPage'
+import { AccountPreferencesProvider } from '../preferences/preferences'
 import AdminRoutes from '../../routes/AdminRoutes'
 
 const template = {
@@ -98,7 +99,7 @@ describe('Admin template management', () => {
 
   it('adds the template view to Admin navigation', async () => {
     window.history.replaceState({}, '', '/admin/templates')
-    render(<AdminRoutes />)
+    render(<AccountPreferencesProvider><AdminRoutes /></AccountPreferencesProvider>)
     expect(await screen.findByRole('heading', { name: 'Şablonlar' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Şablonlar' }).getAttribute('aria-current')).toBe('page')
   })

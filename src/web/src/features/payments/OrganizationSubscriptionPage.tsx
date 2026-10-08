@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { ApiRequestError, DavetiyeApiClient, type OrganizationSubscriptionSnapshot } from '../../api/generated/client'
 import { LoadingState } from '../../components/feedback/LoadingState'
@@ -6,6 +7,8 @@ import { LoadingState } from '../../components/feedback/LoadingState'
 type PageState = 'loading' | 'ready' | 'error'
 
 export function OrganizationSubscriptionPage({ api: providedApi }: { api?: DavetiyeApiClient }) {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.resolvedLanguage === 'en' ? 'en-US' : 'tr-TR'
   const api = useMemo(() => providedApi ?? new DavetiyeApiClient(), [providedApi])
   const [subscription, setSubscription] = useState<OrganizationSubscriptionSnapshot | null>(null)
   const [pageState, setPageState] = useState<PageState>('loading')
@@ -51,7 +54,7 @@ export function OrganizationSubscriptionPage({ api: providedApi }: { api?: Davet
         latest = await api.getOrganizationSubscription()
       } catch {
         setPageState('error')
-        setMessage({ kind: 'success', text: 'İptal isteği sunucuya ulaştı. Güncel abonelik durumunu görmek için yeniden yükleyin.' })
+        setMessage({ kind: 'success', text: t('creatorUi.subscription.cancelReached') })
         requestAnimationFrame(() => liveMessage.current?.focus())
         return
       }
@@ -59,15 +62,15 @@ export function OrganizationSubscriptionPage({ api: providedApi }: { api?: Davet
       setMessage({
         kind: 'success',
         text: latest?.status === 'Canceled'
-          ? `Yenileme kapatıldı. Erişiminiz ${formatDate(latest.paidThroughAtUtc)} tarihine kadar sürecek. İptal onayı e-posta adresinize gönderilecek.`
+          ? t('creatorUi.subscription.renewalOff', { date: formatDate(latest.paidThroughAtUtc, locale) })
           : result.outcome === 'Duplicate'
-            ? 'İptal isteğiniz daha önce işlenmiş. Abonelik durumu yenilendi.'
-            : 'İptal isteğiniz alındı ve abonelik durumu yenilendi.',
+            ? t('creatorUi.subscription.duplicate')
+            : t('creatorUi.subscription.accepted'),
       })
       requestAnimationFrame(() => liveMessage.current?.focus())
     } catch (error) {
       const isConflict = error instanceof ApiRequestError && error.status === 409
-      setMessage({ kind: 'error', text: cancellationErrorMessage(error) })
+      setMessage({ kind: 'error', text: cancellationErrorMessage(error, t) })
       if (isConflict) {
         try {
           const latest = await api.getOrganizationSubscription()
@@ -84,15 +87,15 @@ export function OrganizationSubscriptionPage({ api: providedApi }: { api?: Davet
     }
   }
 
-  if (pageState === 'loading') return <LoadingState label="Abonelik bilgileri yükleniyor…" />
+  if (pageState === 'loading') return <LoadingState label={t('creatorUi.subscription.loading')} />
 
   if (pageState === 'error') {
     return (
       <section className="organization-subscription" aria-labelledby="organization-subscription-title">
-        <h2 id="organization-subscription-title">Organization aboneliği</h2>
-        <p ref={liveMessage} tabIndex={-1} role="alert">{message?.text ?? 'Abonelik bilgileri şu anda yüklenemiyor. Biraz sonra yeniden deneyin.'}</p>
+        <h2 id="organization-subscription-title">{t('creatorUi.subscription.title')}</h2>
+        <p ref={liveMessage} tabIndex={-1} role="alert">{message?.text ?? t('creatorUi.subscription.loadError')}</p>
         <button className="button button--secondary" type="button" onClick={() => { setMessage(null); setPageState('loading'); void loadSubscription() }}>
-          Yeniden dene
+          {t('creatorUi.subscription.retry')}
         </button>
       </section>
     )
@@ -102,11 +105,11 @@ export function OrganizationSubscriptionPage({ api: providedApi }: { api?: Davet
     <section className="organization-subscription" aria-labelledby="organization-subscription-title">
       <header className="organization-subscription__header">
         <div>
-          <p className="organization-subscription__eyebrow">Plan ve ödeme</p>
-          <h2 id="organization-subscription-title">Organization aboneliği</h2>
+          <p className="organization-subscription__eyebrow">{t('creatorUi.subscription.billing')}</p>
+          <h2 id="organization-subscription-title">{t('creatorUi.subscription.title')}</h2>
         </div>
         {subscription ? <span className={`organization-subscription__status organization-subscription__status--${subscription.status.toLowerCase()}`}>
-          {statusLabel(subscription.status)}
+          {statusLabel(subscription.status, t)}
         </span> : null}
       </header>
 
@@ -114,55 +117,55 @@ export function OrganizationSubscriptionPage({ api: providedApi }: { api?: Davet
 
       {!subscription ? (
         <div className="organization-subscription__empty">
-          <h3>Abonelik bilgisi bulunmuyor</h3>
-          <p>Bu hesap için görüntülenecek bir Organization aboneliği bulunmuyor. Abonelik durumunuz sunucudan doğrulandığında bu alanda gösterilir.</p>
+          <h3>{t('creatorUi.subscription.missingTitle')}</h3>
+          <p>{t('creatorUi.subscription.missingBody')}</p>
         </div>
       ) : (
         <>
           <dl className="organization-subscription__details">
             <div>
-              <dt>Plan</dt>
+              <dt>{t('creatorUi.subscription.plan')}</dt>
               <dd>{subscription.planDisplayName}</dd>
             </div>
             <div>
-              <dt>Ücret</dt>
-              <dd>{formatPrice(subscription.priceAmount, subscription.currency)} / {billingPeriodLabel(subscription.billingPeriod)}</dd>
+              <dt>{t('creatorUi.subscription.price')}</dt>
+              <dd>{formatPrice(subscription.priceAmount, subscription.currency, locale)} / {billingPeriodLabel(subscription.billingPeriod, t)}</dd>
             </div>
             <div>
-              <dt>{subscription.status === 'Active' ? 'Sonraki yenileme' : 'Erişim bitişi'}</dt>
-              <dd><time dateTime={subscription.paidThroughAtUtc}>{formatDate(subscription.paidThroughAtUtc)}</time></dd>
+              <dt>{subscription.status === 'Active' ? t('creatorUi.subscription.nextRenewal') : t('creatorUi.subscription.accessEnd')}</dt>
+              <dd><time dateTime={subscription.paidThroughAtUtc}>{formatDate(subscription.paidThroughAtUtc, locale)}</time></dd>
             </div>
           </dl>
 
           {subscription.status === 'Active' ? (
             <>
-              <p className="organization-subscription__explanation">Aboneliğiniz aylık olarak otomatik yenilenir. İptal etmediğiniz sürece yenileme devam eder.</p>
+              <p className="organization-subscription__explanation">{t('creatorUi.subscription.activeExplanation')}</p>
               {!confirming ? (
                 <button ref={cancelButton} className="button button--secondary" type="button" onClick={beginCancellation}>
-                  Aboneliği iptal et
+                  {t('creatorUi.subscription.cancel')}
                 </button>
               ) : (
                 <section className="organization-subscription__confirmation" aria-labelledby="cancel-subscription-title" aria-describedby="cancel-subscription-description">
-                  <h3 id="cancel-subscription-title" ref={confirmationHeading} tabIndex={-1}>Abonelik iptalini onayla</h3>
-                  <p id="cancel-subscription-description">Bir sonraki aylık yenileme durur. Yayın ve public erişim {formatDate(subscription.paidThroughAtUtc)} tarihine kadar sürer. Bu tarihten sonra erişim durur; davetiye ve içerik verileriniz korunur. İptal onayı e-posta ile gönderilir.</p>
+                  <h3 id="cancel-subscription-title" ref={confirmationHeading} tabIndex={-1}>{t('creatorUi.subscription.confirmTitle')}</h3>
+                  <p id="cancel-subscription-description">{t('creatorUi.subscription.confirmBody', { date: formatDate(subscription.paidThroughAtUtc, locale) })}</p>
                   <div className="organization-subscription__actions">
                     <button className="button button--danger" type="button" disabled={busy} onClick={() => void confirmCancellation()}>
-                      {busy ? 'İptal ediliyor…' : 'İptali onayla'}
+                      {busy ? t('creatorUi.subscription.cancelBusy') : t('creatorUi.subscription.confirm')}
                     </button>
                     <button className="button button--secondary" type="button" disabled={busy} onClick={() => {
                       setConfirming(false)
                       requestAnimationFrame(() => cancelButton.current?.focus())
                     }}>
-                      Vazgeç
+                      {t('common.cancel')}
                     </button>
                   </div>
                 </section>
               )}
             </>
           ) : subscription.status === 'Canceled' ? (
-            <p className="organization-subscription__explanation">Yenileme kapalı. Erişim {formatDate(subscription.paidThroughAtUtc)} tarihine kadar sürer. Bu tarihte yayın ve public erişim durur; davetiye ve içerik verileriniz korunur.</p>
+            <p className="organization-subscription__explanation">{t('creatorUi.subscription.canceledExplanation', { date: formatDate(subscription.paidThroughAtUtc, locale) })}</p>
           ) : (
-            <p className="organization-subscription__explanation">Abonelik süresi sona erdi. Public erişim ve aktif yayın durdu; davetiye ve içerik verileriniz korunuyor.</p>
+            <p className="organization-subscription__explanation">{t('creatorUi.subscription.expiredExplanation')}</p>
           )}
         </>
       )}
@@ -170,33 +173,33 @@ export function OrganizationSubscriptionPage({ api: providedApi }: { api?: Davet
   )
 }
 
-function statusLabel(status: OrganizationSubscriptionSnapshot['status']) {
-  if (status === 'Active') return 'Aktif'
-  if (status === 'Canceled') return 'Yenileme kapalı'
-  return 'Süresi doldu'
+function statusLabel(status: OrganizationSubscriptionSnapshot['status'], t: (key: string) => string) {
+  if (status === 'Active') return t('creatorUi.subscription.active')
+  if (status === 'Canceled') return t('creatorUi.subscription.canceled')
+  return t('creatorUi.subscription.expired')
 }
 
-function formatDate(value: string) {
+function formatDate(value: string, locale: string) {
   const date = new Date(value)
   if (!Number.isFinite(date.getTime())) return '—'
-  return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'long', timeStyle: 'short', timeZone: 'Europe/Istanbul' }).format(date)
+    return new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeStyle: 'short', timeZone: 'Europe/Istanbul' }).format(date)
 }
 
-function formatPrice(amount: number, currency: string) {
+function formatPrice(amount: number, currency: string, locale: string) {
   try {
-    return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 2 }).format(amount) + ` ${currency}`
+    return new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(amount) + ` ${currency}`
   } catch {
     return `${amount} ${currency}`
   }
 }
 
-function billingPeriodLabel(period: string) {
-  return period === 'monthly' ? 'ay' : period
+function billingPeriodLabel(period: string, t: (key: string) => string) {
+  return period === 'monthly' ? t('creatorUi.subscription.monthly') : period
 }
 
-function cancellationErrorMessage(error: unknown) {
+function cancellationErrorMessage(error: unknown, t: (key: string) => string) {
   if (error instanceof ApiRequestError && error.status === 409) {
-    return 'Abonelik durumu değişti. Sunucudaki güncel abonelik durumu yenilendi.'
+    return t('creatorUi.subscription.changed')
   }
-  return 'İptal isteği tamamlanamadı. Abonelik durumunu yeniden yükleyip tekrar deneyin.'
+  return t('creatorUi.subscription.cancelError')
 }

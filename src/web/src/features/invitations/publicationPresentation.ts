@@ -4,9 +4,10 @@ export const publicationStateLabels: Record<InvitationPublicationState, string> 
   Draft: 'Taslak', Scheduled: 'Planlandı', Active: 'Yayında', Paused: 'Geçici olarak durduruldu', Expired: 'Yayın süresi bitti',
 }
 
-export function formatPublicationTime(instant: string, timeZoneId: string): string {
+export function formatPublicationTime(instant: string, timeZoneId: string, locale: string = 'tr'): string {
   try {
-    return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short', timeZone: timeZoneId }).format(new Date(instant))
+    const language = locale.toLowerCase().startsWith('en') ? 'en-US' : 'tr-TR'
+    return new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'short', timeZone: timeZoneId }).format(new Date(instant))
   } catch {
     return 'Tarih gösterilemiyor'
   }

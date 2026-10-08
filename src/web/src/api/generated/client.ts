@@ -200,6 +200,12 @@ export interface AccountConsentSnapshot {
   history: Array<{ kind: 'serviceNoticeAcknowledgement' | 'marketingPreference'; granted: boolean; version: string; source: 'emailPasswordSignup' | 'googleSignup' | 'accountSettings' | 'existingAccountAcknowledgement'; recordedAt: string }>
 }
 
+export interface AccountPreferences {
+  locale: 'tr' | 'en'
+  colorTheme: 'kutlio' | 'sage' | 'rose' | 'ocean' | 'plum'
+  appearance: 'system' | 'light' | 'dark'
+}
+
 export interface MarketingPreferenceUpdateRequest { optedIn: boolean }
 export interface ServiceNoticeAcknowledgementRequest { acknowledged: true }
 export interface ConfirmAccountDeletionRequest { token: string }
@@ -1029,6 +1035,16 @@ export class DavetiyeApiClient {
 
   public async getAccountConsents(signal?: AbortSignal): Promise<AccountConsentSnapshot> {
     return this.sendJson<AccountConsentSnapshot>('/api/v1/account/consents', { method: 'GET', signal })
+  }
+
+  public async getAccountPreferences(signal?: AbortSignal): Promise<AccountPreferences> {
+    return this.sendJson<AccountPreferences>('/api/v1/account/preferences', { method: 'GET', signal })
+  }
+
+  public async updateAccountPreferences(request: AccountPreferences, csrfToken: string, signal?: AbortSignal): Promise<AccountPreferences> {
+    return this.sendJson<AccountPreferences>('/api/v1/account/preferences', {
+      method: 'PUT', headers: { 'X-CSRF-TOKEN': csrfToken }, body: JSON.stringify(request), signal,
+    })
   }
 
   public async acknowledgeServiceNotice(request: ServiceNoticeAcknowledgementRequest, csrfToken: string, signal?: AbortSignal): Promise<AccountConsentSnapshot> {

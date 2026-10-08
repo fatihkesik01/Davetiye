@@ -40,6 +40,7 @@ const spec = JSON.parse(specText)
 const requiredGetPaths = [
   '/api/v1/system/info',
   '/api/v1/account/consents',
+  '/api/v1/account/preferences',
   '/api/v1/auth/session',
   '/api/v1/auth/capabilities',
   '/api/v1/antiforgery/token',
@@ -117,6 +118,7 @@ const requiredPostPaths = [
 
 const requiredPutPaths = [
   '/api/v1/account/consents/marketing',
+  '/api/v1/account/preferences',
   '/api/v1/admin/plans/{planId}',
   '/api/v1/admin/settings/{key}',
   '/api/v1/admin/templates/{templateId}',
@@ -560,6 +562,12 @@ assertContract(
 assertContract(
   spec.paths?.['/api/v1/account/consents']?.get?.responses?.['200']?.content?.['application/json']?.schema?.$ref === '#/components/schemas/AccountConsentSnapshot',
   'GET /api/v1/account/consents must return AccountConsentSnapshot',
+)
+assertContract(
+  spec.paths?.['/api/v1/account/preferences']?.get?.responses?.['200']?.content?.['application/json']?.schema?.$ref === '#/components/schemas/AccountPreferences'
+    && spec.paths?.['/api/v1/account/preferences']?.put?.requestBody?.content?.['application/json']?.schema?.$ref === '#/components/schemas/AccountPreferences'
+    && spec.paths?.['/api/v1/account/preferences']?.put?.responses?.['200']?.content?.['application/json']?.schema?.$ref === '#/components/schemas/AccountPreferences',
+  'GET/PUT /api/v1/account/preferences must use the AccountPreferences schema',
 )
 assertContract(
   spec.paths?.['/api/v1/account/consents/marketing']?.put?.requestBody?.content?.['application/json']?.schema?.$ref === '#/components/schemas/MarketingPreferenceHttpRequest',

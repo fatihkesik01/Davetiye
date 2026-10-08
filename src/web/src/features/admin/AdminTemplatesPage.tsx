@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useLatestT } from '../../i18n/useLatestT'
+import { useTranslation } from 'react-i18next'
 import {
   ApiRequestError,
   DavetiyeApiClient,
@@ -15,6 +17,8 @@ const toDraft = (template: AdminTemplateItem): TemplateDraft => ({
 })
 
 export function AdminTemplatesPage() {
+  const { t } = useTranslation()
+  const tRef = useLatestT()
   const api = useMemo(() => new DavetiyeApiClient(), [])
   const [templates, setTemplates] = useState<AdminTemplateItem[] | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -49,14 +53,14 @@ export function AdminTemplatesPage() {
         if (controller.signal.aborted) return
         setLoadError(true)
         if (error instanceof ApiRequestError && (error.status === 401 || error.status === 403)) {
-          setActionError('Bu görünüm için MFA doğrulaması tamamlanmış yönetici oturumu gerekiyor.')
+          setActionError(tRef.current('adminUi.templates.authRequired'))
         }
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false)
       })
     return () => controller.abort()
-  }, [api, reloadVersion])
+  }, [api, reloadVersion, tRef])
 
   const changed = Boolean(selected && draft && (
     draft.name.trim() !== selected.name ||
@@ -92,8 +96,8 @@ export function AdminTemplatesPage() {
     if (!selected || !draft || !changed || saving) return
     const name = draft.name.trim()
     const description = draft.description?.trim() || null
-    const visibility = draft.isActive ? 'katalogda görünür' : 'katalogda gizli'
-    if (!window.confirm(`“${name || selected.name}” şablonunun adını, açıklamasını ve görünürlüğünü kaydetmek istiyor musunuz? Yeni durum: ${visibility}.`)) return
+    const visibility = t(draft.isActive ? 'adminUi.templates.visible' : 'adminUi.templates.hidden')
+    if (!window.confirm(t('adminUi.templates.confirmSave', { name: name || selected.name, visibility }))) return
 
     setSaving(true)
     setActionError('')
@@ -109,16 +113,16 @@ export function AdminTemplatesPage() {
       setTemplates(current => current?.map(item => item.id === updated.id ? updated : item) ?? [updated])
       setDraft(toDraft(updated))
       staleRef.current = false
-      setMessage(`${updated.name} şablonu kaydedildi.`)
+      setMessage(t('adminUi.templates.saved', { name: updated.name }))
     } catch (error) {
       if (error instanceof ApiRequestError && error.status === 409) {
         staleRef.current = true
         setStale(true)
-        setActionError('Şablon siz düzenlerken başka bir yönetici tarafından değiştirildi. Kaydetmeden önce güncel sürümü yenileyin.')
+        setActionError(t('adminUi.templates.stale'))
       } else if (error instanceof ApiRequestError && (error.status === 401 || error.status === 403)) {
-        setActionError('Kaydetmek için MFA doğrulaması tamamlanmış yönetici oturumu gerekiyor.')
+        setActionError(t('adminUi.templates.saveAuthRequired'))
       } else {
-        setActionError('Şablon kaydedilemedi. Bağlantınızı kontrol edip yeniden deneyin.')
+        setActionError(t('adminUi.templates.saveError'))
       }
     } finally {
       setSaving(false)
@@ -129,37 +133,37 @@ export function AdminTemplatesPage() {
     <section className="admin-templates" aria-labelledby="admin-templates-title" aria-busy={loading || saving}>
       <header className="admin-overview__heading">
         <div>
-          <h2 id="admin-templates-title">Şablonlar</h2>
-          <p>Şablon adını, isteğe bağlı açıklamasını ve katalog görünürlüğünü yönetin. Tasarım ve renderer bilgileri kod tarafından yönetilir.</p>
+          <h2 id="admin-templates-title">{t('adminUi.templates.title')}</h2>
+          <p>{t('adminUi.templates.description')}</p>
         </div>
       </header>
 
       {actionError ? <p className="admin-banned__message is-error" role="alert">{actionError}</p> : null}
       {message ? <p className="admin-banned__message" role="status">{message}</p> : null}
-      {loading ? <p className="admin-operational__status" role="status">Şablonlar yükleniyor…</p> : null}
+      {loading ? <p className="admin-operational__status" role="status">{t('adminUi.templates.loading')}</p> : null}
       {!loading && loadError ? (
         <div className="admin-overview__error" role="alert">
-          <h3>Şablonlar yüklenemedi</h3>
-          <p>{actionError || 'Şablon listesi şu anda alınamadı. Biraz sonra yeniden deneyin.'}</p>
-          <button className="button button--secondary" type="button" onClick={retryLoad}>Yeniden dene</button>
+          <h3>{t('adminUi.templates.loadFailed')}</h3>
+          <p>{actionError || t('adminUi.templates.loadError')}</p>
+          <button className="button button--secondary" type="button" onClick={retryLoad}>{t('adminUi.templates.retry')}</button>
         </div>
       ) : null}
       {!loading && !loadError && templates?.length === 0 ? (
         <div className="admin-operational__empty" role="status">
-          <h3>Yönetilecek şablon yok</h3>
-          <p>Şablon tanımları eklendiğinde burada görünür.</p>
+          <h3>{t('adminUi.templates.emptyTitle')}</h3>
+          <p>{t('adminUi.templates.emptyBody')}</p>
         </div>
       ) : null}
       {!loading && !loadError && templates && templates.length > 0 ? (
         <div className="admin-templates__layout">
-          <nav className="admin-templates__list" aria-label="Düzenlenecek şablon">
+          <nav className="admin-templates__list" aria-label={t('adminUi.templates.listLabel')}>
             {templates.map(template => (
               <button key={template.id} type="button"
                 className={`admin-templates__choice${template.id === selectedId ? ' is-selected' : ''}`}
                 aria-current={template.id === selectedId ? 'true' : undefined}
                 onClick={() => selectTemplate(template)}>
                 <span className="admin-templates__choice-name">{template.name}</span>
-                <span className="admin-templates__choice-meta">{template.key} · {template.isActive ? 'Görünür' : 'Gizli'}</span>
+                <span className="admin-templates__choice-meta">{template.key} · {t(template.isActive ? 'adminUi.templates.visible' : 'adminUi.templates.hidden')}</span>
               </button>
             ))}
           </nav>
@@ -168,33 +172,33 @@ export function AdminTemplatesPage() {
               <div className="admin-templates__editor-heading">
                 <div>
                   <p className="eyebrow">{selected.key}</p>
-                  <h3 id="admin-template-editor-title">Şablon bilgileri</h3>
+                  <h3 id="admin-template-editor-title">{t('adminUi.templates.details')}</h3>
                 </div>
-                <span className="admin-templates__revision">Sürüm {selected.revision}</span>
+                <span className="admin-templates__revision">{t('adminUi.templates.revision', { revision: selected.revision })}</span>
               </div>
               <label className="admin-templates__field" htmlFor="admin-template-name">
-                <span>Ad</span>
+                <span>{t('adminUi.templates.name')}</span>
                 <input id="admin-template-name" required maxLength={200} value={draft.name}
                   onChange={event => setDraft(current => current ? { ...current, name: event.target.value } : current)} />
               </label>
               <label className="admin-templates__field" htmlFor="admin-template-description">
-                <span>Açıklama <span className="admin-templates__optional">(isteğe bağlı)</span></span>
+                <span>{t('adminUi.templates.descriptionLabel')} <span className="admin-templates__optional">{t('adminUi.templates.optional')}</span></span>
                 <textarea id="admin-template-description" rows={4} maxLength={2000} value={draft.description ?? ''}
                   onChange={event => setDraft(current => current ? { ...current, description: event.target.value } : current)} />
-                <span className="admin-templates__hint">En çok 2.000 karakter.</span>
+                <span className="admin-templates__hint">{t('adminUi.templates.maxChars')}</span>
               </label>
               <label className="admin-templates__visibility" htmlFor="admin-template-active">
                 <input id="admin-template-active" type="checkbox" checked={draft.isActive}
                   onChange={event => setDraft(current => current ? { ...current, isActive: event.target.checked } : current)} />
-                <span><strong>Katalogda göster</strong><small>Gizlenen şablon yeni seçimlerden kaldırılır; mevcut taslak ve yayınlar etkilenmez.</small></span>
+                <span><strong>{t('adminUi.templates.showInCatalog')}</strong><small>{t('adminUi.templates.hiddenHint')}</small></span>
               </label>
-              {stale ? <div className="admin-templates__conflict" role="group" aria-label="Güncel şablon sürümü">
-                <p>Sunucudaki güncel değerleri yükleyerek bu değişiklikleri yenileyin.</p>
-                <button className="button button--secondary" type="button" onClick={refreshAfterConflict} disabled={loading}>Güncel sürümü yükle</button>
+              {stale ? <div className="admin-templates__conflict" role="group" aria-label={t('adminUi.templates.currentRevision')}>
+                <p>{t('adminUi.templates.refreshConflict')}</p>
+                <button className="button button--secondary" type="button" onClick={refreshAfterConflict} disabled={loading}>{t('adminUi.templates.refresh')}</button>
               </div> : null}
               <div className="admin-templates__actions">
                 <button className="button button--primary" type="submit" disabled={!changed || !draft.name.trim() || saving || stale}>
-                  {saving ? 'Kaydediliyor…' : 'Değişiklikleri kaydet'}
+                  {saving ? t('adminUi.templates.saving') : t('adminUi.templates.saveChanges')}
                 </button>
               </div>
             </form>

@@ -1,0 +1,48 @@
+export const authUiTranslations = {
+  tr: {
+    common: { verifyingEmail: 'E-posta adresiniz doğrulanıyor…' },
+    routeTitles: { login: 'Giriş yap', register: 'Hesap oluştur', confirm: 'E-postanı doğrula', forgot: 'Şifremi unuttum', reset: 'Yeni şifre belirle' },
+    login: {
+      title: 'Giriş yap', intro: 'Kutlio panelinize güvenli oturum çereziyle erişin.', email: 'E-posta', password: 'Şifre', submit: 'Giriş yap',
+      signingIn: 'Giriş yapılıyor…', returnToLogin: 'Girişe dön', forgot: 'Şifremi unuttum', noAccount: 'Hesabınız yok mu?', createAccount: 'Hesap oluşturun',
+      mfaIntro: 'Yönetici hesabınız için ikinci doğrulama adımını tamamlayın.', mfaMethod: 'Doğrulama yöntemi', authenticator: 'Authenticator kodu', recovery: 'Kurtarma kodu',
+      recoveryCode: 'Tek kullanımlık kurtarma kodu', verificationCode: 'Authenticator doğrulama kodu', recoveryHelp: 'Her kurtarma kodu yalnızca bir kez kullanılabilir.', verificationHelp: 'Authenticator uygulamanızdaki güncel kodu yazın.', verifyContinue: 'Doğrula ve devam et',
+      googleContinue: 'Google ile devam et', googleAccountType: 'Google ile devam etmek için hesap türü', individual: 'Bireysel', organization: 'Organizasyon',
+      secureGooglePreparing: 'Güvenli bağlantı hazırlanıyor…', googleRetry: 'Google ile güvenli bağlantı hazırlanamadı.', consentRequired: 'Devam etmek için hizmet bildirimini onaylayın.',
+    },
+    register: {
+      intro: 'Bireysel veya tek sahibi olduğunuz organizasyon hesabınızı oluşturun.', name: 'Görünen ad', email: 'E-posta', accountType: 'Hesap türü', password: 'Şifre', passwordAgain: 'Şifreyi tekrar yazın',
+      create: 'Hesap oluştur', existing: 'Zaten hesabınız var mı?', login: 'Giriş yapın', individual: 'Bireysel', organization: 'Organizasyon', individualHelp: 'Kendi etkinlikleriniz ve davetiyeleriniz için.', organizationHelp: 'Müşteri davetiyelerini tek hesap sahibi olarak yönetmek için.',
+      serviceNotice: 'Hizmet bildirimini okudum.', marketing: 'Ürün haberleri ve kampanyalar hakkında e-posta almak istiyorum. Bu tercih isteğe bağlıdır ve daha sonra değiştirilebilir.',
+      accountTypeHelp: 'Bu seçim kayıt sonrasında değiştirilemez. Organizasyon hesabı MVP’de tek kişi tarafından yönetilir.', passwordHelp: 'Uzun, benzersiz; büyük-küçük harf ve rakam içeren bir şifre kullanın.',
+      successIntro: 'Hesap oluşturma isteğiniz alındı.', verifyEmail: 'E-postayı doğruladıktan sonra', loginAfter: 'giriş yapabilirsiniz',
+    },
+    confirm: { intro: 'Hesabınızı etkinleştirmek için e-posta doğrulamasını tamamlayın.', missing: 'Doğrulama bağlantısı eksik veya geçersiz. Kayıt sırasında gönderilen e-postadaki bağlantıyı açın.', submit: 'E-postamı doğrula', success: 'E-posta adresiniz doğrulandı. Şimdi giriş yapabilirsiniz.', goToLogin: 'Giriş sayfasına git' },
+    forgot: { intro: 'Şifre sıfırlama bağlantısı istemek için e-posta adresinizi yazın.', email: 'E-posta', submit: 'Sıfırlama bağlantısı gönder', sending: 'İstek gönderiliyor…', sent: 'Bu adresle eşleşen bir hesap varsa şifre sıfırlama bağlantısı gönderildi.', back: 'Girişe dön' },
+    reset: { intro: 'Hesabınız için yeni ve güçlü bir şifre belirleyin.', missing: 'Şifre sıfırlama bağlantısı eksik veya geçersiz.', password: 'Yeni şifre', passwordAgain: 'Yeni şifreyi tekrar yazın', passwordHelp: 'Uzun, benzersiz; büyük-küçük harf ve rakam içeren bir şifre kullanın.', submit: 'Şifreyi yenile', saving: 'Şifreniz yenileniyor…', saved: 'Şifreniz yenilendi. Diğer oturumlarınız güvenlik için kapatıldı; yeniden giriş yapın.', goToLogin: 'Giriş sayfasına git' },
+    access: { mfaTitle: 'Ek doğrulama gerekli', sessionTitle: 'Oturum gerekli', loading: 'Oturum doğrulanıyor.', mfa: 'Yönetim alanına erişmek için çok adımlı doğrulamayı tamamlayın.', denied: 'Bu alana erişim izniniz yok.', required: 'Bu alana erişmek için güvenli bir oturum açın.', signIn: 'Giriş yap' },
+  },
+  en: {
+    common: { verifyingEmail: 'Verifying your email address…' },
+    routeTitles: { login: 'Sign in', register: 'Create account', confirm: 'Confirm your email', forgot: 'Forgot password', reset: 'Set a new password' },
+    login: {
+      title: 'Sign in', intro: 'Access your Kutlio dashboard with a secure session cookie.', email: 'Email', password: 'Password', submit: 'Sign in',
+      signingIn: 'Signing in…', returnToLogin: 'Back to sign in', forgot: 'Forgot password?', noAccount: 'New to Kutlio?', createAccount: 'Create an account',
+      mfaIntro: 'Complete the second verification step for your administrator account.', mfaMethod: 'Verification method', authenticator: 'Authenticator code', recovery: 'Recovery code',
+      recoveryCode: 'One-time recovery code', verificationCode: 'Authenticator verification code', recoveryHelp: 'Each recovery code can only be used once.', verificationHelp: 'Enter the current code from your authenticator app.', verifyContinue: 'Verify and continue',
+      googleContinue: 'Continue with Google', googleAccountType: 'Choose an account type to continue with Google', individual: 'Individual', organization: 'Organization',
+      secureGooglePreparing: 'Preparing secure connection…', googleRetry: 'Could not prepare a secure Google connection.', consentRequired: 'Acknowledge the service notice to continue.',
+    },
+    register: {
+      intro: 'Create an individual account or an organization account that you own.', name: 'Display name', email: 'Email', accountType: 'Account type', password: 'Password', passwordAgain: 'Confirm password',
+      create: 'Create account', existing: 'Already have an account?', login: 'Sign in', individual: 'Individual', organization: 'Organization', individualHelp: 'For your own events and invitations.', organizationHelp: 'Manage client invitations as the sole account owner.',
+      serviceNotice: 'I have read the service notice.', marketing: 'I would like to receive product news and campaign emails. This is optional and can be changed later.',
+      accountTypeHelp: 'This choice cannot be changed after registration. In the MVP, an organization account is managed by one person.', passwordHelp: 'Use a long, unique password with uppercase and lowercase letters and numbers.',
+      successIntro: 'Your account request has been received.', verifyEmail: 'After verifying your email, you can', loginAfter: 'sign in',
+    },
+    confirm: { intro: 'Verify your email address to activate your account.', missing: 'The verification link is missing or invalid. Open the link in the email sent during registration.', submit: 'Verify my email', success: 'Your email has been verified. You can sign in now.', goToLogin: 'Go to sign in' },
+    forgot: { intro: 'Enter your email address to request a password reset link.', email: 'Email', submit: 'Send reset link', sending: 'Sending request…', sent: 'If an account matches this address, a password reset link has been sent.', back: 'Back to sign in' },
+    reset: { intro: 'Choose a new, strong password for your account.', missing: 'The password reset link is missing or invalid.', password: 'New password', passwordAgain: 'Confirm new password', passwordHelp: 'Use a long, unique password with uppercase and lowercase letters and numbers.', submit: 'Reset password', saving: 'Updating your password…', saved: 'Your password was changed. Other sessions were closed for security; please sign in again.', goToLogin: 'Go to sign in' },
+    access: { mfaTitle: 'Additional verification required', sessionTitle: 'Sign-in required', loading: 'Verifying your session.', mfa: 'Complete multi-factor authentication to access the administration area.', denied: 'You do not have permission to access this area.', required: 'Sign in securely to access this area.', signIn: 'Sign in' },
+  },
+} as const

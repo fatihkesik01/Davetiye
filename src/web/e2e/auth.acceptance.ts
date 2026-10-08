@@ -65,6 +65,6 @@ test('protected Creator content is not exposed to an unauthenticated browser ses
   await page.goto('/panel')
 
   await expect(page.getByText('Creator paneli için korumalı kabuk hazır.')).toHaveCount(0)
-  await expect(page.getByRole('link', { name: 'Giriş yap' }))
+  await expect(page.locator('#main-content').getByRole('link', { name: 'Giriş yap' }))
     .toHaveAttribute('href', '/giris?returnUrl=%2Fpanel')
 })

@@ -20,6 +20,7 @@ vi.mock('../../api/generated/client', async importOriginal => {
 })
 
 import { AdminPlansPage } from './AdminPlansPage'
+import { AccountPreferencesProvider } from '../preferences/preferences'
 import AdminRoutes from '../../routes/AdminRoutes'
 
 const keys = [
@@ -193,7 +194,7 @@ describe('Admin plan management', () => {
 
   it('adds plan management to the Admin navigation', async () => {
     window.history.replaceState({}, '', '/admin/plans')
-    render(<AdminRoutes />)
+    render(<AccountPreferencesProvider><AdminRoutes /></AccountPreferencesProvider>)
     expect(await screen.findByRole('heading', { name: 'Planlar ve haklar' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Planlar ve haklar' }).getAttribute('aria-current')).toBe('page')
   })

@@ -4,6 +4,7 @@ import { LoadingState } from './components/feedback/LoadingState'
 import { NotFoundPage } from './components/feedback/NotFoundPage'
 import { matchRoute } from './routes/route'
 import { ProtectedRoute } from './routes/ProtectedRoute'
+import { AccountPreferencesProvider } from './features/preferences/preferences'
 
 const PublicRoutes = lazy(() => import('./routes/PublicRoutes'))
 const CreatorRoutes = lazy(() => import('./routes/CreatorRoutes'))
@@ -29,20 +30,18 @@ export function App() {
     document.title = `${route.title} | Kutlio`
   }, [route.title])
 
-  if (route.zone === 'not-found') {
-    return <NotFoundPage />
-  }
-
   return (
-    <Suspense fallback={<LoadingState />}>
-      {route.zone === 'public' ? <PublicRoutes /> : null}
-      {route.zone === 'creator' ? <ProtectedRoute key="creator" requiredAccess="creator"><CreatorRoutes /></ProtectedRoute> : null}
-      {route.zone === 'admin' && window.location.pathname === '/admin/mfa/setup'
-        ? <ProtectedRoute key="admin-mfa-setup" requiredAccess="mfa-setup-required-super-admin"><AdminMfaSetupPage /></ProtectedRoute>
-        : null}
-      {route.zone === 'admin' && window.location.pathname !== '/admin/mfa/setup'
-        ? <ProtectedRoute key="admin" requiredAccess="mfa-complete-super-admin"><AdminRoutes /></ProtectedRoute>
-        : null}
-    </Suspense>
+    <AccountPreferencesProvider>
+      {route.zone === 'not-found' ? <NotFoundPage /> : <Suspense fallback={<LoadingState />}>
+        {route.zone === 'public' ? <PublicRoutes /> : null}
+        {route.zone === 'creator' ? <ProtectedRoute key="creator" requiredAccess="creator"><CreatorRoutes /></ProtectedRoute> : null}
+        {route.zone === 'admin' && window.location.pathname === '/admin/mfa/setup'
+          ? <ProtectedRoute key="admin-mfa-setup" requiredAccess="mfa-setup-required-super-admin"><AdminMfaSetupPage /></ProtectedRoute>
+          : null}
+        {route.zone === 'admin' && window.location.pathname !== '/admin/mfa/setup'
+          ? <ProtectedRoute key="admin" requiredAccess="mfa-complete-super-admin"><AdminRoutes /></ProtectedRoute>
+          : null}
+      </Suspense>}
+    </AccountPreferencesProvider>
   )
 }

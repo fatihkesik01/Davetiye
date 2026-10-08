@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { AccountPreferencesProvider } from '../preferences/preferences'
 import { AdminMfaSetupPage } from './AdminMfaSetupPage'
 
 describe('AdminMfaSetupPage', () => {
@@ -8,6 +9,7 @@ describe('AdminMfaSetupPage', () => {
 
   it('enrolls with CSRF, verifies TOTP, shows recovery codes once, and gates continuation on explicit save', async () => {
     const fetch = vi.fn((url: string) => {
+      if (url === '/api/v1/account/preferences') return Promise.resolve(new Response(JSON.stringify({ locale: 'tr', colorTheme: 'kutlio', appearance: 'system' })))
       if (url === '/api/v1/antiforgery/token') return Promise.resolve(new Response(JSON.stringify({ token: 'csrf' })))
       if (url === '/api/v1/admin/mfa/enroll') return Promise.resolve(new Response(JSON.stringify({ sharedKey: 'JBSWY3DPEHPK3PXP', authenticatorUri: 'otpauth://totp/Davetiye:admin?secret=JBSWY3DPEHPK3PXP' })))
       if (url === '/api/v1/admin/mfa/verify') return Promise.resolve(new Response(JSON.stringify({ recoveryCodes: ['alpha-one', 'beta-two'] })))
@@ -16,7 +18,7 @@ describe('AdminMfaSetupPage', () => {
     vi.stubGlobal('fetch', fetch)
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: vi.fn().mockResolvedValue(undefined) } })
     window.history.replaceState({}, '', '/admin/mfa/setup')
-    render(<AdminMfaSetupPage />)
+    render(<AccountPreferencesProvider><AdminMfaSetupPage /></AccountPreferencesProvider>)
 
     expect(await screen.findByText('JBSWY3DPEHPK3PXP')).toBeTruthy()
     expect(await screen.findByRole('img')).toBeTruthy()

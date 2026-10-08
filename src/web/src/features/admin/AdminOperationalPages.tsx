@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { useLatestT } from '../../i18n/useLatestT'
+import { useTranslation } from 'react-i18next'
 import {
   ApiRequestError,
   DavetiyeApiClient,
@@ -6,8 +8,6 @@ import {
   type AdminPaymentListItem,
 } from '../../api/generated/client'
 
-const numberFormat = new Intl.NumberFormat('tr-TR')
-const dateFormat = new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short' })
 const pageSize = 50
 
 type OperationalPage = 'payments' | 'audit'
@@ -17,6 +17,10 @@ export function AdminOperationalPage({ kind }: { kind: OperationalPage }) {
 }
 
 function AdminOperationalContent({ kind }: { kind: OperationalPage }) {
+  const { t, i18n } = useTranslation()
+  const tRef = useLatestT()
+  const locale = i18n.resolvedLanguage === 'en' ? 'en-US' : 'tr-TR'
+  const numberFormat = new Intl.NumberFormat(locale)
   const [api] = useState(() => new DavetiyeApiClient())
   const [page, setPage] = useState(1)
   const [payments, setPayments] = useState<AdminPaymentListItem[]>([])
@@ -48,16 +52,16 @@ function AdminOperationalContent({ kind }: { kind: OperationalPage }) {
         setError({
           requestKey,
           message: reason instanceof ApiRequestError && (reason.status === 401 || reason.status === 403)
-            ? 'Bu görünüm için MFA doğrulaması tamamlanmış yönetici oturumu gerekiyor.'
-            : 'Kayıtlar şu anda alınamadı. Biraz sonra yeniden deneyin.',
+            ? tRef.current('adminUi.operational.authRequired')
+            : tRef.current('adminUi.operational.loadError'),
         })
         setLoadedRequestKey(requestKey)
       })
 
     return () => controller.abort()
-  }, [api, kind, page, reloadVersion, requestKey])
+  }, [api, kind, page, reloadVersion, requestKey, tRef])
 
-  const title = kind === 'payments' ? 'Ödemeler' : 'Denetim kayıtları'
+  const title = t(kind === 'payments' ? 'adminUi.operational.payments' : 'adminUi.operational.audit')
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
 
   return (
@@ -66,108 +70,109 @@ function AdminOperationalContent({ kind }: { kind: OperationalPage }) {
         <div>
           <h2 id="admin-operational-title">{title}</h2>
           <p>{kind === 'payments'
-            ? 'En son güncellenen ödeme kayıtları. Hesap ve davetiye bilgileri bu listede yer almaz.'
-            : 'En yeni yönetim olayları. Kayıtlar eklenmeye devam eder ve şu an için otomatik silinmez.'}</p>
+          ? t('adminUi.operational.paymentsDescription')
+          : t('adminUi.operational.auditDescription')}</p>
         </div>
-        <p className="admin-operational__count">Toplam: {numberFormat.format(totalCount)}</p>
+        <p className="admin-operational__count">{t('adminUi.operational.total', { count: numberFormat.format(totalCount) })}</p>
       </header>
 
-      {loading ? <p className="admin-operational__status" role="status">{title} yükleniyor…</p> : null}
+      {loading ? <p className="admin-operational__status" role="status">{t('adminUi.operational.loading', { title })}</p> : null}
       {!loading && visibleError ? (
         <div className="admin-overview__error" role="alert">
-          <h3>{title} yüklenemedi</h3>
+          <h3>{t('adminUi.operational.loadFailed', { title })}</h3>
           <p>{visibleError}</p>
-          <button className="button button--secondary" type="button" onClick={() => setReloadVersion(current => current + 1)}>Yeniden dene</button>
+          <button className="button button--secondary" type="button" onClick={() => setReloadVersion(current => current + 1)}>{t('adminUi.operational.retry')}</button>
         </div>
       ) : null}
 
       {!loading && !visibleError && totalCount === 0 ? (
         <div className="admin-operational__empty" role="status">
-          <h3>Henüz kayıt yok</h3>
-          <p>{kind === 'payments' ? 'Ödeme kaydı oluştuğunda burada görünür.' : 'Yönetim olayı oluştuğunda burada görünür.'}</p>
+          <h3>{t('adminUi.operational.emptyTitle')}</h3>
+          <p>{t(kind === 'payments' ? 'adminUi.operational.paymentsEmpty' : 'adminUi.operational.auditEmpty')}</p>
         </div>
       ) : null}
 
       {!loading && !visibleError && totalCount > 0 ? (
-        <div className="admin-operational__table-wrap" tabIndex={0} aria-label={`${title} tablosu. Dar ekranda yatay kaydırılabilir.`}>
-          {kind === 'payments' ? <PaymentsTable items={payments} /> : <AuditTable items={audit} />}
+        <div className="admin-operational__table-wrap" tabIndex={0} aria-label={t('adminUi.operational.tableScroll', { title })}>
+          {kind === 'payments' ? <PaymentsTable items={payments} locale={locale} /> : <AuditTable items={audit} locale={locale} />}
         </div>
       ) : null}
 
       {!loading && !visibleError && totalCount > 0 ? (
-        <nav className="admin-operational__pagination" aria-label={`${title} sayfaları`}>
-          <button className="button button--secondary" type="button" disabled={page <= 1} onClick={() => setPage(current => Math.max(1, current - 1))}>Önceki</button>
-          <span aria-live="polite">Sayfa {numberFormat.format(page)} / {numberFormat.format(totalPages)}</span>
-          <button className="button button--secondary" type="button" disabled={page >= totalPages} onClick={() => setPage(current => current + 1)}>Sonraki</button>
+        <nav className="admin-operational__pagination" aria-label={t('adminUi.operational.pages', { title })}>
+          <button className="button button--secondary" type="button" disabled={page <= 1} onClick={() => setPage(current => Math.max(1, current - 1))}>{t('adminUi.operational.previous')}</button>
+          <span aria-live="polite">{t('adminUi.operational.page', { current: numberFormat.format(page), total: numberFormat.format(totalPages) })}</span>
+          <button className="button button--secondary" type="button" disabled={page >= totalPages} onClick={() => setPage(current => current + 1)}>{t('adminUi.operational.next')}</button>
         </nav>
       ) : null}
     </section>
   )
 }
 
-function PaymentsTable({ items }: { items: AdminPaymentListItem[] }) {
+function PaymentsTable({ items, locale }: { items: AdminPaymentListItem[]; locale: string }) {
+  const { t } = useTranslation()
+  const translate = (key: string) => t(key)
   return (
     <table className="admin-operational__table">
-      <caption className="visually-hidden">Ödeme kayıtları</caption>
-      <thead><tr><th scope="col">Referans</th><th scope="col">Durum</th><th scope="col">Paket</th><th scope="col">Tutar</th><th scope="col">Oluşturulma</th><th scope="col">Son güncelleme</th><th scope="col">Ters kayıt</th></tr></thead>
+      <caption className="visually-hidden">{t('adminUi.operational.paymentCaption')}</caption>
+      <thead><tr><th scope="col">{t('adminUi.operational.reference')}</th><th scope="col">{t('adminUi.operational.status')}</th><th scope="col">{t('adminUi.operational.plan')}</th><th scope="col">{t('adminUi.operational.amount')}</th><th scope="col">{t('adminUi.operational.created')}</th><th scope="col">{t('adminUi.operational.updated')}</th><th scope="col">{t('adminUi.operational.reversal')}</th></tr></thead>
       <tbody>{items.map(payment => (
         <tr key={payment.id}>
-          <td data-label="Referans"><span className="admin-operational__reference">{payment.reference}</span></td>
-          <td data-label="Durum">{paymentStatus(payment.status)}</td>
-          <td data-label="Paket">{planLabel(payment.planKey)}</td>
-          <td data-label="Tutar">{formatMoney(payment.amount, payment.currency)}</td>
-          <td data-label="Oluşturulma">{formatDate(payment.createdAtUtc)}</td>
-          <td data-label="Son güncelleme">{formatDate(payment.updatedAtUtc)}</td>
-          <td data-label="Ters kayıt">{payment.reversalKind ? `${reversalLabel(payment.reversalKind)}${payment.reversedAtUtc ? ` · ${formatDate(payment.reversedAtUtc)}` : ''}` : '—'}</td>
+          <td data-label={t('adminUi.operational.reference')}><span className="admin-operational__reference">{payment.reference}</span></td>
+          <td data-label={t('adminUi.operational.status')}>{paymentStatus(payment.status, translate)}</td>
+          <td data-label={t('adminUi.operational.plan')}>{planLabel(payment.planKey, translate)}</td>
+          <td data-label={t('adminUi.operational.amount')}>{formatMoney(payment.amount, payment.currency, locale)}</td>
+          <td data-label={t('adminUi.operational.created')}>{formatDate(payment.createdAtUtc, locale)}</td>
+          <td data-label={t('adminUi.operational.updated')}>{formatDate(payment.updatedAtUtc, locale)}</td>
+          <td data-label={t('adminUi.operational.reversal')}>{payment.reversalKind ? `${reversalLabel(payment.reversalKind, translate)}${payment.reversedAtUtc ? ` · ${formatDate(payment.reversedAtUtc, locale)}` : ''}` : '—'}</td>
         </tr>
       ))}</tbody>
     </table>
   )
 }
 
-function AuditTable({ items }: { items: AdminAuditListItem[] }) {
+function AuditTable({ items, locale }: { items: AdminAuditListItem[]; locale: string }) {
+  const { t } = useTranslation()
   return (
     <table className="admin-operational__table admin-operational__table--audit">
-      <caption className="visually-hidden">Denetim kayıtları</caption>
-      <thead><tr><th scope="col">Olay</th><th scope="col">Tarih</th><th scope="col">İşlemi yapan</th><th scope="col">İlgili kayıt</th></tr></thead>
+      <caption className="visually-hidden">{t('adminUi.operational.auditCaption')}</caption>
+      <thead><tr><th scope="col">{t('adminUi.operational.event')}</th><th scope="col">{t('adminUi.operational.date')}</th><th scope="col">{t('adminUi.operational.actor')}</th><th scope="col">{t('adminUi.operational.subject')}</th></tr></thead>
       <tbody>{items.map(record => (
         <tr key={record.id}>
-          <td data-label="Olay">{record.eventType}</td>
-          <td data-label="Tarih">{formatDate(record.occurredAtUtc)}</td>
-          <td data-label="İşlemi yapan"><span className="admin-operational__identifier">{record.actorId}</span></td>
-          <td data-label="İlgili kayıt"><span className="admin-operational__identifier">{record.subjectId}</span></td>
+          <td data-label={t('adminUi.operational.event')}>{record.eventType}</td>
+          <td data-label={t('adminUi.operational.date')}>{formatDate(record.occurredAtUtc, locale)}</td>
+          <td data-label={t('adminUi.operational.actor')}><span className="admin-operational__identifier">{record.actorId}</span></td>
+          <td data-label={t('adminUi.operational.subject')}><span className="admin-operational__identifier">{record.subjectId}</span></td>
         </tr>
       ))}</tbody>
     </table>
   )
 }
 
-function formatDate(value: string): string {
+function formatDate(value: string, locale: string): string {
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '—' : dateFormat.format(date)
+  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(date)
 }
 
-function formatMoney(amount: number, currency: string): string {
+function formatMoney(amount: number, currency: string, locale: string): string {
   try {
-    return new Intl.NumberFormat('tr-TR', { style: 'currency', currency }).format(amount)
+    return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(amount)
   } catch {
-    return `${numberFormat.format(amount)} ${currency}`
+    return `${new Intl.NumberFormat(locale).format(amount)} ${currency}`
   }
 }
 
-function paymentStatus(status: string): string {
-  const labels: Record<string, string> = {
-    Pending: 'Bekliyor', Unknown: 'Belirsiz', Succeeded: 'Başarılı', Failed: 'Başarısız', Canceled: 'İptal edildi', Reversed: 'Ters kayıt',
-  }
-  return labels[status] ?? 'Diğer'
+function paymentStatus(status: string, t: (key: string) => string): string {
+  const known: Record<string, string> = { Pending: 'Pending', Unknown: 'Unknown', Succeeded: 'Succeeded', Failed: 'Failed', Canceled: 'Canceled', Reversed: 'Reversed' }
+  return t(known[status] ? `adminUi.operational.statusValues.${known[status]}` : 'adminUi.operational.statusValues.other')
 }
 
-function reversalLabel(kind: string): string {
-  const labels: Record<string, string> = { FullRefund: 'Tam iade', FinalLostChargeback: 'Sonuçlanmış kart itirazı' }
-  return labels[kind] ?? 'Ters kayıt'
+function reversalLabel(kind: string, t: (key: string) => string): string {
+  const known: Record<string, string> = { FullRefund: 'FullRefund', FinalLostChargeback: 'FinalLostChargeback' }
+  return t(known[kind] ? `adminUi.operational.reversalValues.${known[kind]}` : 'adminUi.operational.reversalValues.other')
 }
 
-function planLabel(planKey: string): string {
-  const labels: Record<string, string> = { standard: 'Standard', premium: 'Premium' }
-  return labels[planKey] ?? 'Diğer paket'
+function planLabel(planKey: string, t: (key: string) => string): string {
+  const known: Record<string, string> = { standard: 'standard', premium: 'premium' }
+  return t(known[planKey] ? `adminUi.operational.plans.${known[planKey]}` : 'adminUi.operational.plans.other')
 }

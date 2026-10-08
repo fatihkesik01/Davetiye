@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type {
   DraftValidationFieldResult,
   InvitationDraftValidationReport,
@@ -19,18 +20,19 @@ export function DraftValidationSummary({
   hasUnsavedChanges,
   onRetry,
 }: DraftValidationSummaryProps) {
+  const { t } = useTranslation()
   if (loading && !report) {
     return <section className="validation-summary" aria-labelledby="validation-heading" aria-busy="true">
-      <h3 id="validation-heading">Taslak kontrolü</h3>
-      <p role="status">Kaydedilmiş taslak kontrol ediliyor…</p>
+      <h3 id="validation-heading">{t('creatorEditorUi.draftValidation.title')}</h3>
+      <p role="status">{t('creatorEditorUi.draftValidation.checking')}</p>
     </section>
   }
 
   if (failed && !report) {
     return <section className="validation-summary validation-summary--blocked" aria-labelledby="validation-heading">
-      <h3 id="validation-heading">Taslak kontrolü alınamadı</h3>
-      <p role="alert">Eksik alan raporu şu anda yüklenemedi. Bu durum taslağınızı kaydetmenizi engellemez.</p>
-      <button className="button button--secondary" type="button" onClick={onRetry}>Tekrar dene</button>
+      <h3 id="validation-heading">{t('creatorEditorUi.draftValidation.unavailable')}</h3>
+      <p role="alert">{t('creatorEditorUi.draftValidation.loadFailure')}</p>
+      <button className="button button--secondary" type="button" onClick={onRetry}>{t('creatorEditorUi.draftValidation.retry')}</button>
     </section>
   }
 
@@ -45,39 +47,39 @@ export function DraftValidationSummary({
     className={`validation-summary ${readyForFuturePreflight ? 'validation-summary--ready' : 'validation-summary--blocked'}`}
     aria-labelledby="validation-heading"
   >
-    <h3 id="validation-heading">Taslak kontrolü</h3>
+    <h3 id="validation-heading">{t('creatorEditorUi.draftValidation.title')}</h3>
     {hasUnsavedChanges ? <p className="validation-summary__notice" role="status">
-      Bu rapor son kaydedilen sürümü gösterir. Bekleyen değişiklikler kaydedildiğinde otomatik yenilenir.
+      {t('creatorEditorUi.draftValidation.stale')}
     </p> : null}
-    {loading ? <p className="validation-summary__notice" role="status">Rapor yenileniyor…</p> : null}
+    {loading ? <p className="validation-summary__notice" role="status">{t('creatorEditorUi.draftValidation.refreshing')}</p> : null}
     {failed ? <p className="validation-summary__notice" role="alert">
-      Rapor yenilenemedi; aşağıdaki sonuç son başarılı kontroldendir.
-      {' '}<button className="text-button" type="button" onClick={onRetry}>Tekrar dene</button>
+      {t('creatorEditorUi.draftValidation.refreshFailure')}
+      {' '}<button className="text-button" type="button" onClick={onRetry}>{t('creatorEditorUi.draftValidation.retry')}</button>
     </p> : null}
 
     {!report.templateSelected ? <div className="validation-group validation-group--required">
-      <h4>Şablon seçimi gerekli</h4>
-      <p>Yayın kontrolünün tamamlanabilmesi için önce aktif katalogdan bir şablon seçin.</p>
+      <h4>{t('creatorEditorUi.draftValidation.templateRequired')}</h4>
+      <p>{t('creatorEditorUi.draftValidation.selectTemplate')}</p>
     </div> : null}
     {report.templateSelected && !report.templateAvailable ? <div className="validation-group validation-group--required">
-      <h4>Şablon doğrulanamadı</h4>
-      <p>Seçili şablon veya renderer sürümü artık aktif katalogda bulunmuyor. Bu rapor tamamlanmış sayılmaz.</p>
+      <h4>{t('creatorEditorUi.draftValidation.templateInvalid')}</h4>
+      <p>{t('creatorEditorUi.draftValidation.templateUnavailable')}</p>
     </div> : null}
 
     <ValidationGroup
-      title="Gerekli alanlar"
-      emptyMessage="Kaydedilmiş sürümde zorunlu alan eksiği görünmüyor."
+      title={t('creatorEditorUi.draftValidation.required')}
+      emptyMessage={t('creatorEditorUi.draftValidation.requiredEmpty')}
       fields={requiredMissing}
       kind="required"
     />
     <ValidationGroup
-      title="Önerilen alanlar"
-      emptyMessage="Kaydedilmiş sürümde önerilen alan eksiği görünmüyor."
+      title={t('creatorEditorUi.draftValidation.recommended')}
+      emptyMessage={t('creatorEditorUi.draftValidation.recommendedEmpty')}
       fields={recommendedMissing}
       kind="recommended"
     />
     <p className="validation-summary__footnote">
-      Bu rapor kaydedilmiş bilgilerinizi kontrol eder. Yayınla adımında yayın hakkınız ve seçtiğiniz tarihler ayrıca doğrulanır.
+      {t('creatorEditorUi.draftValidation.footnote')}
     </p>
   </section>
 }
@@ -93,13 +95,14 @@ function ValidationGroup({
   fields: DraftValidationFieldResult[]
   kind: 'required' | 'recommended'
 }) {
+  const { t } = useTranslation()
   return <div className={`validation-group validation-group--${kind}`}>
     <h4>{title}</h4>
     {fields.length === 0
       ? <p>{emptyMessage}</p>
       : <ul>{fields.map(result => <li key={result.field}>
         {invitationFieldLabel(result.field)}
-        {!result.isRecognized ? ' (şablon alanı tanınmıyor)' : ''}
+        {!result.isRecognized ? t('creatorEditorUi.draftValidation.unrecognized') : ''}
       </li>)}</ul>}
   </div>
 }

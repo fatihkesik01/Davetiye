@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import {
   ApiRequestError,
@@ -27,7 +28,6 @@ import { MemoriesManagementPanel } from './MemoriesManagementPanel'
 import { GiftRegistryManagementPanel } from './GiftRegistryManagementPanel'
 import { RsvpManagementPanel } from './RsvpManagementPanel'
 import { invitationFields } from './invitationFields'
-import { publicationStateLabels } from './publicationPresentation'
 import {
   draftRecoveryKey,
   emptyEditableDraft,
@@ -41,17 +41,12 @@ import {
 
 type SaveState = 'idle' | 'unsaved' | 'saving' | 'saved' | 'offline' | 'error' | 'conflict'
 
-const steps = [
-  'Etkinlik türü',
-  'Temel bilgiler',
-  'Şablon',
-  'Tarih / Mekân',
-  'Opsiyonel bölümler',
-  'Önizleme',
-  'Yayınla',
-] as const
-
 export function InvitationDraftEditor({ invitationId }: { invitationId: string }) {
+  const { t } = useTranslation()
+  const steps = [
+    t('creatorFormsUi.editor.steps.eventType'), t('creatorFormsUi.editor.steps.basics'), t('creatorFormsUi.editor.steps.template'),
+    t('creatorFormsUi.editor.steps.dateVenue'), t('creatorFormsUi.editor.steps.optional'), t('creatorFormsUi.editor.steps.preview'), t('creatorFormsUi.editor.steps.publish'),
+  ]
   const api = useMemo(() => new DavetiyeApiClient(), [])
   const [draft, setDraft] = useState<InvitationDraftDetails | null>(null)
   const [content, setContent] = useState<EditableDraftContent>(emptyEditableDraft)
@@ -107,10 +102,10 @@ export function InvitationDraftEditor({ invitationId }: { invitationId: string }
     }).catch(error => {
       if (error instanceof DOMException && error.name === 'AbortError') return
       setLoadFailed(true)
-      setMessage(draftErrorMessage(error))
+      setMessage(draftErrorMessage(error, t))
     })
     return () => controller.abort()
-  }, [api, invitationId])
+  }, [api, invitationId, t])
 
   useEffect(() => {
     const requested = requestedFieldFocus.current
@@ -134,7 +129,7 @@ export function InvitationDraftEditor({ invitationId }: { invitationId: string }
       setPublicationLoading(false)
       if (status.expected.invitationRevision !== invitationRevision || status.expected.workingContentRevision !== contentRevision) {
         setSaveState('conflict')
-        setMessage('Sunucudaki davetiye siz düzenlerken değişti. Güncel sürümü yükleyip yeniden gözden geçirin.')
+        setMessage(t('creatorFormsUi.editor.conflictPublication'))
       }
     }).catch(error => {
       if (error instanceof DOMException && error.name === 'AbortError') return
@@ -142,7 +137,7 @@ export function InvitationDraftEditor({ invitationId }: { invitationId: string }
       setPublicationFailed(true)
     })
     return () => controller.abort()
-  }, [api, invitationId, invitationRevision, contentRevision, publicationAttempt])
+  }, [api, invitationId, invitationRevision, contentRevision, publicationAttempt, t])
 
   useEffect(() => {
     if (!publication || publicationBusy) return
@@ -172,11 +167,11 @@ export function InvitationDraftEditor({ invitationId }: { invitationId: string }
     }
     sessionStorage.setItem(draftRecoveryKey(invitationId), JSON.stringify(recoverySnapshot))
     setSaveState('unsaved')
-    setMessage('Değişiklikler kaydedilmeyi bekliyor.')
+    setMessage(t('creatorFormsUi.editor.unsaved'))
     const controller = new AbortController()
     const timeout = window.setTimeout(() => {
       setSaveState('saving')
-      setMessage('Kaydediliyor…')
+      setMessage(t('creatorFormsUi.editor.saving'))
       void api.getAntiforgeryToken(controller.signal)
         .then(csrfToken => api.autosaveInvitationDraft(invitationId, {
           contentSchemaVersion: 1,
@@ -190,20 +185,20 @@ export function InvitationDraftEditor({ invitationId }: { invitationId: string }
           if (JSON.stringify(toDraftContent(currentContent.current)) === serialized) {
             sessionStorage.removeItem(draftRecoveryKey(invitationId))
             setSaveState('saved')
-            setMessage('Kaydedildi.')
+            setMessage(t('creatorFormsUi.editor.saved'))
           }
         })
         .catch(error => {
           if (error instanceof DOMException && error.name === 'AbortError') return
           if (error instanceof ApiRequestError && error.status === 409) {
             setSaveState('conflict')
-            setMessage('Sunucudaki taslak siz düzenlerken değişti. Hangi sürümle devam edeceğinizi seçin.')
+            setMessage(t('creatorFormsUi.editor.saveConflict'))
             return
           }
           setSaveState(navigator.onLine ? 'error' : 'offline')
           setMessage(navigator.onLine
-            ? 'Kaydetme başarısız. Değişiklikler bu sekmede geçici olarak korunuyor.'
-            : 'Bağlantı yok. Değişiklikler bu sekmede geçici olarak korunuyor.')
+            ? t('creatorFormsUi.editor.saveFailed')
+            : t('creatorFormsUi.editor.offline'))
         })
     }, 800)
 
@@ -211,7 +206,7 @@ export function InvitationDraftEditor({ invitationId }: { invitationId: string }
       window.clearTimeout(timeout)
       controller.abort()
     }
-  }, [api, content, draft, invitationId, saveAttempt])
+  }, [api, content, draft, invitationId, saveAttempt, t])
 
   useEffect(() => {
     if (step < 5 || !draft) return
@@ -248,8 +243,8 @@ export function InvitationDraftEditor({ invitationId }: { invitationId: string }
     return () => window.removeEventListener('beforeunload', warn)
   }, [saveState])
 
-  if (loadFailed) return <section className="inline-alert" role="alert"><p>{message}</p><InternalLink to="/panel/davetiyeler">Taslaklara dön</InternalLink></section>
-  if (!draft) return <LoadingState label="Taslak editörü yükleniyor" />
+  if (loadFailed) return <section className="inline-alert" role="alert"><p>{message}</p><InternalLink to="/panel/davetiyeler">{t('creatorFormsUi.editor.loadFailedBack')}</InternalLink></section>
+  if (!draft) return <LoadingState label={t('creatorFormsUi.editor.loading')} />
 
   const update = <Key extends keyof EditableDraftContent>(key: Key, value: EditableDraftContent[Key]) => {
     setContent(previous => ({ ...previous, [key]: value }))
@@ -295,7 +290,7 @@ export function InvitationDraftEditor({ invitationId }: { invitationId: string }
   const selectTemplate = async (templateKey: string) => {
     if (draft.templateKey === templateKey) return
     setSaveState('saving')
-    setMessage('Şablon seçimi kaydediliyor…')
+    setMessage(t('creatorFormsUi.editor.templateSaving'))
     try {
       const csrfToken = await api.getAntiforgeryToken()
       const updated = await api.selectInvitationTemplate(invitationId, {
@@ -304,20 +299,20 @@ export function InvitationDraftEditor({ invitationId }: { invitationId: string }
       }, csrfToken)
       setDraft(updated)
       setSaveState('saved')
-      setMessage('Şablon seçimi kaydedildi.')
+      setMessage(t('creatorFormsUi.editor.templateSaved'))
     } catch (error) {
       if (error instanceof ApiRequestError && error.status === 409) {
         setSaveState('conflict')
-        setMessage('Sunucudaki şablon seçimi değişti. Taslağı yenileyip tekrar deneyin.')
+        setMessage(t('creatorFormsUi.editor.templateConflict'))
       } else {
         setSaveState('error')
-        setMessage(draftErrorMessage(error))
+        setMessage(draftErrorMessage(error, t))
       }
     }
   }
 
   const reloadServerVersion = async () => {
-    setMessage('Sunucudaki sürüm yükleniyor…')
+    setMessage(t('creatorFormsUi.editor.serverLoading'))
     try {
       const loaded = await api.getInvitationDraft(invitationId)
       const editable = toEditableDraft(loaded.content)
@@ -327,23 +322,23 @@ export function InvitationDraftEditor({ invitationId }: { invitationId: string }
       setSavedContentSnapshot(lastSavedContent.current)
       sessionStorage.removeItem(draftRecoveryKey(invitationId))
       setSaveState('saved')
-      setMessage('Sunucudaki sürüm yüklendi.')
+      setMessage(t('creatorFormsUi.editor.serverLoaded'))
     } catch (error) {
       setSaveState('error')
-      setMessage(draftErrorMessage(error))
+      setMessage(draftErrorMessage(error, t))
     }
   }
 
   const retryOwnVersion = async () => {
-    setMessage('Güncel revision alınıyor…')
+    setMessage(t('creatorFormsUi.editor.revisionLoading'))
     try {
       const loaded = await api.getInvitationDraft(invitationId)
       setDraft(loaded)
       setSaveState('unsaved')
-      setMessage('Değişiklikleriniz yeniden kaydedilecek.')
+      setMessage(t('creatorFormsUi.editor.retryOwn'))
     } catch (error) {
       setSaveState('error')
-      setMessage(draftErrorMessage(error))
+      setMessage(draftErrorMessage(error, t))
     }
   }
 
@@ -352,7 +347,7 @@ export function InvitationDraftEditor({ invitationId }: { invitationId: string }
     setContent(recovery.content)
     setRecovery(null)
     setSaveState('unsaved')
-    setMessage('Bu sekmede korunan değişiklikler geri yüklendi ve kaydedilecek.')
+    setMessage(t('creatorFormsUi.editor.recoveryRestored'))
   }
 
   const discardRecovery = () => {
@@ -361,42 +356,42 @@ export function InvitationDraftEditor({ invitationId }: { invitationId: string }
   }
 
   return <div className="draft-editor">
-    <nav className="editor-topbar" aria-label="Editör üst menüsü">
-      <InternalLink to="/panel/davetiyeler">← Taslaklar</InternalLink>
+    <nav className="editor-topbar" aria-label={t('creatorFormsUi.editor.topNav')}>
+      <InternalLink to="/panel/davetiyeler">{t('creatorFormsUi.editor.backDrafts')}</InternalLink>
       <div className="autosave-status-group">
         <p className={`autosave-status autosave-status--${saveState}`} role={saveState === 'error' || saveState === 'conflict' ? 'alert' : 'status'} aria-live="polite">
-          <span aria-hidden="true" />{message || 'Taslak hazır.'}
+          <span aria-hidden="true" />{message || t('creatorFormsUi.editor.ready')}
         </p>
         {saveState === 'error' || saveState === 'offline'
-          ? <button className="text-button" type="button" onClick={() => setSaveAttempt(value => value + 1)}>Kaydetmeyi tekrar dene</button>
+          ? <button className="text-button" type="button" onClick={() => setSaveAttempt(value => value + 1)}>{t('creatorFormsUi.editor.retrySave')}</button>
           : null}
       </div>
     </nav>
 
     {publication ? <div className="publication-editor-status">
-      <p>Durum: <strong>{publicationStateLabels[publication.effectiveState]}</strong></p>
-      {publication.hasPendingChanges || (publication.published && hasUnsavedChanges) ? <p role="status">Değişiklikler henüz yayında değil. Otomatik kayıt yayındaki davetiyeyi değiştirmez.</p> : null}
+      <p>{t('creatorFormsUi.publication.status')}: <strong>{t(`creatorFormsUi.publication.state.${publication.effectiveState}`)}</strong></p>
+      {publication.hasPendingChanges || (publication.published && hasUnsavedChanges) ? <p role="status">{t('creatorFormsUi.editor.unpublished')}</p> : null}
     </div> : null}
 
     {recovery ? <section className="recovery-banner" aria-labelledby="recovery-heading">
-      <h2 id="recovery-heading">Kaydedilmemiş değişiklik bulundu</h2>
-      <p>Bu sekmede geçici olarak korunan bilgileri geri yüklemek ister misiniz?</p>
+      <h2 id="recovery-heading">{t('creatorFormsUi.editor.recoveryTitle')}</h2>
+      <p>{t('creatorFormsUi.editor.recoveryBody')}</p>
       <div className="button-row">
-        <button className="button button--primary" type="button" onClick={restoreRecovery}>Değişiklikleri geri yükle</button>
-        <button className="button button--secondary" type="button" onClick={discardRecovery}>Sunucudaki sürümle devam et</button>
+        <button className="button button--primary" type="button" onClick={restoreRecovery}>{t('creatorFormsUi.editor.restore')}</button>
+        <button className="button button--secondary" type="button" onClick={discardRecovery}>{t('creatorFormsUi.editor.useServer')}</button>
       </div>
     </section> : null}
 
     {saveState === 'conflict' ? <section className="conflict-banner" aria-labelledby="conflict-heading">
-      <h2 id="conflict-heading">Taslak çakışması</h2>
-      <p>Başka bir sekmede veya cihazda daha yeni bir kayıt var. Seçiminiz yapılana kadar otomatik kayıt durduruldu.</p>
+      <h2 id="conflict-heading">{t('creatorFormsUi.editor.conflictTitle')}</h2>
+      <p>{t('creatorFormsUi.editor.conflictBody')}</p>
       <div className="button-row">
-        <button className="button button--primary" type="button" onClick={() => void reloadServerVersion()}>Sunucudaki sürümü yükle</button>
-        <button className="button button--secondary" type="button" onClick={() => void retryOwnVersion()}>Benim değişikliklerimi yeniden kaydet</button>
+        <button className="button button--primary" type="button" onClick={() => void reloadServerVersion()}>{t('creatorFormsUi.editor.loadServer')}</button>
+        <button className="button button--secondary" type="button" onClick={() => void retryOwnVersion()}>{t('creatorFormsUi.editor.retryMine')}</button>
       </div>
     </section> : null}
 
-    <ol className="wizard-steps" aria-label="Davetiye oluşturma adımları">
+    <ol className="wizard-steps" aria-label={t('creatorFormsUi.editor.stepsLabel')}>
       {steps.map((label, index) => <li key={label} aria-current={index === step ? 'step' : undefined}>
         <button type="button" disabled={publicationBusy} onClick={() => setStep(index)}>
           <span>{index + 1}</span>{label}
@@ -405,7 +400,7 @@ export function InvitationDraftEditor({ invitationId }: { invitationId: string }
     </ol>
 
     <section className="wizard-panel" aria-labelledby="wizard-step-heading">
-      <p className="wizard-panel__counter">Adım {step + 1} / {steps.length}</p>
+      <p className="wizard-panel__counter">{t('creatorFormsUi.editor.stepCounter', { current: step + 1, total: steps.length })}</p>
       <h2 id="wizard-step-heading" ref={stepHeading} tabIndex={-1}>{steps[step]}</h2>
       <fieldset className="wizard-content" disabled={publicationBusy}>
       <WizardStep
@@ -439,15 +434,15 @@ export function InvitationDraftEditor({ invitationId }: { invitationId: string }
       />
       </fieldset>
       <div className="wizard-actions">
-        {step > 0 ? <button disabled={publicationBusy} className="button button--secondary" type="button" onClick={() => setStep(value => value - 1)}>Geri</button> : <span />}
+        {step > 0 ? <button disabled={publicationBusy} className="button button--secondary" type="button" onClick={() => setStep(value => value - 1)}>{t('creatorFormsUi.editor.back')}</button> : <span />}
         {step === 4 ? <button disabled={publicationBusy} className="button button--secondary" type="button" onClick={() => {
           update('programTitle', '')
           update('programDescription', '')
           update('programStartsAtLocal', '')
           update('additionalProgramItems', [])
           setStep(5)
-        }}>Şimdilik geç</button> : null}
-        {step < steps.length - 1 ? <button disabled={publicationBusy} className="button button--primary" type="button" onClick={() => setStep(value => value + 1)}>Devam et</button> : null}
+        }}>{t('creatorFormsUi.editor.skip')}</button> : null}
+        {step < steps.length - 1 ? <button disabled={publicationBusy} className="button button--primary" type="button" onClick={() => setStep(value => value + 1)}>{t('creatorFormsUi.editor.continue')}</button> : null}
       </div>
     </section>
   </div>
@@ -496,28 +491,29 @@ function WizardStep({
   giftsPanel,
   onManagePublication,
 }: WizardStepProps) {
+  const { t } = useTranslation()
   if (step === 0) return <fieldset className="choice-grid">
-    <legend>Etkinliğinizi en iyi anlatan türü seçin</legend>
+    <legend>{t('creatorFormsUi.editor.eventPrompt')}</legend>
     {eventTypes.map(option => <label key={option.value} className="choice-card">
       <input type="radio" name="event-type" value={option.value} checked={content.eventType === option.value} onChange={() => update('eventType', option.value)} />
-      <span>{option.label}</span>
+      <span>{t(`creatorFormsUi.editor.eventType.${({ dugun: 'dugun', nisan: 'nisan', kina: 'kina', sunnet: 'sunnet', 'dogum-gunu': 'dogum', 'baby-shower': 'baby', mezuniyet: 'mezuniyet', 'acilis-genel': 'general' } as Record<string, string>)[option.value] ?? 'general'}`)}</span>
     </label>)}
   </fieldset>
 
   if (step === 1) return <div className="wizard-fields">
-    <EditorField id="draft-headline" label="Davetiye başlığı" value={content.headline} onChange={value => update('headline', value)} maxLength={200} help="Örnek: Zeynep & Kerem evleniyor" />
-    <EditorField id="draft-hosts" label="İsimler" value={content.hostNamesText} onChange={value => update('hostNamesText', value)} maxLength={500} help="Birden fazla ismi virgülle ayırabilirsiniz." />
-    <EditorTextArea id="draft-message" label="Kısa davet mesajı" value={content.message} onChange={value => update('message', value)} maxLength={4000} />
+    <EditorField id="draft-headline" label={t('creatorFormsUi.editor.headline')} value={content.headline} onChange={value => update('headline', value)} maxLength={200} help={t('creatorFormsUi.editor.headlineHelp')} />
+    <EditorField id="draft-hosts" label={t('creatorFormsUi.editor.names')} value={content.hostNamesText} onChange={value => update('hostNamesText', value)} maxLength={500} help={t('creatorFormsUi.editor.namesHelp')} />
+    <EditorTextArea id="draft-message" label={t('creatorFormsUi.editor.message')} value={content.message} onChange={value => update('message', value)} maxLength={4000} />
   </div>
 
   if (step === 2) return <fieldset className="template-choice-grid">
-    <legend>Bir şablon seçin</legend>
-    <p className="fieldset-help">Premium şablonları taslakta seçebilir ve önizleyebilirsiniz.</p>
+    <legend>{t('creatorFormsUi.editor.chooseTemplate')}</legend>
+    <p className="fieldset-help">{t('creatorFormsUi.editor.premiumDraft')}</p>
     {templateLocked ? <div className="fieldset-help publication-notice">
-      <p>{templateActive ? 'Yayındaki şablon doğrudan değiştirilemez. Önce yayını durdurun, şablonu değiştirip önizleyin, ardından değişiklikleri yayımlayarak devam edin.' : 'Şablon seçmeden önce güncel yayın durumu doğrulanmalıdır.'}</p>
-      <button type="button" className="button button--secondary" onClick={onManagePublication}>Yayın yönetimine git</button>
+      <p>{templateActive ? t('creatorFormsUi.editor.activeTemplateLocked') : t('creatorFormsUi.editor.verifyPublication')}</p>
+      <button type="button" className="button button--secondary" onClick={onManagePublication}>{t('creatorFormsUi.editor.managePublication')}</button>
     </div> : null}
-    {templates.length === 0 ? <p className="inline-alert" role="status">Şu anda seçilebilecek aktif şablon bulunmuyor.</p> : null}
+    {templates.length === 0 ? <p className="inline-alert" role="status">{t('creatorFormsUi.editor.noTemplates')}</p> : null}
     {templates.map(template => <label key={template.key} className="template-choice-card">
       <input
         type="radio"
@@ -530,23 +526,23 @@ function WizardStep({
       {template.previewImageUrl ? <img src={template.previewImageUrl} alt="" width="960" height="640" /> : null}
       <span className="template-choice-card__copy">
         <strong>{template.name}</strong>
-        <small>{template.category} · {template.isPremium ? 'Premium' : 'Ücretsiz'}</small>
+        <small>{template.category} · {template.isPremium ? t('creatorFormsUi.editor.premium') : t('creatorFormsUi.editor.free')}</small>
       </span>
     </label>)}
   </fieldset>
 
   if (step === 3) return <div className="wizard-fields">
-    <EditorDateTime id="draft-starts-at" label="Etkinlik tarihi ve saati" value={content.startsAtLocal} onChange={value => update('startsAtLocal', value)} />
-    <EditorField id="draft-venue" label="Mekân adı" value={content.venueName} onChange={value => update('venueName', value)} maxLength={200} />
-    <EditorTextArea id="draft-address" label="Adres" value={content.venueAddress} onChange={value => update('venueAddress', value)} maxLength={500} />
-    <EditorField id="draft-map-url" label="Harita bağlantısı" value={content.mapUrl} onChange={value => update('mapUrl', value)} maxLength={2048} inputMode="url" help="İsteğe bağlı; http veya https bağlantısı kullanın." />
+    <EditorDateTime id="draft-starts-at" label={t('creatorFormsUi.editor.eventDate')} value={content.startsAtLocal} onChange={value => update('startsAtLocal', value)} />
+    <EditorField id="draft-venue" label={t('creatorFormsUi.editor.venue')} value={content.venueName} onChange={value => update('venueName', value)} maxLength={200} />
+    <EditorTextArea id="draft-address" label={t('creatorFormsUi.editor.address')} value={content.venueAddress} onChange={value => update('venueAddress', value)} maxLength={500} />
+    <EditorField id="draft-map-url" label={t('creatorFormsUi.editor.map')} value={content.mapUrl} onChange={value => update('mapUrl', value)} maxLength={2048} inputMode="url" help={t('creatorFormsUi.editor.optionalUrl')} />
   </div>
 
   if (step === 4) return <div className="wizard-fields">
-    <p>İsterseniz davetiyenize ilk program satırını ekleyin. Bu adımı şimdi geçebilirsiniz.</p>
-    <EditorField id="draft-program-title" label="Program başlığı" value={content.programTitle} onChange={value => update('programTitle', value)} maxLength={200} help="Örnek: Karşılama, Nikâh veya Kutlama" />
-    <EditorDateTime id="draft-program-start" label="Program saati" value={content.programStartsAtLocal} onChange={value => update('programStartsAtLocal', value)} />
-    <EditorTextArea id="draft-program-description" label="Program açıklaması" value={content.programDescription} onChange={value => update('programDescription', value)} maxLength={1000} />
+    <p>{t('creatorFormsUi.editor.optionalIntro')}</p>
+    <EditorField id="draft-program-title" label={t('creatorFormsUi.editor.programTitle')} value={content.programTitle} onChange={value => update('programTitle', value)} maxLength={200} help={t('creatorFormsUi.editor.programTitleHelp')} />
+    <EditorDateTime id="draft-program-start" label={t('creatorFormsUi.editor.programTime')} value={content.programStartsAtLocal} onChange={value => update('programStartsAtLocal', value)} />
+    <EditorTextArea id="draft-program-description" label={t('creatorFormsUi.editor.programDescription')} value={content.programDescription} onChange={value => update('programDescription', value)} maxLength={1000} />
     <OptionalContentEditor content={content} update={update} />
     {rsvpPanel}
     {memoriesPanel}
@@ -600,15 +596,16 @@ function EditorTextArea({ id, label, value, onChange, maxLength }: Omit<EditorFi
 }
 
 function EditorDateTime({ id, label, value, onChange }: Omit<EditorFieldProps, 'maxLength' | 'help' | 'inputMode'>) {
+  const { t } = useTranslation()
   return <div className="form-field">
     <label htmlFor={id}>{label}</label>
     <input id={id} name={id} type="datetime-local" value={value} onChange={(event: ChangeEvent<HTMLInputElement>) => onChange(event.target.value)} />
-    <p className="form-field__help">Tarih ve saat bu cihazın yerel saatine göre kaydedilir. Bu aşamada ayrıca bir saat dilimi seçilmez.</p>
+    <p className="form-field__help">{t('creatorFormsUi.editor.localTimeHelp')}</p>
   </div>
 }
 
-function draftErrorMessage(error: unknown): string {
-  if (error instanceof ApiRequestError && error.status === 404) return 'Bu taslak bulunamadı veya erişim izniniz yok.'
-  if (error instanceof ApiRequestError && error.status === 400) return 'Bazı bilgiler kaydedilemedi. Alanları kontrol edip yeniden deneyin.'
-  return 'İşlem tamamlanamadı. Bağlantınızı kontrol edip yeniden deneyin.'
+function draftErrorMessage(error: unknown, t: (key: string) => string): string {
+  if (error instanceof ApiRequestError && error.status === 404) return t('creatorFormsUi.editor.errorNotFound')
+  if (error instanceof ApiRequestError && error.status === 400) return t('creatorFormsUi.editor.errorInvalid')
+  return t('creatorFormsUi.editor.errorGeneric')
 }

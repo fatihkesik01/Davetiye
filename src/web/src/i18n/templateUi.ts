@@ -1,0 +1,10 @@
+export const templateUiTranslations = {
+  tr: {
+    title: 'Şablonlar', demoTitle: 'Şablon demosu', failedTitle: 'Şablonlar yüklenemedi', failedBody: 'Katalog şu anda alınamadı. Bağlantınızı kontrol edip yeniden deneyin.', retry: 'Tekrar dene', loading: 'Şablonlar yükleniyor',
+    missingTitle: 'Şablon bulunamadı', missingBody: 'Bu şablon katalogda yer almıyor veya artık aktif değil.', allTemplates: 'Tüm şablonlara dön', eyebrow: 'Sekiz farklı başlangıç tasarımı', heading: 'Etkinliğinize yakışan görünümü seçin', lead: 'Her şablonu örnek içerikle inceleyin. Hesap açtığınızda kendi bilgilerinizle aynı tasarımı önizleyebilirsiniz.', empty: 'Şu anda gösterilebilecek aktif şablon bulunmuyor.', free: 'Ücretsiz', compatibleSections: '{{count}} içerik bölümüyle uyumlu', simple: 'Sade davetiye düzeni', preview: 'Demoyu incele', demoActions: 'Şablon demosu eylemleri', startWith: 'Bu şablonla başla', sampleData: 'Bu görünüm örnek veriler kullanır. Taslak oluşturduğunuzda bilgileriniz yalnızca korumalı panelinizde işlenir.',
+  },
+  en: {
+    title: 'Templates', demoTitle: 'Template preview', failedTitle: 'Templates could not be loaded', failedBody: 'The catalog is unavailable right now. Check your connection and try again.', retry: 'Try again', loading: 'Loading templates',
+    missingTitle: 'Template not found', missingBody: 'This template is not in the catalog or is no longer active.', allTemplates: 'Back to all templates', eyebrow: 'Eight ways to get started', heading: 'Choose a look for your event', lead: 'Preview each template with sample content. After creating an account, you can preview the same design with your own details.', empty: 'There are no active templates to show right now.', free: 'Free', compatibleSections: 'Works with {{count}} content sections', simple: 'Simple invitation layout', preview: 'Preview demo', demoActions: 'Template preview actions', startWith: 'Start with this template', sampleData: 'This preview uses sample data. After creating a draft, your details are handled only in your protected dashboard.',
+  },
+} as const

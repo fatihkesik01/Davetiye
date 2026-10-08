@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { DavetiyeApiClient } from '../../api/generated/client'
 
 export function ConsentMap({ location }: { location: string }) {
+  const { t } = useTranslation()
   const api = useMemo(() => new DavetiyeApiClient(), [])
   const [source, setSource] = useState<{ location: string; url: string } | null>(null)
   const [consentLocation, setConsentLocation] = useState<string | null>(null)
@@ -19,10 +21,10 @@ export function ConsentMap({ location }: { location: string }) {
     return () => controller.abort()
   }, [api, location])
   if (!source || source.location !== location) return null
-  return <section className="consent-map" aria-labelledby="consent-map-heading"><h2 id="consent-map-heading">Harita</h2>
-    {consentLocation !== location ? <><p>Haritayı açarsanız Google Maps cihazınızdan bağlantı bilgileri alır. Onayınızdan önce harita yüklenmez; yukarıdaki yol tarifi bağlantılarını da kullanabilirsiniz.</p><button className="button button--secondary" type="button" onClick={() => setConsentLocation(location)}>Google haritasını yükle</button></> : <>
-      <iframe title="Etkinlik mekânı Google haritası" src={source.url} referrerPolicy="strict-origin-when-cross-origin" loading="lazy" allowFullScreen />
-      <button className="button button--secondary" type="button" onClick={() => setConsentLocation(null)}>Haritayı kapat</button>
+  return <section className="consent-map" aria-labelledby="consent-map-heading"><h2 id="consent-map-heading">{t('creatorUi.map.title')}</h2>
+    {consentLocation !== location ? <><p>{t('creatorUi.map.notice')}</p><button className="button button--secondary" type="button" onClick={() => setConsentLocation(location)}>{t('creatorUi.map.load')}</button></> : <>
+      <iframe title={t('creatorUi.map.iframeTitle')} src={source.url} referrerPolicy="strict-origin-when-cross-origin" loading="lazy" allowFullScreen />
+      <button className="button button--secondary" type="button" onClick={() => setConsentLocation(null)}>{t('creatorUi.map.close')}</button>
     </>}
   </section>
 }

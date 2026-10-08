@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 
 import {
   ApiRequestError,
@@ -32,17 +34,8 @@ interface Props {
   supportedModules: string[]
 }
 
-const copy = {
-  invalidType: 'Bu dosya türü desteklenmiyor. Fotoğraf veya video seçin.',
-  invalidSize: 'Dosya boş görünüyor. Başka bir dosya seçin.',
-  transferFailed: 'Yükleme tamamlanamadı. Tekrar deneyin; doğrulanmadan hazır olarak gösterilmez.',
-  finalizeFailed: 'Dosyanın durumu doğrulanamadı. Tekrar deneyin.',
-  expired: 'Yükleme süresi dolmuş. Yeni bir yükleme başlatın.',
-  processing: 'Yükleme alındı. Sağlayıcı doğrulaması tamamlanıyor.',
-  ready: 'Dosya sunucu tarafından doğrulandı ve hazır.',
-}
-
 export function CreatorMediaPanel({ api, invitationId, hasPublicationGrant, supportedModules }: Props) {
+  const { t } = useTranslation()
   const input = useRef<HTMLInputElement>(null)
   const files = useRef(new Map<string, File>())
   const [role, setRole] = useState<CreatorMediaPresentationRole>(supportedModules.includes('gallery') ? 'Gallery' : 'Cover')
@@ -80,11 +73,11 @@ export function CreatorMediaPanel({ api, invitationId, hasPublicationGrant, supp
 
   const upload = async (file: File, retryItem?: UploadItem) => {
     if (!isAllowedFile(file)) {
-      setItems(current => [{ id: crypto.randomUUID(), name: file.name, kind: isVideo(file) ? 'Video' : 'Image', role, status: 'failed', progress: 0, message: copy.invalidType }, ...current])
+      setItems(current => [{ id: crypto.randomUUID(), name: file.name, kind: isVideo(file) ? 'Video' : 'Image', role, status: 'failed', progress: 0, message: t('creatorUi.media.invalidType') }, ...current])
       return
     }
     if (file.size <= 0) {
-      setItems(current => [{ id: crypto.randomUUID(), name: file.name, kind: 'Image', role, status: 'failed', progress: 0, message: copy.invalidSize }, ...current])
+      setItems(current => [{ id: crypto.randomUUID(), name: file.name, kind: 'Image', role, status: 'failed', progress: 0, message: t('creatorUi.media.invalidSize') }, ...current])
       return
     }
 
@@ -137,7 +130,7 @@ export function CreatorMediaPanel({ api, invitationId, hasPublicationGrant, supp
           } else {
             // A pending finalize does not prove that an ambiguous transfer reached storage.
             // Retain the File and retry the same asset/capability (TUS resumes by offset).
-            updateItem(itemId, { status: 'failed', message: copy.transferFailed, transferComplete: false })
+            updateItem(itemId, { status: 'failed', message: t('creatorUi.media.transferFailed'), transferComplete: false })
             await refreshLibrary()
           }
           return
@@ -147,7 +140,7 @@ export function CreatorMediaPanel({ api, invitationId, hasPublicationGrant, supp
       }
       updateItem(itemId, {
         status: 'failed',
-        message: expired ? copy.expired : transferComplete ? copy.finalizeFailed : copy.transferFailed,
+        message: expired ? t('creatorUi.media.expired') : transferComplete ? t('creatorUi.media.finalizeFailed') : t('creatorUi.media.transferFailed'),
         intent: expired ? undefined : intent,
         assetId: expired ? undefined : assetId,
         transferComplete: expired ? false : transferComplete,
@@ -170,7 +163,7 @@ export function CreatorMediaPanel({ api, invitationId, hasPublicationGrant, supp
           setItems(current => current.filter(candidate => candidate.id !== item.id))
         }
       } catch {
-        updateItem(item.id, { status: item.transferComplete ? 'failed' : 'processing', message: item.transferComplete ? copy.finalizeFailed : undefined })
+        updateItem(item.id, { status: item.transferComplete ? 'failed' : 'processing', message: item.transferComplete ? t('creatorUi.media.finalizeFailed') : undefined })
       } finally {
         setBusy(false)
       }
@@ -196,7 +189,7 @@ export function CreatorMediaPanel({ api, invitationId, hasPublicationGrant, supp
   }
 
   const removeAsset = async (asset: CreatorMediaAsset) => {
-    if (!window.confirm('Bu medya davetiyeden kaldırılacak. Devam edilsin mi?')) return
+    if (!window.confirm(t('creatorUi.media.confirmRemove'))) return
     setBusy(true)
     try {
       const csrf = await api.getAntiforgeryToken()
@@ -224,39 +217,39 @@ export function CreatorMediaPanel({ api, invitationId, hasPublicationGrant, supp
 
   return <section className="creator-media" aria-labelledby="creator-media-heading">
     <div className="creator-media__intro">
-      <h3 id="creator-media-heading">Kapak ve galeri medyası</h3>
-      <p>Fotoğraf ve videolar doğrudan sağlayıcıya yüklenir. Hazır durumu yalnızca sunucu doğrulamasından sonra gösterilir.</p>
+      <h3 id="creator-media-heading">{t('creatorUi.media.title')}</h3>
+      <p>{t('creatorUi.media.intro')}</p>
     </div>
 
     {!hasPublicationGrant
-      ? <p className="creator-media__notice" role="status">Medya yüklemek için bu davetiyeye yayın hakkı atanmış olmalı. Taslakta yükleme kullanılamaz.</p>
+      ? <p className="creator-media__notice" role="status">{t('creatorUi.media.grantRequired')}</p>
       : null}
     {!canCover && !canGallery
-      ? <p className="creator-media__notice" role="status">Seçili şablon kapak veya galeri medyasını desteklemiyor.</p>
+      ? <p className="creator-media__notice" role="status">{t('creatorUi.media.unsupported')}</p>
       : null}
 
     {libraryFailed ? <div className="creator-media__notice" role="alert">
-      <p>Medya listesi güncellenemedi.</p>
-      <button className="button button--secondary" type="button" disabled={busy} onClick={() => void refreshLibrary()}>Tekrar dene</button>
+      <p>{t('creatorUi.media.libraryFailed')}</p>
+      <button className="button button--secondary" type="button" disabled={busy} onClick={() => void refreshLibrary()}>{t('creatorUi.media.retry')}</button>
     </div> : null}
 
-    {assets.length ? <ul className="creator-media__library" aria-label="Davetiye medyaları">
+    {assets.length ? <ul className="creator-media__library" aria-label={t('creatorUi.media.library')}>
       {assets.map(asset => {
         const placedRoles = new Set(asset.placements.map(placement => placement.role))
         return <li className="creator-media__asset" key={asset.assetId}>
           <div>
-            <strong>{asset.kind === 'Image' ? 'Fotoğraf' : 'Video'}</strong>
-            <span>{asset.byteLength === null ? '' : formatBytes(asset.byteLength)}{asset.durationSeconds === null ? '' : ` · ${asset.durationSeconds} sn`}</span>
+            <strong>{asset.kind === 'Image' ? t('creatorUi.media.photo') : t('creatorUi.media.video')}</strong>
+            <span>{asset.byteLength === null ? '' : formatBytes(asset.byteLength)}{asset.durationSeconds === null ? '' : ` · ${t('creatorUi.media.seconds', { count: asset.durationSeconds })}`}</span>
           </div>
-          <p className={`creator-media__state creator-media__state--${asset.state.toLowerCase()}`} role="status">{mediaStateLabel(asset.state)}</p>
-          <p>{placedRoles.size ? [placedRoles.has('Cover') ? 'Kapak' : null, placedRoles.has('Gallery') ? 'Galeri' : null].filter(Boolean).join(' · ') : 'Henüz yerleştirilmedi'}</p>
-          {asset.state === 'Processing' ? <button className="button button--secondary" type="button" disabled={busy} onClick={() => void verifyAsset(asset)}>Durumu yenile</button> : null}
+          <p className={`creator-media__state creator-media__state--${asset.state.toLowerCase()}`} role="status">{mediaStateLabel(asset.state, t)}</p>
+          <p>{placedRoles.size ? [placedRoles.has('Cover') ? t('creatorUi.media.cover') : null, placedRoles.has('Gallery') ? t('creatorUi.media.gallery') : null].filter(Boolean).join(' · ') : t('creatorUi.media.unplaced')}</p>
+          {asset.state === 'Processing' ? <button className="button button--secondary" type="button" disabled={busy} onClick={() => void verifyAsset(asset)}>{t('creatorUi.media.refreshStatus')}</button> : null}
           {asset.state === 'Ready' ? <div className="creator-media__asset-actions">
-            {canCover && !placedRoles.has('Cover') ? <button className="button button--secondary" type="button" disabled={busy} onClick={() => void changePlacement(asset, 'Cover')}>Kapağa ekle</button> : null}
-            {canGallery && !placedRoles.has('Gallery') ? <button className="button button--secondary" type="button" disabled={busy} onClick={() => void changePlacement(asset, 'Gallery')}>Galeriye ekle</button> : null}
-            <button className="button button--secondary" type="button" disabled={busy} onClick={() => void removeAsset(asset)}>Kaldır</button>
+            {canCover && !placedRoles.has('Cover') ? <button className="button button--secondary" type="button" disabled={busy} onClick={() => void changePlacement(asset, 'Cover')}>{t('creatorUi.media.addCover')}</button> : null}
+            {canGallery && !placedRoles.has('Gallery') ? <button className="button button--secondary" type="button" disabled={busy} onClick={() => void changePlacement(asset, 'Gallery')}>{t('creatorUi.media.addGallery')}</button> : null}
+            <button className="button button--secondary" type="button" disabled={busy} onClick={() => void removeAsset(asset)}>{t('creatorUi.media.remove')}</button>
           </div> : asset.state !== 'PendingDeletion' && asset.state !== 'Deleted'
-            ? <button className="button button--secondary" type="button" disabled={busy} onClick={() => void removeAsset(asset)}>Yüklemeyi iptal et</button>
+            ? <button className="button button--secondary" type="button" disabled={busy} onClick={() => void removeAsset(asset)}>{t('creatorUi.media.cancelUpload')}</button>
             : null}
         </li>
       })}
@@ -264,14 +257,14 @@ export function CreatorMediaPanel({ api, invitationId, hasPublicationGrant, supp
 
     <div className="creator-media__controls">
       <div className="form-field">
-        <label htmlFor="creator-media-role">Kullanım alanı</label>
+        <label htmlFor="creator-media-role">{t('creatorUi.media.usage')}</label>
         <select id="creator-media-role" value={role} onChange={event => setRole(event.target.value as CreatorMediaPresentationRole)} disabled={busy || !canUpload}>
-          {canCover ? <option value="Cover">Kapak</option> : null}
-          {canGallery ? <option value="Gallery">Galeri</option> : null}
+          {canCover ? <option value="Cover">{t('creatorUi.media.cover')}</option> : null}
+          {canGallery ? <option value="Gallery">{t('creatorUi.media.gallery')}</option> : null}
         </select>
       </div>
       <div className="form-field">
-        <label htmlFor="creator-media-file">Fotoğraf veya video ekle</label>
+        <label htmlFor="creator-media-file">{t('creatorUi.media.addMedia')}</label>
         <input
           ref={input}
           id="creator-media-file"
@@ -287,23 +280,23 @@ export function CreatorMediaPanel({ api, invitationId, hasPublicationGrant, supp
           }}
           aria-describedby="creator-media-help"
         />
-        <p id="creator-media-help" className="form-field__help">Dosya boyutu ve yayın hakkı sunucu tarafından denetlenir. Yükleme bağlantısı kısa ömürlüdür.</p>
+        <p id="creator-media-help" className="form-field__help">{t('creatorUi.media.uploadHelp')}</p>
       </div>
     </div>
 
-    {items.length ? <ul className="creator-media__items" aria-label="Medya yüklemeleri">
+    {items.length ? <ul className="creator-media__items" aria-label={t('creatorUi.media.uploads')}>
       {items.map(item => <li className="creator-media__item" key={item.id}>
         <div className="creator-media__item-copy">
           <strong>{item.name}</strong>
-          <span>{item.role === 'Cover' ? 'Kapak' : 'Galeri'} · {item.kind === 'Image' ? 'Fotoğraf' : 'Video'}</span>
+          <span>{item.role === 'Cover' ? t('creatorUi.media.cover') : t('creatorUi.media.gallery')} · {item.kind === 'Image' ? t('creatorUi.media.photo') : t('creatorUi.media.video')}</span>
         </div>
         <p className={`creator-media__state creator-media__state--${item.status}`} role={item.status === 'failed' ? 'alert' : 'status'} aria-live="polite">
-          {item.status === 'failed' ? item.message ?? copy.transferFailed : statusLabel(item.status, item.progress)}
+          {item.status === 'failed' ? item.message ?? t('creatorUi.media.transferFailed') : statusLabel(item.status, item.progress, t)}
         </p>
-        {item.status === 'uploading' ? <progress max="100" value={item.progress} aria-label={`${item.name} yükleme ilerlemesi`} /> : null}
+        {item.status === 'uploading' ? <progress max="100" value={item.progress} aria-label={t('creatorUi.media.progress', { name: item.name })} /> : null}
         {item.status === 'processing' || (item.status === 'failed' && item.retryable)
           ? <button className="button button--secondary" type="button" disabled={busy} onClick={() => void retry(item)}>
-            {item.status === 'processing' ? 'Durumu yenile' : 'Tekrar dene'}
+            {item.status === 'processing' ? t('creatorUi.media.refreshStatus') : t('creatorUi.media.retry')}
           </button>
           : null}
       </li>)}
@@ -325,24 +318,24 @@ function isAllowedFile(file: File): boolean {
 
 function isVideo(file: File): boolean { return file.type.toLowerCase().startsWith('video/') }
 
-function statusLabel(status: MediaStatus, progress: number): string {
+function statusLabel(status: MediaStatus, progress: number, t: TFunction): string {
   switch (status) {
-    case 'uploading': return `Yükleniyor · %${progress}`
-    case 'verifying': return 'Sunucu doğrulaması bekleniyor'
-    case 'processing': return copy.processing
-    case 'ready': return copy.ready
-    case 'failed': return copy.transferFailed
+    case 'uploading': return t('creatorUi.media.uploading', { progress })
+    case 'verifying': return t('creatorUi.media.waitingVerification')
+    case 'processing': return t('creatorUi.media.processing')
+    case 'ready': return t('creatorUi.media.ready')
+    case 'failed': return t('creatorUi.media.transferFailed')
   }
 }
 
-function mediaStateLabel(state: CreatorMediaAsset['state']): string {
+function mediaStateLabel(state: CreatorMediaAsset['state'], t: TFunction): string {
   switch (state) {
-    case 'PendingUpload': return 'Yükleme bekleniyor'
-    case 'Processing': return copy.processing
-    case 'Ready': return copy.ready
-    case 'Rejected': return 'Dosya doğrulanamadı'
-    case 'PendingDeletion': return 'Kaldırılıyor'
-    case 'Deleted': return 'Kaldırıldı'
+    case 'PendingUpload': return t('creatorUi.media.pendingUpload')
+    case 'Processing': return t('creatorUi.media.processing')
+    case 'Ready': return t('creatorUi.media.ready')
+    case 'Rejected': return t('creatorUi.media.rejected')
+    case 'PendingDeletion': return t('creatorUi.media.removing')
+    case 'Deleted': return t('creatorUi.media.removed')
   }
 }
 

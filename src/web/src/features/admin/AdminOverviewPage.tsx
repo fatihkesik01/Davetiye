@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react'
+import { useLatestT } from '../../i18n/useLatestT'
+import { useTranslation } from 'react-i18next'
 import { ApiRequestError, DavetiyeApiClient, type AdminOverview } from '../../api/generated/client'
 
-const numberFormat = new Intl.NumberFormat('tr-TR')
-const dateFormat = new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short' })
-
 export function AdminOverviewPage() {
+  const { t, i18n } = useTranslation()
+  const tRef = useLatestT()
+  const locale = i18n.language === 'en' ? 'en-US' : 'tr-TR'
+  const numberFormat = new Intl.NumberFormat(locale)
+  const dateFormat = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' })
   const [api] = useState(() => new DavetiyeApiClient())
   const [overview, setOverview] = useState<AdminOverview | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -17,48 +21,48 @@ export function AdminOverviewPage() {
       .catch((reason: unknown) => {
         if (controller.signal.aborted) return
         setError(reason instanceof ApiRequestError && (reason.status === 401 || reason.status === 403)
-          ? 'Bu görünüm için MFA doğrulaması tamamlanmış yönetici oturumu gerekiyor.'
-          : 'Platform özeti şu anda alınamadı. Biraz sonra yeniden deneyin.')
+          ? tRef.current('adminOverview.loadError')
+          : tRef.current('adminOverview.failed'))
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false)
       })
     return () => controller.abort()
-  }, [api])
+  }, [api, tRef])
 
   if (loading) {
-    return <section className="admin-overview" aria-busy="true" aria-live="polite"><p>Platform özeti yükleniyor…</p></section>
+    return <section className="admin-overview" aria-busy="true" aria-live="polite"><p>{t('adminOverview.loading')}</p></section>
   }
 
   if (error || !overview) {
     return (
       <section className="admin-overview" aria-live="polite">
         <div className="admin-overview__error" role="alert">
-          <h2>Özet yüklenemedi</h2>
-          <p>{error ?? 'Beklenmeyen bir yanıt alındı.'}</p>
-          <button className="button button--secondary" type="button" onClick={() => window.location.reload()}>Yeniden dene</button>
+          <h2>{t('adminOverview.heading')}</h2>
+          <p>{error ?? t('adminOverview.unexpected')}</p>
+          <button className="button button--secondary" type="button" onClick={() => window.location.reload()}>{t('adminOverview.retry')}</button>
         </div>
       </section>
     )
   }
 
   const sections = [
-    { title: 'Hesaplar', items: [['Toplam kullanıcı', overview.accounts.total], ['Bireysel', overview.accounts.individual], ['Organizasyon', overview.accounts.organization], ['Banlı hesap', overview.accounts.banned]] as const },
-    { title: 'Davetiyeler', items: [['Taslak', overview.invitations.draft], ['Planlandı', overview.invitations.scheduled], ['Aktif', overview.invitations.active], ['Duraklatıldı', overview.invitations.paused], ['Süresi doldu', overview.invitations.expired], ['Silindi', overview.invitations.deleted]] as const },
-    { title: 'Yayın hakları', items: [['Toplam hak', overview.grants.total], ['Ücretsiz', overview.grants.free], ['Tek seferlik satın alma', overview.grants.individualPurchase], ['Organizasyon aboneliği', overview.grants.organizationSubscription], ['İptal edilen', overview.grants.revoked]] as const },
-    { title: 'Paketler', items: [['Toplam paket', overview.plans.total], ['Etkin', overview.plans.active], ['Devre dışı', overview.plans.inactive]] as const },
-    { title: 'Ödemeler', items: [['Bekliyor', overview.payments.pending], ['Durumu bilinmiyor', overview.payments.unknown], ['Başarılı', overview.payments.succeeded], ['Başarısız', overview.payments.failed], ['İptal', overview.payments.canceled], ['Ters kayıt', overview.payments.reversed]] as const },
-    { title: 'Depolama', items: [['Medya kaydı', overview.storage.assets], ['Hazır', overview.storage.ready], ['Yükleme bekliyor', overview.storage.pendingUpload], ['İşleniyor', overview.storage.processing], ['Silme bekliyor', overview.storage.pendingDeletion], ['Silindi', overview.storage.deleted], ['Reddedildi', overview.storage.rejected], ['DB’de doğrulanmış medya', formatBytes(overview.storage.verifiedBytes)]] as const },
+    { title: t('adminOverview.accounts'), items: [[t('adminOverview.totalUsers'), overview.accounts.total], [t('adminOverview.individual'), overview.accounts.individual], [t('adminOverview.organization'), overview.accounts.organization], [t('adminOverview.banned'), overview.accounts.banned]] as const },
+    { title: t('adminOverview.invitations'), items: [[t('adminOverview.draft'), overview.invitations.draft], [t('adminOverview.scheduled'), overview.invitations.scheduled], [t('adminOverview.active'), overview.invitations.active], [t('adminOverview.paused'), overview.invitations.paused], [t('adminOverview.expired'), overview.invitations.expired], [t('adminOverview.deleted'), overview.invitations.deleted]] as const },
+    { title: t('adminOverview.grants'), items: [[t('adminOverview.totalGrants'), overview.grants.total], [t('adminOverview.free'), overview.grants.free], [t('adminOverview.purchase'), overview.grants.individualPurchase], [t('adminOverview.subscription'), overview.grants.organizationSubscription], [t('adminOverview.revoked'), overview.grants.revoked]] as const },
+    { title: t('adminOverview.plans'), items: [[t('adminOverview.totalPlans'), overview.plans.total], [t('adminOverview.enabled'), overview.plans.active], [t('adminOverview.disabled'), overview.plans.inactive]] as const },
+    { title: t('adminOverview.payments'), items: [[t('adminOverview.pending'), overview.payments.pending], [t('adminOverview.unknown'), overview.payments.unknown], [t('adminOverview.succeeded'), overview.payments.succeeded], [t('adminOverview.failedPayment'), overview.payments.failed], [t('adminOverview.canceled'), overview.payments.canceled], [t('adminOverview.reversed'), overview.payments.reversed]] as const },
+    { title: t('adminOverview.storage'), items: [[t('adminOverview.asset'), overview.storage.assets], [t('adminOverview.ready'), overview.storage.ready], [t('adminOverview.pendingUpload'), overview.storage.pendingUpload], [t('adminOverview.processing'), overview.storage.processing], [t('adminOverview.pendingDeletion'), overview.storage.pendingDeletion], [t('adminOverview.deleted'), overview.storage.deleted], [t('adminOverview.rejected'), overview.storage.rejected], [t('adminOverview.verifiedMedia'), formatBytes(overview.storage.verifiedBytes, locale)]] as const },
   ]
 
   return (
     <div className="admin-overview">
       <div className="admin-overview__heading">
         <div>
-          <h2>Platform özeti</h2>
-          <p>Yalnızca toplu operasyon göstergeleri. Özel davetli içerikleri bu panelde gösterilmez.</p>
+          <h2>{t('adminOverview.platformHeading')}</h2>
+          <p>{t('adminOverview.privacy')}</p>
         </div>
-        <p className="admin-overview__updated">Güncellendi: <time dateTime={overview.generatedAtUtc}>{dateFormat.format(new Date(overview.generatedAtUtc))}</time></p>
+        <p className="admin-overview__updated">{t('adminOverview.updated')}: <time dateTime={overview.generatedAtUtc}>{dateFormat.format(new Date(overview.generatedAtUtc))}</time></p>
       </div>
 
       <div className="admin-overview__grid">
@@ -76,24 +80,26 @@ export function AdminOverviewPage() {
           </section>
         ))}
         <section className="admin-overview__card" aria-labelledby="admin-health">
-          <h3 id="admin-health">Sistem durumu</h3>
+          <h3 id="admin-health">{t('adminOverview.health')}</h3>
           <dl>
             <HealthMetric label="API" value={overview.health.api} />
             <HealthMetric label="Veritabanı" value={overview.health.database} />
           </dl>
         </section>
       </div>
-      <p className="admin-overview__privacy">Depolama boyutu yalnızca veritabanında doğrulanmış medya baytlarını gösterir; Cloudflare kullanım veya faturalama miktarı değildir. Bu özet hesap veya davetli kimliği içermez ve yönetim işlemleri bu görünümden yapılmaz.</p>
+      <p className="admin-overview__privacy">{t('adminOverview.privacyDetail')}</p>
     </div>
   )
 }
 
 function HealthMetric({ label, value }: { label: string; value: string }) {
+  const { t } = useTranslation()
   const healthy = value.toLowerCase() === 'healthy'
-  return <div className="admin-overview__metric"><dt>{label}</dt><dd><span className={`admin-overview__health${healthy ? ' is-healthy' : ' is-warning'}`}><span aria-hidden="true" />{healthy ? 'Çalışıyor' : value}</span></dd></div>
+  return <div className="admin-overview__metric"><dt>{label}</dt><dd><span className={`admin-overview__health${healthy ? ' is-healthy' : ' is-warning'}`}><span aria-hidden="true" />{healthy ? t('adminOverview.working') : value}</span></dd></div>
 }
 
-function formatBytes(bytes: number): string {
+function formatBytes(bytes: number, locale: string): string {
+  const numberFormat = new Intl.NumberFormat(locale)
   if (bytes < 1024) return `${numberFormat.format(bytes)} B`
   const units = ['KB', 'MB', 'GB', 'TB']
   let value = bytes / 1024
@@ -102,7 +108,7 @@ function formatBytes(bytes: number): string {
     value /= 1024
     unit += 1
   }
-  return `${new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 1 }).format(value)} ${units[unit]}`
+  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(value)} ${units[unit]}`
 }
 
 function slug(value: string): string {

@@ -160,7 +160,7 @@ test('full draft preview never renders outside the Creator guard', async ({ page
   await expect(page.getByRole('heading', { name: 'Oturum gerekli' })).toBeVisible()
   await expect(page.getByText(/Korumalı taslak önizlemesi/i)).toHaveCount(0)
   await expect(page.locator('.invitation-renderer')).toHaveCount(0)
-  await expect(page.getByRole('link', { name: 'Giriş yap' })).toHaveAttribute(
+  await expect(page.locator('#main-content').getByRole('link', { name: 'Giriş yap' })).toHaveAttribute(
     'href',
     `/giris?returnUrl=${encodeURIComponent(`/panel/davetiyeler/${invitationId}/onizleme`)}`,
   )

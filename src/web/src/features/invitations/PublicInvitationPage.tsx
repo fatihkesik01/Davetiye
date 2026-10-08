@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { ApiRequestError, DavetiyeApiClient, type PublicInvitationMedia as PublicMediaSnapshotItem, type PublicInvitationResponse } from '../../api/generated/client'
 import { InvitationRenderer } from '../templates/rendering/InvitationRenderer'
@@ -12,9 +13,6 @@ import { PublicGiftRegistrySection } from './PublicGiftRegistrySection'
 
 // Revalidation is a delivery cadence, never a local replacement for the server access gate.
 const publicRefreshIntervalMs = 60_000
-const genericTitle = 'Dijital davetiye | Kutlio'
-const genericDescription = 'Dijital davetiye sayfası.'
-
 type PublicPageView = { state: 'loading' | 'unavailable' | 'not-found' | 'error' } | {
   state: 'active'
   invitation: Extract<PublicInvitationResponse, { status: 'active' }>
@@ -23,6 +21,9 @@ type PublicPageView = { state: 'loading' | 'unavailable' | 'not-found' | 'error'
 const noPublicMedia: PublicMediaSnapshotItem[] = []
 
 export function PublicInvitationPage({ pathname }: { pathname: string }) {
+  const { t } = useTranslation()
+  const genericTitle = `${t('guest.publicTitle')} | Kutlio`
+  const genericDescription = t('guest.publicDescription')
   const api = useMemo(() => new DavetiyeApiClient(), [])
   const publicCode = publicCodeFromPath(pathname)
   const [view, setView] = useState<PublicPageView>(publicCode ? { state: 'loading' } : { state: 'not-found' })
@@ -47,7 +48,7 @@ export function PublicInvitationPage({ pathname }: { pathname: string }) {
     description.name = 'description'
     description.content = view.state === 'active' ? view.invitation.content.message?.trim() || 'Dijital davetiye sayfası.' : genericDescription
     if (!description.isConnected) document.head.appendChild(description)
-  }, [view])
+  }, [genericDescription, genericTitle, view])
 
   useEffect(() => {
     document.title = genericTitle
@@ -67,7 +68,7 @@ export function PublicInvitationPage({ pathname }: { pathname: string }) {
     }
     mainRef.current?.focus()
     return () => cleanup.forEach(clear => clear())
-  }, [])
+  }, [genericDescription, genericTitle])
 
   useEffect(() => {
     if (!publicCode) return
@@ -108,7 +109,7 @@ export function PublicInvitationPage({ pathname }: { pathname: string }) {
   }, [publicCode])
 
   return <div className="public-invitation-page">
-    <a className="skip-link" href="#public-invitation-content">Davetiye içeriğine geç</a>
+    <a className="skip-link" href="#public-invitation-content">{t('guest.invitationContent')}</a>
     <main id="public-invitation-content" ref={mainRef} tabIndex={-1} aria-busy={view.state === 'loading'}>
       {view.state === 'active' ? <>
         <PublicInvitationMedia key={`${publicCode ?? ''}-cover`} api={api} publicCode={publicCode ?? ''} templateKey={view.invitation.templateKey}
@@ -121,20 +122,20 @@ export function PublicInvitationPage({ pathname }: { pathname: string }) {
         />
         <PublicInvitationMedia key={`${publicCode ?? ''}-gallery`} api={api} publicCode={publicCode ?? ''} templateKey={view.invitation.templateKey}
           media={view.invitation.media ?? noPublicMedia} role="Gallery" />
-        <p className="public-invitation-zone">Saat dilimi: {view.invitation.content.timeZoneId}</p>
+        <p className="public-invitation-zone">{t('guest.timeZone')}: {view.invitation.content.timeZoneId}</p>
         {publicCode ? <PublicRsvpSection key={`${publicCode}-rsvp`} api={api} publicCode={publicCode} templateKey={view.invitation.templateKey} /> : null}
         {publicCode ? <PublicMemoriesSection key={`${publicCode}-memories`} api={api} publicCode={publicCode} /> : null}
         {publicCode ? <PublicGiftRegistrySection key={`${publicCode}-gifts`} api={api} publicCode={publicCode} templateKey={view.invitation.templateKey} /> : null}
         {view.invitation.rendererVersion >= 2 && publicCode ? <PublicEventTools model={normalizeDraftContent(view.invitation.content)} publicCode={publicCode} /> : null}
       </> : <section className="public-invitation-feedback" aria-labelledby="public-invitation-heading">
-        <h1 id="public-invitation-heading">{view.state === 'not-found' ? 'Davetiye bulunamadı' : view.state === 'error' ? 'Davetiye yüklenemedi' : view.state === 'unavailable' ? 'Bu davetiye şu anda yayında değil' : 'Davetiye yükleniyor'}</h1>
+        <h1 id="public-invitation-heading">{view.state === 'not-found' ? t('guest.missing') : view.state === 'error' ? t('guest.failed') : view.state === 'unavailable' ? t('guest.unavailable') : t('guest.loading')}</h1>
         <p role={view.state === 'error' ? 'alert' : 'status'}>
-          {view.state === 'unavailable' ? 'Yayın henüz başlamamış, yayın süresi sona ermiş veya davetiye geçici olarak pasife alınmış olabilir.'
-            : view.state === 'not-found' ? 'Bağlantıyı kontrol edip tekrar deneyin.'
-            : view.state === 'error' ? 'Davetiye şu anda gösterilemiyor. Lütfen yeniden deneyin.'
-            : 'Lütfen bekleyin…'}
+          {view.state === 'unavailable' ? t('guest.unavailableDetails')
+            : view.state === 'not-found' ? t('guest.checkLink')
+            : view.state === 'error' ? t('guest.cannotShow')
+            : t('guest.wait')}
         </p>
-        {view.state === 'error' || view.state === 'unavailable' ? <button type="button" className="button button--secondary" onClick={() => setAttempt(value => value + 1)}>Tekrar dene</button> : null}
+        {view.state === 'error' || view.state === 'unavailable' ? <button type="button" className="button button--secondary" onClick={() => setAttempt(value => value + 1)}>{t('guest.retry')}</button> : null}
       </section>}
     </main>
   </div>

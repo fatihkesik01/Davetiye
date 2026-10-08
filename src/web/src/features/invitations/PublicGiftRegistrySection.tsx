@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { type DavetiyeApiClient, type PublicGiftGuestReservation, type PublicGiftRegistry } from '../../api/generated/client'
 
@@ -7,6 +8,7 @@ export function PublicGiftRegistrySection({ api, publicCode, templateKey }: {
   publicCode: string
   templateKey: string
 }) {
+  const { t, i18n } = useTranslation()
   const [registry, setRegistry] = useState<PublicGiftRegistry | null>(null)
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -51,8 +53,8 @@ export function PublicGiftRegistrySection({ api, publicCode, templateKey }: {
   async function reserve(itemId: string, remaining: number) {
     const quantity = Number((document.getElementById(`gift-quantity-${itemId}`) as HTMLInputElement | null)?.value || '1')
     const emailInput = document.getElementById('public-gift-email') as HTMLInputElement | null
-    if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > remaining || !fullName.trim()) { setMessage('Adınızı ve kalan miktar içindeki geçerli adedi girin.'); return }
-    if (email.trim() && (!emailInput?.checkValidity() || email.trim().length < 3)) { setMessage('E-posta adresini kontrol edin.'); emailInput?.focus(); return }
+    if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > remaining || !fullName.trim()) { setMessage(t('creatorUi.gifts.validate')); return }
+    if (email.trim() && (!emailInput?.checkValidity() || email.trim().length < 3)) { setMessage(t('creatorUi.gifts.invalidEmail')); emailInput?.focus(); return }
     setBusyId(itemId); setMessage('')
     try {
       const csrf = await api.getAntiforgeryToken()
@@ -61,8 +63,8 @@ export function PublicGiftRegistrySection({ api, publicCode, templateKey }: {
         { reservationId: result.reservationId, itemId, itemName: registry?.items.find(item => item.id === itemId)?.name ?? '', quantity }]
       setOwnedReservations(next)
       localStorage.setItem(storageKey, JSON.stringify(next.map(({ reservationId }) => ({ reservationId }))))
-      await reload(); setMessage('Rezervasyonunuz kaydedildi. Bu tarayıcıdan iptal edebilirsiniz.')
-    } catch { setMessage('Rezervasyon tamamlanamadı. Miktarı kontrol edip tekrar deneyin.') }
+      await reload(); setMessage(t('creatorUi.gifts.saved'))
+    } catch { setMessage(t('creatorUi.gifts.reserveFailed')) }
     finally { setBusyId(null) }
   }
   async function cancel(reservationId: string) {
@@ -73,31 +75,31 @@ export function PublicGiftRegistrySection({ api, publicCode, templateKey }: {
       const next = ownedReservations.filter(item => item.reservationId !== reservationId)
       setOwnedReservations(next)
       localStorage.setItem(storageKey, JSON.stringify(next.map(({ reservationId }) => ({ reservationId }))))
-      await reload(); setMessage('Rezervasyon iptal edildi.')
-    } catch { setMessage('Rezervasyon iptal edilemedi. Bu işlem aynı tarayıcıdaki rezervasyonlar için kullanılabilir.') }
+      await reload(); setMessage(t('creatorUi.gifts.canceled'))
+    } catch { setMessage(t('creatorUi.gifts.cancelFailed')) }
     finally { setBusyId(null) }
   }
   return <section className="public-gift-registry" aria-labelledby="public-gift-registry-title">
-    <h2 id="public-gift-registry-title">Hediye listesi</h2>
-    <p>Adınız gereklidir. E-posta ve telefon isteğe bağlıdır; bilgilerinizi yalnızca davetiye sahibi görür.</p>
+    <h2 id="public-gift-registry-title">{t('creatorUi.gifts.title')}</h2>
+    <p>{t('creatorUi.gifts.intro')}</p>
     {registry?.items.length ? <>
     <div className="public-gift-registry__contact">
-      <label>Ad soyad<input autoComplete="name" required maxLength={200} value={fullName} onChange={event => setFullName(event.target.value)} /></label>
-      <label>E-posta (isteğe bağlı)<input id="public-gift-email" autoComplete="email" type="email" minLength={3} maxLength={320} value={email} onChange={event => setEmail(event.target.value)} /></label>
-      <label>Telefon (isteğe bağlı)<input autoComplete="tel" type="tel" maxLength={32} value={phone} onChange={event => setPhone(event.target.value)} /></label>
+      <label>{t('creatorUi.gifts.fullName')}<input autoComplete="name" required maxLength={200} value={fullName} onChange={event => setFullName(event.target.value)} /></label>
+      <label>{t('creatorUi.gifts.email')}<input id="public-gift-email" autoComplete="email" type="email" minLength={3} maxLength={320} value={email} onChange={event => setEmail(event.target.value)} /></label>
+      <label>{t('creatorUi.gifts.phone')}<input autoComplete="tel" type="tel" maxLength={32} value={phone} onChange={event => setPhone(event.target.value)} /></label>
     </div>
-    <ul aria-label="Hediye listesi">
+    <ul aria-label={t('creatorUi.gifts.list')}>
       {registry.items.map(item => <li key={item.id}>
         <span>{item.name}</span>
-        <span>{item.remainingQuantity} / {item.requestedQuantity} kaldı</span>
-        {item.remainingQuantity > 0 ? <><label htmlFor={`gift-quantity-${item.id}`}>Adet</label>
+        <span>{t('creatorUi.gifts.left', { remaining: new Intl.NumberFormat(i18n.resolvedLanguage === 'en' ? 'en-US' : 'tr-TR').format(item.remainingQuantity), requested: new Intl.NumberFormat(i18n.resolvedLanguage === 'en' ? 'en-US' : 'tr-TR').format(item.requestedQuantity) })}</span>
+        {item.remainingQuantity > 0 ? <><label htmlFor={`gift-quantity-${item.id}`}>{t('creatorUi.gifts.quantity')}</label>
           <input id={`gift-quantity-${item.id}`} type="number" min={1} max={item.remainingQuantity} defaultValue={1} disabled={busyId !== null} />
-          <button type="button" disabled={busyId !== null || !fullName.trim()} onClick={() => void reserve(item.id, item.remainingQuantity)}>Rezerve et</button></> : <span>Tamamı rezerve edildi</span>}
+          <button type="button" disabled={busyId !== null || !fullName.trim()} onClick={() => void reserve(item.id, item.remainingQuantity)}>{t('creatorUi.gifts.reserve')}</button></> : <span>{t('creatorUi.gifts.allReserved')}</span>}
       </li>)}
     </ul>
-    </> : <p>Gift list is hidden. You can cancel reservations saved in this browser.</p>}
+    </> : <p>{t('creatorUi.gifts.hidden')}</p>}
     {ownedReservations.map(reservation => <button key={reservation.reservationId} type="button" className="button button--secondary" disabled={busyId !== null} onClick={() => void cancel(reservation.reservationId)}>
-      {reservation.itemName ? `${reservation.itemName} - ${reservation.quantity} adet rezervasyonu iptal et` : 'Cancel my saved reservation'}
+      {reservation.itemName ? t('creatorUi.gifts.cancelReservation', { name: reservation.itemName, quantity: new Intl.NumberFormat(i18n.resolvedLanguage === 'en' ? 'en-US' : 'tr-TR').format(reservation.quantity) }) : t('creatorUi.gifts.cancelSaved')}
     </button>)}
     <p role="status" aria-live="polite">{message}</p>
   </section>

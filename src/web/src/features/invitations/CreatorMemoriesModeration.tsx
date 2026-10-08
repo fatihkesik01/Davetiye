@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import type { CreatorMemoriesPage, CreatorMemoryItem, CreatorMemoryMediaStatus, CreatorMemoryPreview, DavetiyeApiClient } from '../../api/generated/client'
 
@@ -13,6 +14,7 @@ interface Props {
 const pageSize = 25
 
 export function CreatorMemoriesModeration({ api, invitationId }: Props) {
+  const { t, i18n } = useTranslation()
   const [page, setPage] = useState<ModerationPage | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [refreshToken, setRefreshToken] = useState(0)
@@ -43,11 +45,11 @@ export function CreatorMemoriesModeration({ api, invitationId }: Props) {
     try {
       const csrfToken = await api.getAntiforgeryToken()
       await api.hideCreatorMemory(invitationId, memory.id, csrfToken)
-      setAnnouncement(`${memory.displayName || 'Misafir'} anısı gizlendi.`)
+      setAnnouncement(t('creatorUi.moderation.hideAnnouncement', { guest: memory.displayName || t('creatorUi.memories.guest') }))
       setListState('loading')
       setRefreshToken(value => value + 1)
     } catch {
-      setActionError('Anı gizlenemedi. Sayfayı yenileyip tekrar deneyin.')
+      setActionError(t('creatorUi.moderation.hideFailed'))
     } finally {
       setBusyMemoryId(null)
     }
@@ -61,12 +63,12 @@ export function CreatorMemoriesModeration({ api, invitationId }: Props) {
       const csrfToken = await api.getAntiforgeryToken()
       await api.deleteCreatorMemory(invitationId, memory.id, csrfToken)
       setDeleteMemory(null)
-      setAnnouncement(`${memory.displayName || 'Misafir'} anısı kalıcı olarak silindi.`)
+      setAnnouncement(t('creatorUi.moderation.deleteAnnouncement', { guest: memory.displayName || t('creatorUi.memories.guest') }))
       setListState('loading')
       if (page && page.items.length === 1 && currentPage > 1) setCurrentPage(value => value - 1)
       else setRefreshToken(value => value + 1)
     } catch {
-      setActionError('Anı kalıcı olarak silinemedi. Tekrar deneyin.')
+      setActionError(t('creatorUi.moderation.deleteFailed'))
     } finally {
       setBusyMemoryId(null)
     }
@@ -78,32 +80,32 @@ export function CreatorMemoriesModeration({ api, invitationId }: Props) {
 
   return <section className="memories-moderation" aria-labelledby={titleId}>
     <div className="rsvp-panel__heading">
-      <div><h4 id={titleId}>Misafir anıları</h4><p>Yayınlanan ve gizlenen anıları yönetin. Hazır medya için özel önizlemeler yalnızca burada açılır.</p></div>
-      {page ? <span aria-label={`Toplam ${page.totalCount} anı`}>{page.totalCount}</span> : null}
+      <div><h4 id={titleId}>{t('creatorUi.moderation.title')}</h4><p>{t('creatorUi.moderation.intro')}</p></div>
+      {page ? <span aria-label={t('creatorUi.moderation.total', { count: page.totalCount })}>{page.totalCount}</span> : null}
     </div>
 
     <div aria-busy={listState === 'loading'}>
-      {listState === 'loading' ? <p role="status">Anılar yükleniyor…</p> : null}
+      {listState === 'loading' ? <p role="status">{t('creatorUi.moderation.loading')}</p> : null}
       {listState === 'error' ? <div role="alert" className="inline-alert">
-        <p>Anılar yüklenemedi.</p>
-        <button type="button" className="button button--secondary" onClick={() => { setListState('loading'); setRefreshToken(value => value + 1) }}>Tekrar dene</button>
+        <p>{t('creatorUi.moderation.failed')}</p>
+        <button type="button" className="button button--secondary" onClick={() => { setListState('loading'); setRefreshToken(value => value + 1) }}>{t('creatorUi.moderation.retry')}</button>
       </div> : null}
-      {listState === 'ready' && page?.items.length === 0 ? <p>Anı bulunmuyor.</p> : null}
-      {page?.items.length ? <ul className="public-memories__items" aria-label="Creator tarafından yönetilen anılar">
+      {listState === 'ready' && page?.items.length === 0 ? <p>{t('creatorUi.moderation.empty')}</p> : null}
+      {page?.items.length ? <ul className="public-memories__items" aria-label={t('creatorUi.moderation.managed')}>
         {page.items.map(memory => {
-          const guest = memory.displayName?.trim() || 'Misafir'
+          const guest = memory.displayName?.trim() || t('creatorUi.memories.guest')
           const confirmId = `memory-delete-confirm-${memory.id}`
           return <li key={memory.id} className="public-memory">
             <div className="public-memory__head">
-              {memory.emoji ? <span className="public-memory__emoji" aria-label="Misafir emojisi">{memory.emoji}</span> : null}
+              {memory.emoji ? <span className="public-memory__emoji" aria-label={t('creatorUi.moderation.guestEmoji')}>{memory.emoji}</span> : null}
               <strong className="public-memory__name">{guest}</strong>
-              <time dateTime={memory.createdAt}>{formatMemoryDate(memory.createdAt)}</time>
-              <span className="memories-moderation__state">{memory.state === 'Published' ? 'Yayında' : 'Gizli'}</span>
+              <time dateTime={memory.createdAt}>{formatMemoryDate(memory.createdAt, i18n.resolvedLanguage)}</time>
+              <span className="memories-moderation__state">{memory.state === 'Published' ? t('creatorUi.moderation.published') : t('creatorUi.moderation.hidden')}</span>
             </div>
             {memory.text ? <p className="public-memory__text">{memory.text}</p> : null}
-            {memory.media.length ? <ul className="memories-moderation__media" aria-label={`${guest} anısındaki medya`}>
+            {memory.media.length ? <ul className="memories-moderation__media" aria-label={t('creatorUi.moderation.mediaOf', { guest })}>
               {memory.media.map(media => <li key={media.assetId}>
-                <span>{media.kind === 'Image' ? 'Fotoğraf' : 'Video'} · {mediaStatusLabel(media.status)}</span>
+                <span>{media.kind === 'Image' ? t('creatorUi.moderation.image') : t('creatorUi.moderation.video')} · {mediaStatusLabel(media.status, t)}</span>
                 {media.status === 'Ready' ? <CreatorMemoryMediaPreview api={api} invitationId={invitationId}
                   memoryId={memory.id} assetId={media.assetId} kind={media.kind} /> : null}
               </li>)}
@@ -111,20 +113,20 @@ export function CreatorMemoriesModeration({ api, invitationId }: Props) {
 
             <div className="button-row">
               {memory.state === 'Published' ? <button type="button" className="button button--secondary"
-                aria-label={`${guest} anısını gizle`} disabled={busyMemoryId === memory.id || busyMemoryId !== null}
-                onClick={() => void hide(memory)}>{busyMemoryId === memory.id ? 'İşleniyor…' : 'Gizle'}</button> : null}
-              <button type="button" className="button button--secondary" aria-label={`${guest} anısını kalıcı olarak sil`}
-                disabled={busyMemoryId === memory.id || busyMemoryId !== null} onClick={() => { setDeleteMemory(memory); setActionError('') }}>Sil</button>
+                aria-label={t('creatorUi.moderation.hide', { guest })} disabled={busyMemoryId === memory.id || busyMemoryId !== null}
+                onClick={() => void hide(memory)}>{busyMemoryId === memory.id ? t('creatorUi.moderation.processing') : t('creatorUi.moderation.hideAction')}</button> : null}
+              <button type="button" className="button button--secondary" aria-label={t('creatorUi.moderation.deleteLabel', { guest })}
+                disabled={busyMemoryId === memory.id || busyMemoryId !== null} onClick={() => { setDeleteMemory(memory); setActionError('') }}>{t('creatorUi.moderation.deleteAction')}</button>
             </div>
 
             {deleteMemory?.id === memory.id ? <div className="inline-alert" role="group" aria-labelledby={confirmId}>
-              <h5 id={confirmId}>Anı kalıcı olarak silinsin mi?</h5>
-              <p>{guest} tarafından bırakılan anı ve bağlı medya kayıtları kalıcı olarak silinir. Bu işlem geri alınamaz.</p>
+              <h5 id={confirmId}>{t('creatorUi.moderation.confirmTitle')}</h5>
+              <p>{t('creatorUi.moderation.confirmBody', { guest })}</p>
               {actionError ? <p role="alert">{actionError}</p> : null}
               <div className="button-row">
-                <button type="button" className="button button--secondary" disabled={busyMemoryId === memory.id} onClick={() => { setDeleteMemory(null); setActionError('') }}>Vazgeç</button>
+                <button type="button" className="button button--secondary" disabled={busyMemoryId === memory.id} onClick={() => { setDeleteMemory(null); setActionError('') }}>{t('creatorUi.moderation.cancel')}</button>
                 <button type="button" className="button button--danger" disabled={busyMemoryId === memory.id} onClick={() => void permanentlyDelete(memory)}>
-                  {busyMemoryId === memory.id ? 'Siliniyor…' : 'Kalıcı olarak sil'}
+                  {busyMemoryId === memory.id ? t('creatorUi.moderation.deleting') : t('creatorUi.moderation.deletePermanently')}
                 </button>
               </div>
             </div> : null}
@@ -135,10 +137,10 @@ export function CreatorMemoriesModeration({ api, invitationId }: Props) {
 
     {actionError && !deleteMemory ? <p role="alert">{actionError}</p> : null}
     <p role="status" aria-live="polite">{announcement}</p>
-    {page && page.totalCount > pageSize ? <nav aria-label="Anı sayfaları" className="button-row">
-      <button type="button" className="button button--secondary" disabled={!hasPrevious || listState === 'loading'} onClick={() => { setListState('loading'); setCurrentPage(value => value - 1) }}>Önceki</button>
-      <span>Sayfa {page.page} / {Math.ceil(page.totalCount / pageSize)}</span>
-      <button type="button" className="button button--secondary" disabled={!hasNext || listState === 'loading'} onClick={() => { setListState('loading'); setCurrentPage(value => value + 1) }}>Sonraki</button>
+    {page && page.totalCount > pageSize ? <nav aria-label={t('creatorUi.moderation.pages')} className="button-row">
+      <button type="button" className="button button--secondary" disabled={!hasPrevious || listState === 'loading'} onClick={() => { setListState('loading'); setCurrentPage(value => value - 1) }}>{t('creatorUi.moderation.previous')}</button>
+      <span>{t('creatorUi.moderation.page', { current: page.page, total: Math.ceil(page.totalCount / pageSize) })}</span>
+      <button type="button" className="button button--secondary" disabled={!hasNext || listState === 'loading'} onClick={() => { setListState('loading'); setCurrentPage(value => value + 1) }}>{t('creatorUi.moderation.next')}</button>
     </nav> : null}
   </section>
 }
@@ -152,6 +154,7 @@ interface MediaPreviewProps {
 }
 
 function CreatorMemoryMediaPreview({ api, invitationId, memoryId, assetId, kind }: MediaPreviewProps) {
+  const { t } = useTranslation()
   const hostRef = useRef<HTMLDivElement>(null)
   const [isVisible, setIsVisible] = useState(false)
   const [preview, setPreview] = useState<CreatorMemoryPreview | null>(null)
@@ -197,18 +200,18 @@ function CreatorMemoryMediaPreview({ api, invitationId, memoryId, assetId, kind 
     return () => controller.abort()
   }, [api, assetId, invitationId, isVisible, memoryId, attempt])
 
-  const label = kind === 'Image' ? 'Fotoğraf' : 'Video'
+  const label = kind === 'Image' ? t('creatorUi.moderation.image') : t('creatorUi.moderation.video')
   return <div ref={hostRef} className="memories-moderation__preview">
-    {state === 'idle' ? <span>{label} önizlemesi görünür alana geldiğinde yüklenir.</span> : null}
-    {state === 'loading' ? <span role="status">Önizleme yükleniyor…</span> : null}
-    {state === 'error' ? <div role="group" aria-label={`${label} önizlemesi`}>
-      <span>Önizleme şu anda kullanılamıyor.</span>
-      <button type="button" className="button button--secondary" onClick={() => setAttempt(value => value + 1)}>Önizlemeyi tekrar dene</button>
+    {state === 'idle' ? <span>{t('creatorUi.moderation.idle', { kind: label })}</span> : null}
+    {state === 'loading' ? <span role="status">{t('creatorUi.moderation.previewLoading')}</span> : null}
+    {state === 'error' ? <div role="group" aria-label={t('creatorUi.moderation.preview', { kind: label })}>
+      <span>{t('creatorUi.moderation.unavailable')}</span>
+      <button type="button" className="button button--secondary" onClick={() => setAttempt(value => value + 1)}>{t('creatorUi.moderation.previewRetry')}</button>
     </div> : null}
     {state === 'ready' && preview?.mediaKind === 'image' ? <img className="public-invitation-media__image"
-      src={preview.deliveryUrl} alt={`${label} anı önizlemesi`} loading="lazy" referrerPolicy="no-referrer" /> : null}
+      src={preview.deliveryUrl} alt={t('creatorUi.moderation.memoryPreview', { kind: label })} loading="lazy" referrerPolicy="no-referrer" /> : null}
     {state === 'ready' && preview?.mediaKind === 'video' ? <iframe className="public-invitation-media__video"
-      src={preview.deliveryUrl} title={`${label} anı önizlemesi`} referrerPolicy="no-referrer"
+      src={preview.deliveryUrl} title={t('creatorUi.moderation.memoryPreview', { kind: label })} referrerPolicy="no-referrer"
       sandbox="allow-scripts allow-same-origin allow-presentation"
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen loading="lazy" /> : null}
   </div>
@@ -225,17 +228,17 @@ function isValidCreatorPreview(value: CreatorMemoryPreview): boolean {
   }
 }
 
-function mediaStatusLabel(status: CreatorMemoryMediaStatus): string {
+function mediaStatusLabel(status: CreatorMemoryMediaStatus, t: (key: string) => string): string {
   switch (status) {
-    case 'Pending': return 'Bekliyor'
-    case 'Ready': return 'Hazır'
-    case 'Rejected': return 'Reddedildi'
-    case 'Deleted': return 'Silindi'
+    case 'Pending': return t('creatorUi.moderation.pending')
+    case 'Ready': return t('creatorUi.moderation.ready')
+    case 'Rejected': return t('creatorUi.moderation.rejected')
+    case 'Deleted': return t('creatorUi.moderation.deleted')
   }
 }
 
-function formatMemoryDate(value: string): string {
+function formatMemoryDate(value: string, language?: string): string {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
-  return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short' }).format(date)
+  return new Intl.DateTimeFormat(language === 'en' ? 'en-US' : 'tr-TR', { dateStyle: 'medium', timeStyle: 'short' }).format(date)
 }

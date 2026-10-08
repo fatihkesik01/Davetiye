@@ -1,40 +1,63 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
+import { authUiTranslations } from './authUi'
+import { landingUiTranslations } from './landingUi'
+import { templateUiTranslations } from './templateUi'
+import { creatorUiTranslations } from './creatorUi'
+import { adminUiTranslations } from './adminUi'
+import { creatorEditorUiTranslations } from './creatorEditorUi'
+import { creatorFormsUi } from './creatorFormsUi'
+import { siteHeaderUiTranslations } from './siteHeaderUi'
 
 const resources = {
-  tr: {
-    translation: {
-      app: {
-        eyebrow: 'Dijital davetiye platformu',
-        title: 'Kutlio web temeli hazır',
-        description:
-          'Ürün ekranları, onaylanan kullanıcı akışlarıyla sonraki milestone’larda eklenecek.',
-      },
-      common: {
-        loading: 'Yükleniyor…',
-        skipToContent: 'Ana içeriğe geç',
-      },
-      error: {
-        title: 'Bir sorun oluştu',
-        description: 'Sayfayı yenileyip tekrar deneyin.',
-      },
-      notFound: {
-        title: 'Sayfa bulunamadı',
-        description: 'Aradığınız sayfa taşınmış veya kaldırılmış olabilir.',
-      },
-    },
-  },
+  tr: { translation: {
+    authUi: authUiTranslations.tr,
+    landingUi: landingUiTranslations.tr,
+    siteHeader: siteHeaderUiTranslations.tr,
+    templateUi: templateUiTranslations.tr,
+    creatorUi: creatorUiTranslations.tr,
+    creatorEditorUi: creatorEditorUiTranslations.tr,
+    creatorFormsUi: creatorFormsUi.tr,
+    adminUi: adminUiTranslations.tr.adminUi,
+    app: { eyebrow: 'Dijital davetiye platformu', title: 'Kutlio web temeli hazır', description: 'Ürün ekranları, onaylanan kullanıcı akışlarıyla sonraki milestone’larda eklenecek.' },
+    common: { loading: 'Yükleniyor…', skipToContent: 'Ana içeriğe geç', close: 'Kapat', save: 'Kaydet', cancel: 'Vazgeç', secureLogout: 'Güvenli çıkış yap', saving: 'Kaydediliyor…', creator: 'Davetiye sahibi', admin: 'Platform yönetimi', status: 'Durum' },
+    error: { title: 'Bir sorun oluştu', description: 'Sayfayı yenileyip tekrar deneyin.' },
+    notFound: { title: 'Sayfa bulunamadı', description: 'Aradığınız sayfa taşınmış veya kaldırılmış olabilir.' },
+    navigation: { adminTitle: 'Yönetim Paneli', creatorLabel: 'Davetiye sahibi menüsü', adminLabel: 'Yönetim bölümleri', invitations: 'Davetiyeler', trash: 'Çöp kutusu', billing: 'Plan ve ödeme', account: 'Hesap tercihleri', overview: 'Platform özeti', accounts: 'Banlı hesaplar', plans: 'Planlar ve haklar', settings: 'Sistem ayarları', templates: 'Şablonlar', payments: 'Ödemeler', audit: 'Denetim kayıtları', openPreferences: 'Tema, dil ve hesap ayarları', drawerTitle: 'Görünüm ve hesap', drawerDescription: 'Bu ayarlar Kutlio arayüzünü değiştirir; davetiyenizde yazdığınız metinler aynı kalır.' },
+    preferences: { language: 'Dil', colorTheme: 'Renk teması', appearance: 'Görünüm', themes: { kutlio: 'Kutlio', sage: 'Adaçayı', rose: 'Gül', ocean: 'Okyanus', plum: 'Erik' }, appearances: { system: 'Sistem', light: 'Açık', dark: 'Koyu' }, saving: 'Tercihler kaydediliyor…', saved: 'Tercihleriniz kaydedildi.', local: 'Tercihler bu cihazda saklandı; hesap eşitlemesi kullanılamıyor.' },
+    account: { title: 'Hesap tercihleri', appearanceTitle: 'Görünüm tercihleri', privacyTitle: 'Gizlilik ve iletişim tercihleri' },
+    auth: { logoutInProgress: 'Oturum kapatılıyor…' },
+    creator: { invitations: 'Davetiye taslakları', trash: 'Çöp kutusu', billing: 'Plan ve ödeme', newInvitation: 'Yeni davetiye', editor: 'Taslak editörü', rsvp: 'RSVP yanıtları', preview: 'Taslak önizlemesi' },
+    drafts: { eyebrow: 'Davetiye sahibi paneli', yours: 'Davetiyeleriniz', autosave: 'Bilgileriniz güvenli hesabınıza otomatik kaydedilir.', create: 'Yeni davetiye oluştur', failed: 'Taslaklar yüklenemedi. Bağlantınızı kontrol edip yeniden deneyin.', retry: 'Tekrar dene', emptyTitle: 'Henüz taslağınız yok', emptyBody: 'İlk davetiyenizi oluşturun; bütün adımları daha sonra da değiştirebilirsiniz.', unnamed: 'İsimsiz davetiye', selected: 'Şablon seçildi', waiting: 'Şablon bekliyor', lastSaved: 'Son kayıt', continue: 'Düzenlemeye devam et', loading: 'Taslaklar yükleniyor', state: { Draft: 'Taslak', Scheduled: 'Planlandı', Active: 'Yayında', Paused: 'Geçici olarak durduruldu', Expired: 'Yayın süresi bitti' } },
+    adminOverview: { loadError: 'Bu görünüm için MFA doğrulaması tamamlanmış yönetici oturumu gerekiyor.', failed: 'Platform özeti şu anda alınamadı. Biraz sonra yeniden deneyin.', loading: 'Platform özeti yükleniyor…', heading: 'Özet yüklenemedi', retry: 'Yeniden dene', unexpected: 'Beklenmeyen bir yanıt alındı.', accounts: 'Hesaplar', invitations: 'Davetiyeler', grants: 'Yayın hakları', plans: 'Paketler', payments: 'Ödemeler', storage: 'Depolama', totalUsers: 'Toplam kullanıcı', individual: 'Bireysel', organization: 'Organizasyon', banned: 'Banlı hesap', draft: 'Taslak', scheduled: 'Planlandı', active: 'Aktif', paused: 'Duraklatıldı', expired: 'Süresi doldu', deleted: 'Silindi', totalGrants: 'Toplam hak', free: 'Ücretsiz', purchase: 'Tek seferlik satın alma', subscription: 'Organizasyon aboneliği', revoked: 'İptal edilen', totalPlans: 'Toplam paket', enabled: 'Etkin', disabled: 'Devre dışı', pending: 'Bekliyor', unknown: 'Durumu bilinmiyor', succeeded: 'Başarılı', failedPayment: 'Başarısız', canceled: 'İptal', reversed: 'Ters kayıt', asset: 'Medya kaydı', ready: 'Hazır', pendingUpload: 'Yükleme bekliyor', processing: 'İşleniyor', pendingDeletion: 'Silme bekliyor', rejected: 'Reddedildi', verifiedMedia: 'DB’de doğrulanmış medya', health: 'Sistem durumu', working: 'Çalışıyor', platformHeading: 'Platform özeti', privacy: 'Yalnızca toplu operasyon göstergeleri. Özel davetli içerikleri bu panelde gösterilmez.', updated: 'Güncellendi', privacyDetail: 'Depolama boyutu yalnızca veritabanında doğrulanmış medya baytlarını gösterir; Cloudflare kullanım veya faturalama miktarı değildir. Bu özet hesap veya davetli kimliği içermez ve yönetim işlemleri bu görünümden yapılmaz.' },
+    consent: { intro: 'Hizmet bildirimleri ve ürün iletileri ayrı tercihlerdir. Pazarlama tercihinizi dilediğiniz zaman değiştirebilirsiniz.', loadFailed: 'Tercihleriniz şu anda yüklenemedi. Biraz sonra yeniden deneyin.', savingFailed: 'Tercihiniz kaydedilemedi. Bağlantınızı kontrol edip yeniden deneyin.', noticeTitle: 'Hizmet bildirimi', acknowledged: 'Hesap ve davetiye hizmeti için gerekli bildirim onaylandı.', missing: 'Bu hesap için hizmet bildirimi kaydı bulunmuyor.', textStatus: 'Metin durumu: taslak; Phase 11 hukuk incelemesi bekliyor.', version: 'Bildirim sürümü', acknowledgedAt: 'Onay zamanı', marketing: 'Ürün haberleri ve kampanyalar hakkında e-posta almak istiyorum.', optional: 'Bu tercih isteğe bağlıdır; kapalı tutmanız hizmeti kullanmanızı engellemez.', preferenceVersion: 'Tercih sürümü', lastUpdated: 'Son güncelleme', save: 'Tercihi kaydet', history: 'Tercih geçmişi', serviceNotice: 'Hizmet bildirimi', marketingChoice: 'Pazarlama tercihi', accepted: 'onaylandı', disabledChoice: 'kapatıldı', privacyLink: 'Hizmet bildirimi ve gizlilik bilgisi', termsLink: 'Kullanım koşulları', loaded: 'Tercihler yüklendi.' },
+    guest: { publicTitle: 'Dijital davetiye', publicDescription: 'Dijital davetiye sayfası.', invitationContent: 'Davetiye içeriğine geç', timeZone: 'Saat dilimi', missing: 'Davetiye bulunamadı', failed: 'Davetiye yüklenemedi', unavailable: 'Bu davetiye şu anda yayında değil', loading: 'Davetiye yükleniyor', unavailableDetails: 'Yayın henüz başlamamış, yayın süresi sona ermiş veya davetiye geçici olarak pasife alınmış olabilir.', checkLink: 'Bağlantıyı kontrol edip tekrar deneyin.', cannotShow: 'Davetiye şu anda gösterilemiyor. Lütfen yeniden deneyin.', wait: 'Lütfen bekleyin…', retry: 'Tekrar dene', rsvp: 'Katılım yanıtı', checkingAnswer: 'Önceki yanıtınız kontrol ediliyor…', update: 'Yanıtımı Güncelle', previousCannotEdit: 'Önceki yanıt bu tarayıcıda artık düzenlenemiyor. Yeni bir yanıt gönderebilirsiniz.', previousFailed: 'Önceki yanıtınız yüklenemedi. Lütfen tekrar deneyin.', validation: 'Göndermeden önce işaretli alanları kontrol edin.', saved: 'Yanıtınız kaydedildi. Bu tarayıcıdan dilediğiniz zaman güncelleyebilirsiniz.', cannotUpdate: 'Yanıtınız artık güncellenemiyor. İsterseniz yeni bir yanıt gönderebilirsiniz.', submitFailed: 'Yanıtınız gönderilemedi. Lütfen tekrar deneyin.', previous: 'Daha önce yanıt verdiniz.', submitting: 'Gönderiliyor…', saveAnswer: 'Yanıtımı kaydet', sendAnswer: 'Yanıtı gönder', yes: 'Evet', no: 'Hayır', required: 'Bu alan zorunludur.', maxOptions: 'En fazla {{count}} seçenek işaretleyin.', maxChars: 'En fazla {{count}} karakter girin.', minimum: 'En az {{value}}', maximum: 'En fazla {{value}}', integer: 'Tam sayı girin.', outOfRange: 'Bu sayı desteklenen aralığın dışında.', range: 'Değer {{minimum}} ile {{maximum}} arasında olmalıdır.' },
+  } },
+  en: { translation: {
+    authUi: authUiTranslations.en,
+    landingUi: landingUiTranslations.en,
+    siteHeader: siteHeaderUiTranslations.en,
+    templateUi: templateUiTranslations.en,
+    creatorUi: creatorUiTranslations.en,
+    creatorEditorUi: creatorEditorUiTranslations.en,
+    creatorFormsUi: creatorFormsUi.en,
+    adminUi: adminUiTranslations.en.adminUi,
+    app: { eyebrow: 'Digital invitation platform', title: 'Kutlio web foundation is ready', description: 'Product screens will be added in upcoming milestones following approved user flows.' },
+    common: { loading: 'Loading…', skipToContent: 'Skip to main content', close: 'Close', save: 'Save', cancel: 'Cancel', secureLogout: 'Sign out securely', saving: 'Saving…', creator: 'Invitation creator', admin: 'Platform administration', status: 'Status' },
+    error: { title: 'Something went wrong', description: 'Refresh the page and try again.' },
+    notFound: { title: 'Page not found', description: 'The page may have moved or been removed.' },
+    navigation: { adminTitle: 'Administration', creatorLabel: 'Creator navigation', adminLabel: 'Administration sections', invitations: 'Invitations', trash: 'Trash', billing: 'Plan and billing', account: 'Account preferences', overview: 'Platform overview', accounts: 'Banned accounts', plans: 'Plans and entitlements', settings: 'System settings', templates: 'Templates', payments: 'Payments', audit: 'Audit log', openPreferences: 'Theme, language and account settings', drawerTitle: 'Appearance and account', drawerDescription: 'These settings change the Kutlio interface; text you wrote for your invitation stays the same.' },
+    preferences: { language: 'Language', colorTheme: 'Color theme', appearance: 'Appearance', themes: { kutlio: 'Kutlio', sage: 'Sage', rose: 'Rose', ocean: 'Ocean', plum: 'Plum' }, appearances: { system: 'System', light: 'Light', dark: 'Dark' }, saving: 'Saving preferences…', saved: 'Your preferences have been saved.', local: 'Preferences are saved on this device; account sync is unavailable.' },
+    account: { title: 'Account preferences', appearanceTitle: 'Appearance preferences', privacyTitle: 'Privacy and communication preferences' },
+    auth: { logoutInProgress: 'Signing out…' },
+    creator: { invitations: 'Invitation drafts', trash: 'Trash', billing: 'Plan and billing', newInvitation: 'New invitation', editor: 'Draft editor', rsvp: 'RSVP responses', preview: 'Draft preview' },
+    drafts: { eyebrow: 'Invitation creator panel', yours: 'Your invitations', autosave: 'Your information is saved automatically to your secure account.', create: 'Create an invitation', failed: 'Drafts could not be loaded. Check your connection and try again.', retry: 'Try again', emptyTitle: 'You have no drafts yet', emptyBody: 'Create your first invitation. You can change every step later.', unnamed: 'Untitled invitation', selected: 'Template selected', waiting: 'Waiting for a template', lastSaved: 'Last saved', continue: 'Continue editing', loading: 'Loading drafts', state: { Draft: 'Draft', Scheduled: 'Scheduled', Active: 'Published', Paused: 'Paused', Expired: 'Expired' } },
+    adminOverview: { loadError: 'An administrator session with completed MFA is required for this view.', failed: 'The platform overview is unavailable right now. Please try again shortly.', loading: 'Loading platform overview…', heading: 'Overview could not be loaded', retry: 'Try again', unexpected: 'An unexpected response was received.', accounts: 'Accounts', invitations: 'Invitations', grants: 'Publication grants', plans: 'Plans', payments: 'Payments', storage: 'Storage', totalUsers: 'Total users', individual: 'Individual', organization: 'Organization', banned: 'Banned accounts', draft: 'Draft', scheduled: 'Scheduled', active: 'Active', paused: 'Paused', expired: 'Expired', deleted: 'Deleted', totalGrants: 'Total grants', free: 'Free', purchase: 'One-time purchase', subscription: 'Organization subscription', revoked: 'Revoked', totalPlans: 'Total plans', enabled: 'Active', disabled: 'Inactive', pending: 'Pending', unknown: 'Unknown status', succeeded: 'Succeeded', failedPayment: 'Failed', canceled: 'Canceled', reversed: 'Reversed', asset: 'Media asset', ready: 'Ready', pendingUpload: 'Upload pending', processing: 'Processing', pendingDeletion: 'Deletion pending', rejected: 'Rejected', verifiedMedia: 'Verified media in database', health: 'System health', working: 'Healthy', platformHeading: 'Platform overview', privacy: 'Aggregate operational indicators only. Private guest content is not shown here.', updated: 'Updated', privacyDetail: 'Storage size includes only media bytes verified in the database; it is not Cloudflare usage or billing. This overview contains no account or guest identities, and administration actions are not available here.' },
+    consent: { intro: 'Service notices and product communications are separate preferences. You can change your marketing choice at any time.', loadFailed: 'Your preferences could not be loaded right now. Please try again shortly.', savingFailed: 'Your preference could not be saved. Check your connection and try again.', noticeTitle: 'Service notice', acknowledged: 'The required notice for account and invitation services was acknowledged.', missing: 'No service notice record was found for this account.', textStatus: 'Text status: draft; awaiting Phase 11 legal review.', version: 'Notice version', acknowledgedAt: 'Acknowledged at', marketing: 'I would like to receive product news and campaign emails.', optional: 'This choice is optional. Turning it off does not affect your use of the service.', preferenceVersion: 'Preference version', lastUpdated: 'Last updated', save: 'Save preference', history: 'Preference history', serviceNotice: 'Service notice', marketingChoice: 'Marketing preference', accepted: 'accepted', disabledChoice: 'turned off', privacyLink: 'Service notice and privacy information', termsLink: 'Terms of use', loaded: 'Preferences loaded.' },
+    guest: { publicTitle: 'Digital invitation', publicDescription: 'Digital invitation page.', invitationContent: 'Skip to invitation content', timeZone: 'Time zone', missing: 'Invitation not found', failed: 'Invitation could not be loaded', unavailable: 'This invitation is not currently published', loading: 'Loading invitation', unavailableDetails: 'The publication may not have started, may have expired, or the invitation may be temporarily paused.', checkLink: 'Check the link and try again.', cannotShow: 'The invitation cannot be shown right now. Please try again.', wait: 'Please wait…', retry: 'Try again', rsvp: 'RSVP', checkingAnswer: 'Checking your previous response…', update: 'Update my response', previousCannotEdit: 'Your previous response can no longer be edited in this browser. You can send a new response.', previousFailed: 'Your previous response could not be loaded. Please try again.', validation: 'Review the marked fields before submitting.', saved: 'Your response was saved. You can update it from this browser at any time.', cannotUpdate: 'Your response can no longer be updated. You can send a new response if you wish.', submitFailed: 'Your response could not be submitted. Please try again.', previous: 'You have already responded.', submitting: 'Submitting…', saveAnswer: 'Save my response', sendAnswer: 'Submit response', yes: 'Yes', no: 'No', required: 'This field is required.', maxOptions: 'Select up to {{count}} options.', maxChars: 'Up to {{count}} characters.', minimum: 'At least {{value}}', maximum: 'At most {{value}}', integer: 'Enter a whole number.', outOfRange: 'This number is outside the supported range.', range: 'The value must be between {{minimum}} and {{maximum}}.' },
+  } },
 } as const
 
-void i18n.use(initReactI18next).init({
-  resources,
-  lng: 'tr',
-  fallbackLng: 'tr',
-  supportedLngs: ['tr'],
-  interpolation: {
-    escapeValue: false,
-  },
-})
+void i18n.use(initReactI18next).init({ resources, lng: 'tr', fallbackLng: 'tr', supportedLngs: ['tr', 'en'], interpolation: { escapeValue: false } })
 
 export { i18n }
-

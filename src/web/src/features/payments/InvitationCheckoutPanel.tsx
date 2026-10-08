@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { DavetiyeApiClient } from '../../api/generated/client'
 import { CheckoutApiError, createInvitationCheckout, listIndividualPurchasePlans, type IndividualPurchasePlan, type InvitationCheckout } from './checkoutApi'
@@ -13,6 +14,7 @@ interface InvitationCheckoutPanelProps {
 type CheckoutState = 'idle' | 'creating' | 'uncertain' | 'conflict' | 'ready' | 'failed' | 'unavailable'
 
 export function InvitationCheckoutPanel({ invitationId, api, disabled = false, redirectTo = url => window.location.assign(url) }: InvitationCheckoutPanelProps) {
+  const { t, i18n } = useTranslation()
   const [plans, setPlans] = useState<IndividualPurchasePlan[]>([])
   const [plansState, setPlansState] = useState<'loading' | 'ready' | 'failed' | 'unavailable'>('loading')
   const [selectedKey, setSelectedKey] = useState<IndividualPurchasePlan['key'] | ''>('')
@@ -59,7 +61,7 @@ export function InvitationCheckoutPanel({ invitationId, api, disabled = false, r
 
     setCheckoutState('creating')
     setCheckout(null)
-    setMessage('Ödeme bağlantısı hazırlanıyor…')
+    setMessage(t('creatorUi.checkout.preparingMessage'))
     try {
       const csrfToken = await api.getAntiforgeryToken()
       const result = await createInvitationCheckout(api, invitationId, request.planKey, request.key, csrfToken)
@@ -68,46 +70,46 @@ export function InvitationCheckoutPanel({ invitationId, api, disabled = false, r
         setCheckout(null)
         setCheckoutState('failed')
         setMessage(result.status === 'Failed'
-          ? 'Ödeme sağlayıcısı bu denemeyi başarısız olarak doğruladı. Yeni bir ödeme denemesi başlatabilirsiniz.'
-          : 'Ödeme denemesi sağlayıcı tarafından iptal edildi. Yeni bir ödeme denemesi başlatabilirsiniz.')
+          ? t('creatorUi.checkout.providerFailed')
+          : t('creatorUi.checkout.canceled'))
         return
       }
       if (result.status === 'Succeeded') {
         setIdempotency(null)
         setCheckout(null)
         setCheckoutState('conflict')
-        setMessage('Ödeme sağlayıcısı işlemi başarılı olarak doğruladı. Yayın hakkı durumu sunucuda güncelleniyor; yeni bir ödeme başlatmayın.')
+        setMessage(t('creatorUi.checkout.succeeded'))
         return
       }
       if (result.status === 'Unknown') {
         setCheckoutState('uncertain')
-        setMessage('Ödeme sağlayıcısının sonucu henüz doğrulanamadı. Yayın hakkı verilmedi; aynı isteği yeniden deneyebilirsiniz.')
+        setMessage(t('creatorUi.checkout.unknown'))
         return
       }
       if (!isSafeCheckoutUrl(result.checkoutUrl)) {
         setCheckoutState('uncertain')
-        setMessage('Ödeme denemesi başlatıldı ancak güvenli bir ödeme bağlantısı doğrulanamadı. Bu deneme yayın hakkı oluşturmaz. Aynı isteği yeniden deneyin; yeni bir deneme oluşturulmadı.')
+        setMessage(t('creatorUi.checkout.unsafeUrl'))
         return
       }
       setCheckout(result)
       setCheckoutState('ready')
-      setMessage('Bu deneme henüz ödeme veya yayın hakkı anlamına gelmez. Sağlayıcıda ödeme tamamlanıp sunucu tarafından doğrulanmalıdır.')
+      setMessage(t('creatorUi.checkout.ready'))
     } catch (error) {
       if (error instanceof CheckoutApiError && error.status === 409) {
         setIdempotency(null)
         setCheckoutState('conflict')
-        setMessage('Bu davetiye için bekleyen veya sonucu doğrulanamayan başka bir ödeme denemesi var. Yeni bir deneme başlatılamaz; mevcut denemenin sonucu netleşmeden tekrar ödeme yapmayın.')
+        setMessage(t('creatorUi.checkout.conflict'))
       } else if (error instanceof CheckoutApiError && error.status === 404) {
         setIdempotency(null)
         setCheckoutState('failed')
-        setMessage('Davetiye bulunamadı veya bu işlem için erişim izniniz yok.')
+        setMessage(t('creatorUi.checkout.invitationMissing'))
       } else if (error instanceof CheckoutApiError && error.status >= 400 && error.status < 500 && error.status !== 408 && error.status !== 429) {
         setIdempotency(null)
         setCheckoutState('failed')
-        setMessage('Ödeme isteği doğrulanamadı. Davetiye ve paket seçiminizi kontrol edip yeniden deneyin.')
+        setMessage(t('creatorUi.checkout.invalidRequest'))
       } else {
         setCheckoutState('uncertain')
-        setMessage('Ödeme isteğinin sonucu doğrulanamadı. Yayın hakkı verildiğini varsaymayın; aynı isteği güvenle yeniden deneyebilirsiniz.')
+        setMessage(t('creatorUi.checkout.uncertain'))
       }
     }
   }
@@ -118,23 +120,23 @@ export function InvitationCheckoutPanel({ invitationId, api, disabled = false, r
   }
 
   return <section className="invitation-checkout" aria-labelledby="checkout-heading" aria-busy={busy || plansState === 'loading'}>
-    <h4 id="checkout-heading">Bireysel yayın hakkı</h4>
-    <p>Standard veya Premium tek seferlik yayın hakkı seçebilirsiniz. Ödeme doğrulanmadan davetiye için yeni bir hak açılmaz.</p>
-    {plansState === 'loading' ? <p role="status">Güncel paket fiyatları yükleniyor…</p> : null}
+    <h4 id="checkout-heading">{t('creatorUi.checkout.title')}</h4>
+    <p>{t('creatorUi.checkout.intro')}</p>
+    {plansState === 'loading' ? <p role="status">{t('creatorUi.checkout.loading')}</p> : null}
     {plansState === 'failed' ? <div className="inline-alert" role="alert">
-      <p>Paket fiyatları şu anda alınamıyor. Tutarı doğrulamadan ödeme başlatamazsınız.</p>
+      <p>{t('creatorUi.checkout.failed')}</p>
       <button type="button" className="button button--secondary" onClick={() => {
         setPlansState('loading')
         void listIndividualPurchasePlans(api).then(result => {
           setPlans(result)
           setPlansState(result.length ? 'ready' : 'unavailable')
         }).catch(() => setPlansState('failed'))
-      }}>Fiyatları yeniden yükle</button>
+      }}>{t('creatorUi.checkout.reloadPrices')}</button>
     </div> : null}
-    {plansState === 'unavailable' ? <p className="invitation-checkout__muted" role="status">Bu hesap için bireysel Standard/Premium paket seçeneği sunulmuyor.</p> : null}
+    {plansState === 'unavailable' ? <p className="invitation-checkout__muted" role="status">{t('creatorUi.checkout.unavailable')}</p> : null}
     {plansState === 'ready' ? <>
       <fieldset className="invitation-checkout__plans" disabled={busy || checkoutState === 'ready' || checkoutState === 'conflict' || canRetrySameAttempt}>
-        <legend>Yayın hakkı paketi</legend>
+        <legend>{t('creatorUi.checkout.planLegend')}</legend>
         {plans.map(plan => <label className="invitation-checkout__plan" key={plan.key}>
           <input type="radio" name={`checkout-plan-${invitationId}`} value={plan.key} checked={selectedKey === plan.key} onChange={() => {
             setSelectedKey(plan.key)
@@ -145,26 +147,26 @@ export function InvitationCheckoutPanel({ invitationId, api, disabled = false, r
           }} />
           <span>
             <strong>{plan.displayName}</strong>
-            <span>{formatPlanPrice(plan)}</span>
+            <span>{formatPlanPrice(plan, i18n.resolvedLanguage === 'en' ? 'en-US' : 'tr-TR', t('creatorUi.checkout.oneTime'))}</span>
           </span>
         </label>)}
       </fieldset>
-      {checkoutState === 'ready' && checkout ? <div className="invitation-checkout__summary" aria-label="Ödeme özeti">
+      {checkoutState === 'ready' && checkout ? <div className="invitation-checkout__summary" aria-label={t('creatorUi.checkout.summary')}>
         <p><strong>{planName(plans, checkout.planKey)}</strong></p>
-        <p className="invitation-checkout__price">{formatPlanPrice(checkout)}</p>
+        <p className="invitation-checkout__price">{formatPlanPrice(checkout, i18n.resolvedLanguage === 'en' ? 'en-US' : 'tr-TR', t('creatorUi.checkout.oneTime'))}</p>
       </div> : null}
       {message ? <p className={`invitation-checkout__message${checkoutState === 'conflict' || checkoutState === 'failed' ? ' invitation-checkout__message--error' : ''}`} role={checkoutState === 'conflict' || checkoutState === 'failed' ? 'alert' : 'status'} aria-live="polite">{message}</p> : null}
-      {checkoutState === 'ready' ? <button type="button" className="button button--primary" disabled={disabled} onClick={continueToProvider}>Ödemeye geç</button> : null}
+      {checkoutState === 'ready' ? <button type="button" className="button button--primary" disabled={disabled} onClick={continueToProvider}>{t('creatorUi.checkout.pay')}</button> : null}
       {checkoutState !== 'ready' && checkoutState !== 'conflict' ? <button type="button" className="button button--primary" disabled={busy || !selectedPlan} onClick={() => void beginCheckout(canRetrySameAttempt)}>
-        {checkoutState === 'creating' ? 'Bağlantı hazırlanıyor…' : canRetrySameAttempt ? 'Aynı isteği tekrar dene' : 'Ödemeye geç'}
+        {checkoutState === 'creating' ? t('creatorUi.checkout.preparing') : canRetrySameAttempt ? t('creatorUi.checkout.retrySame') : t('creatorUi.checkout.pay')}
       </button> : null}
     </> : null}
   </section>
 }
 
-function formatPlanPrice(plan: Pick<IndividualPurchasePlan, 'amount' | 'currency' | 'billingPeriod'> | Pick<InvitationCheckout, 'amount' | 'currency' | 'billingPeriod'>): string {
-  const amount = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 2 }).format(plan.amount)
-  const period = plan.billingPeriod === 'one-time' ? 'tek sefer' : plan.billingPeriod
+function formatPlanPrice(plan: Pick<IndividualPurchasePlan, 'amount' | 'currency' | 'billingPeriod'> | Pick<InvitationCheckout, 'amount' | 'currency' | 'billingPeriod'>, locale: string, oneTime: string): string {
+  const amount = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(plan.amount)
+  const period = plan.billingPeriod === 'one-time' ? oneTime : plan.billingPeriod
   return `${amount} ${plan.currency} / ${period}`
 }
 

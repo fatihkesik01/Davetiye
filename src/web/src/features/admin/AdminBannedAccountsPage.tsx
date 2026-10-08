@@ -1,11 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useLatestT } from '../../i18n/useLatestT'
+import { useTranslation } from 'react-i18next'
 import { ApiRequestError, DavetiyeApiClient, type AdminBannedAccountListItem, type AdminPage } from '../../api/generated/client'
 
 const pageSize = 50
-const numberFormat = new Intl.NumberFormat('tr-TR')
-const dateFormat = new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short' })
-
 export function AdminBannedAccountsPage() {
+  const { t, i18n } = useTranslation()
+  const tRef = useLatestT()
+  const translate = (key: string) => t(key)
+  const locale = i18n.resolvedLanguage === 'en' ? 'en-US' : 'tr-TR'
+  const numberFormat = new Intl.NumberFormat(locale)
   const [client] = useState(() => new DavetiyeApiClient())
   const api = client
   const [page, setPage] = useState(1)
@@ -40,33 +44,34 @@ export function AdminBannedAccountsPage() {
         setError({
           key: requestKey,
           message: reason instanceof ApiRequestError && (reason.status === 401 || reason.status === 403)
-            ? 'Bu görünüm için MFA doğrulaması tamamlanmış yönetici oturumu gerekiyor.'
-            : 'Banlı hesaplar şu anda alınamadı. Biraz sonra yeniden deneyin.',
+            ? tRef.current('adminUi.banned.authRequired')
+            : tRef.current('adminUi.banned.loadError'),
         })
         setLoadedKey(requestKey)
       })
     return () => controller.abort()
-  }, [api, page, emailPrefix, reloadVersion, requestKey])
+  }, [api, page, emailPrefix, reloadVersion, requestKey, tRef])
 
   const totalCount = result?.totalCount ?? 0
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
   const items = result?.items ?? []
 
   async function unban(account: AdminBannedAccountListItem) {
-    if (!window.confirm(`${account.displayName || account.email || account.accountId} hesabının banını kaldırmak istiyor musunuz? Hesabın erişimi geri gelir.`)) return
+    const accountName = account.displayName || account.email || account.accountId
+    if (!window.confirm(t('adminUi.banned.confirmUnban', { name: accountName }))) return
     setPendingId(account.accountId)
     setActionError(null)
     setNotice('')
     try {
       const csrfToken = await api.getAntiforgeryToken()
       await api.unbanAccount(account.accountId, csrfToken)
-      setNotice(`${account.email || account.displayName || 'Hesap'} hesabının banı kaldırıldı.`)
+      setNotice(t('adminUi.banned.unbanSuccess', { name: account.email || account.displayName || t('adminUi.banned.unnamedAccount') }))
       if (items.length === 1 && page > 1) setPage(current => current - 1)
       else setReloadVersion(current => current + 1)
     } catch (reason) {
       setActionError(reason instanceof ApiRequestError && (reason.status === 401 || reason.status === 403)
-        ? 'İşlem için MFA doğrulaması tamamlanmış yönetici oturumu gerekiyor.'
-        : 'Ban kaldırılamadı. Hesap durumu değişmiş olabilir; listeyi yenileyip tekrar deneyin.')
+        ? t('adminUi.banned.actionAuthRequired')
+        : t('adminUi.banned.unbanError'))
     } finally {
       setPendingId(null)
     }
@@ -85,70 +90,74 @@ export function AdminBannedAccountsPage() {
     <section className="admin-banned" aria-labelledby="admin-banned-title" aria-busy={loading}>
       <header className="admin-overview__heading">
         <div>
-          <h2 id="admin-banned-title">Banlı hesaplar</h2>
-          <p>Banlı hesap özetlerini e-posta başlangıcına göre arayın. Dahili notlar burada gösterilmez.</p>
+          <h2 id="admin-banned-title">{t('adminUi.banned.title')}</h2>
+          <p>{t('adminUi.banned.description')}</p>
         </div>
-        <p className="admin-operational__count">Toplam: {numberFormat.format(totalCount)}</p>
+        <p className="admin-operational__count">{t('adminUi.banned.total', { count: numberFormat.format(totalCount) })}</p>
       </header>
 
       <form className="admin-banned__search" onSubmit={submitSearch} role="search">
-        <label htmlFor="admin-banned-email">E-posta başlangıcı</label>
+        <label htmlFor="admin-banned-email">{t('adminUi.banned.emailPrefix')}</label>
         <div className="admin-banned__search-controls">
           <input id="admin-banned-email" type="search" autoComplete="email" maxLength={254} value={emailDraft}
-            onChange={event => setEmailDraft(event.target.value)} placeholder="ornek@eposta.com" />
-          <button className="button button--primary" type="submit" disabled={loading}>Ara</button>
+            onChange={event => setEmailDraft(event.target.value)} placeholder="name@example.com" />
+          <button className="button button--primary" type="submit" disabled={loading}>{t('adminUi.banned.search')}</button>
         </div>
       </form>
 
       {actionError ? <p className="admin-banned__message is-error" role="alert">{actionError}</p> : null}
       {notice ? <p className="admin-banned__message" role="status">{notice}</p> : null}
-      {loading ? <p className="admin-operational__status" role="status">Banlı hesaplar yükleniyor…</p> : null}
+      {loading ? <p className="admin-operational__status" role="status">{t('adminUi.banned.loading')}</p> : null}
       {!loading && visibleError ? (
         <div className="admin-overview__error" role="alert">
-          <h3>Banlı hesaplar yüklenemedi</h3>
+          <h3>{t('adminUi.banned.loadFailed')}</h3>
           <p>{visibleError}</p>
-          <button className="button button--secondary" type="button" onClick={() => setReloadVersion(value => value + 1)}>Yeniden dene</button>
+          <button className="button button--secondary" type="button" onClick={() => setReloadVersion(value => value + 1)}>{t('adminUi.banned.retry')}</button>
         </div>
       ) : null}
       {!loading && !visibleError && items.length === 0 ? (
         <div className="admin-operational__empty" role="status">
-          <h3>{emailPrefix ? 'Eşleşen banlı hesap yok' : 'Banlı hesap yok'}</h3>
-          <p>{emailPrefix ? 'Farklı bir e-posta başlangıcı deneyin.' : 'Banlı hesaplar bu listede görünür.'}</p>
+          <h3>{t(emailPrefix ? 'adminUi.banned.emptyMatchTitle' : 'adminUi.banned.emptyTitle')}</h3>
+          <p>{t(emailPrefix ? 'adminUi.banned.tryDifferentPrefix' : 'adminUi.banned.emptyBody')}</p>
         </div>
       ) : null}
-      {!loading && !visibleError && items.length > 0 ? <BannedAccountsTable items={items} pendingId={pendingId} onUnban={account => void unban(account)} /> : null}
+      {!loading && !visibleError && items.length > 0 ? <BannedAccountsTable items={items} pendingId={pendingId} onUnban={account => void unban(account)} translate={translate} /> : null}
       {!loading && !visibleError && totalCount > 0 ? (
-        <nav className="admin-operational__pagination" aria-label="Banlı hesaplar sayfaları">
-          <button className="button button--secondary" type="button" disabled={page <= 1 || pendingId !== null} onClick={() => setPage(value => Math.max(1, value - 1))}>Önceki</button>
-          <span aria-live="polite">Sayfa {numberFormat.format(page)} / {numberFormat.format(totalPages)}</span>
-          <button className="button button--secondary" type="button" disabled={page >= totalPages || pendingId !== null} onClick={() => setPage(value => Math.min(totalPages, value + 1))}>Sonraki</button>
+        <nav className="admin-operational__pagination" aria-label={t('adminUi.banned.pages')}>
+          <button className="button button--secondary" type="button" disabled={page <= 1 || pendingId !== null} onClick={() => setPage(value => Math.max(1, value - 1))}>{t('adminUi.banned.previous')}</button>
+          <span aria-live="polite">{t('adminUi.banned.page', { current: numberFormat.format(page), total: numberFormat.format(totalPages) })}</span>
+          <button className="button button--secondary" type="button" disabled={page >= totalPages || pendingId !== null} onClick={() => setPage(value => Math.min(totalPages, value + 1))}>{t('adminUi.banned.next')}</button>
         </nav>
       ) : null}
     </section>
   )
 }
 
-function BannedAccountsTable({ items, pendingId, onUnban }: {
+function BannedAccountsTable({ items, pendingId, onUnban, translate }: {
   items: AdminBannedAccountListItem[]
   pendingId: string | null
   onUnban: (account: AdminBannedAccountListItem) => void
+  translate: (key: string) => string
 }) {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.resolvedLanguage === 'en' ? 'en-US' : 'tr-TR'
+  const dateFormat = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' })
   return (
     <div className="admin-banned__table-wrap">
       <table className="admin-operational__table admin-banned__table">
-        <caption className="visually-hidden">Banlı hesaplar</caption>
-        <thead><tr><th scope="col">Hesap</th><th scope="col">E-posta</th><th scope="col">Tür</th><th scope="col">Kayıt tarihi</th><th scope="col">Ban tarihi</th><th scope="col">Sebep</th><th scope="col">İşlem</th></tr></thead>
+          <caption className="visually-hidden">{t('adminUi.banned.caption')}</caption>
+        <thead><tr><th scope="col">{t('adminUi.banned.account')}</th><th scope="col">{t('adminUi.banned.email')}</th><th scope="col">{t('adminUi.banned.type')}</th><th scope="col">{t('adminUi.banned.created')}</th><th scope="col">{t('adminUi.banned.bannedAt')}</th><th scope="col">{t('adminUi.banned.reason')}</th><th scope="col">{t('adminUi.banned.action')}</th></tr></thead>
         <tbody>{items.map(account => (
           <tr key={account.accountId}>
-            <td data-label="Hesap">{account.displayName || 'İsimsiz hesap'}</td>
-            <td data-label="E-posta"><span className="admin-operational__reference">{account.email || 'E-posta yok'}</span></td>
-            <td data-label="Tür">{accountTypeLabel(account.accountType)}</td>
-            <td data-label="Kayıt tarihi">{formatDate(account.createdAtUtc)}</td>
-            <td data-label="Ban tarihi">{formatDate(account.bannedAtUtc)}</td>
-            <td data-label="Sebep">{account.reason || 'Belirtilmedi'}</td>
-            <td data-label="İşlem"><button className="button button--secondary" type="button" disabled={pendingId !== null}
-              aria-label={`${account.email || account.displayName || account.accountId} hesabının banını kaldır`} onClick={() => onUnban(account)}>
-              {pendingId === account.accountId ? 'Ban kaldırılıyor…' : 'Banı kaldır'}
+            <td data-label={t('adminUi.banned.account')}>{account.displayName || t('adminUi.banned.unnamedAccount')}</td>
+            <td data-label={t('adminUi.banned.email')}><span className="admin-operational__reference">{account.email || t('adminUi.banned.noEmail')}</span></td>
+            <td data-label={t('adminUi.banned.type')}>{accountTypeLabel(account.accountType, translate)}</td>
+            <td data-label={t('adminUi.banned.created')}>{formatDate(account.createdAtUtc, dateFormat)}</td>
+            <td data-label={t('adminUi.banned.bannedAt')}>{formatDate(account.bannedAtUtc, dateFormat)}</td>
+            <td data-label={t('adminUi.banned.reason')}>{account.reason || t('adminUi.banned.unspecified')}</td>
+            <td data-label={t('adminUi.banned.action')}><button className="button button--secondary" type="button" disabled={pendingId !== null}
+              aria-label={t('adminUi.banned.unbanAria', { name: account.email || account.displayName || account.accountId })} onClick={() => onUnban(account)}>
+              {pendingId === account.accountId ? t('adminUi.banned.unbanning') : t('adminUi.banned.unban')}
             </button></td>
           </tr>
         ))}</tbody>
@@ -157,11 +166,11 @@ function BannedAccountsTable({ items, pendingId, onUnban }: {
   )
 }
 
-function accountTypeLabel(value: AdminBannedAccountListItem['accountType']): string {
-  return value === 'individual' ? 'Bireysel' : 'Organizasyon'
+function accountTypeLabel(value: AdminBannedAccountListItem['accountType'], t: (key: string) => string): string {
+  return value === 'individual' ? t('adminUi.banned.individual') : t('adminUi.banned.organization')
 }
 
-function formatDate(value: string): string {
+function formatDate(value: string, dateFormat: Intl.DateTimeFormat): string {
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? '—' : dateFormat.format(date)
 }

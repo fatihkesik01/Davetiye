@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import {
   DavetiyeApiClient,
@@ -13,6 +14,7 @@ interface TemplateCatalogPageProps {
 }
 
 export function TemplateCatalogPage({ demoTemplateKey }: TemplateCatalogPageProps) {
+  const { t } = useTranslation()
   const api = useMemo(() => new DavetiyeApiClient(), [])
   const [templates, setTemplates] = useState<TemplateCatalogItem[] | null>(null)
   const [failed, setFailed] = useState(false)
@@ -31,27 +33,27 @@ export function TemplateCatalogPage({ demoTemplateKey }: TemplateCatalogPageProp
 
   if (failed) {
     return <section className="feedback-state feedback-state--stacked" role="alert">
-      <h2>Şablonlar yüklenemedi</h2>
-      <p>Katalog şu anda alınamadı. Bağlantınızı kontrol edip yeniden deneyin.</p>
+      <h2>{t('templateUi.failedTitle')}</h2>
+      <p>{t('templateUi.failedBody')}</p>
       <button className="button button--secondary" type="button" onClick={() => {
         setFailed(false)
         setTemplates(null)
         setAttempt(value => value + 1)
       }}>
-        Tekrar dene
+        {t('templateUi.retry')}
       </button>
     </section>
   }
 
-  if (!templates) return <LoadingState label="Şablonlar yükleniyor" />
+  if (!templates) return <LoadingState label={t('templateUi.loading')} />
 
   if (demoTemplateKey) {
     const selected = templates.find(template => template.key === demoTemplateKey)
     if (!selected) {
       return <section className="catalog-empty" role="status">
-        <h2>Şablon bulunamadı</h2>
-        <p>Bu şablon katalogda yer almıyor veya artık aktif değil.</p>
-        <InternalLink className="button button--secondary" to="/sablonlar">Tüm şablonlara dön</InternalLink>
+        <h2>{t('templateUi.missingTitle')}</h2>
+        <p>{t('templateUi.missingBody')}</p>
+        <InternalLink className="button button--secondary" to="/sablonlar">{t('templateUi.allTemplates')}</InternalLink>
       </section>
     }
 
@@ -60,11 +62,11 @@ export function TemplateCatalogPage({ demoTemplateKey }: TemplateCatalogPageProp
 
   return <section className="template-catalog" aria-labelledby="catalog-heading">
     <div className="catalog-intro">
-      <p className="eyebrow">Sekiz farklı başlangıç tasarımı</p>
-      <h2 id="catalog-heading">Etkinliğinize yakışan görünümü seçin</h2>
-      <p>Her şablonu örnek içerikle inceleyin. Hesap açtığınızda kendi bilgilerinizle aynı tasarımı önizleyebilirsiniz.</p>
+      <p className="eyebrow">{t('templateUi.eyebrow')}</p>
+      <h2 id="catalog-heading">{t('templateUi.heading')}</h2>
+      <p>{t('templateUi.lead')}</p>
     </div>
-    {templates.length === 0 ? <p className="catalog-empty" role="status">Şu anda gösterilebilecek aktif şablon bulunmuyor.</p> : null}
+    {templates.length === 0 ? <p className="catalog-empty" role="status">{t('templateUi.empty')}</p> : null}
     <ul className="template-catalog__grid">
       {templates.map(template => <li key={template.key}><TemplateCatalogCard template={template} /></li>)}
     </ul>
@@ -72,6 +74,7 @@ export function TemplateCatalogPage({ demoTemplateKey }: TemplateCatalogPageProp
 }
 
 export function TemplateCatalogCard({ template }: { template: TemplateCatalogItem }) {
+  const { t } = useTranslation()
   return <article className="template-card">
     {template.previewImageUrl
       ? <img src={template.previewImageUrl} alt="" width="960" height="640" loading="lazy" />
@@ -80,34 +83,35 @@ export function TemplateCatalogCard({ template }: { template: TemplateCatalogIte
       <div className="template-card__meta">
         <span>{template.category}</span>
         <span className={`template-badge ${template.isPremium ? 'template-badge--premium' : ''}`}>
-          {template.isPremium ? 'Premium' : 'Ücretsiz'}
+          {template.isPremium ? 'Premium' : t('templateUi.free')}
         </span>
       </div>
       <h3>{template.name}</h3>
       {template.description ? <p>{template.description}</p> : null}
       <p>{template.supportedModules.length > 0
-        ? `${template.supportedModules.length} içerik bölümüyle uyumlu`
-        : 'Sade davetiye düzeni'}</p>
+        ? t('templateUi.compatibleSections', { count: template.supportedModules.length })
+        : t('templateUi.simple')}</p>
       <InternalLink className="button button--secondary" to={`/sablonlar/${encodeURIComponent(template.key)}`}>
-        Demoyu incele
+        {t('templateUi.preview')}
       </InternalLink>
     </div>
   </article>
 }
 
 function TemplateDemoPage({ template }: { template: TemplateCatalogItem }) {
+  const { t } = useTranslation()
   return <section className="template-demo" aria-labelledby="template-demo-heading">
-    <nav className="template-demo__actions" aria-label="Şablon demosu eylemleri">
-      <InternalLink to="/sablonlar">← Tüm şablonlar</InternalLink>
+    <nav className="template-demo__actions" aria-label={t('templateUi.demoActions')}>
+      <InternalLink to="/sablonlar">← {t('templateUi.allTemplates')}</InternalLink>
       <InternalLink
         className="button button--primary"
         to={`/panel/davetiyeler/yeni?template=${encodeURIComponent(template.key)}`}
-      >Bu şablonla başla</InternalLink>
+      >{t('templateUi.startWith')}</InternalLink>
     </nav>
     <header className="template-demo__header">
       <p className="eyebrow">{template.category} · {template.isPremium ? 'Premium' : 'Ücretsiz'}</p>
       <h2 id="template-demo-heading">{template.name}</h2>
-      <p>Bu görünüm örnek veriler kullanır. Taslak oluşturduğunuzda bilgileriniz yalnızca korumalı panelinizde işlenir.</p>
+      <p>{t('templateUi.sampleData')}</p>
     </header>
     <div className="template-demo__canvas">
       <TemplateDemoRenderer templateKey={template.key} rendererVersion={template.rendererVersion} />

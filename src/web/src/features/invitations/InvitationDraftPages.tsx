@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import {
   DavetiyeApiClient,
@@ -12,9 +13,9 @@ import { navigate } from '../../routes/navigation'
 import { InvitationRenderer } from '../templates/rendering/InvitationRenderer'
 import { normalizeDraftContent } from '../templates/rendering/model'
 import { InvitationDraftEditor } from './InvitationDraftEditor'
-import { publicationStateLabels } from './publicationPresentation'
 
 export function InvitationDraftDashboard() {
+  const { t, i18n } = useTranslation()
   const api = useMemo(() => new DavetiyeApiClient(), [])
   const [page, setPage] = useState<InvitationDraftPage | null>(null)
   const [failed, setFailed] = useState(false)
@@ -34,35 +35,35 @@ export function InvitationDraftDashboard() {
   return <section className="draft-dashboard" aria-labelledby="drafts-heading">
     <div className="dashboard-heading">
       <div>
-        <p className="eyebrow">Creator paneli</p>
-        <h2 id="drafts-heading">Davetiyeleriniz</h2>
-        <p>Bilgileriniz güvenli hesabınıza otomatik kaydedilir.</p>
+        <p className="eyebrow">{t('drafts.eyebrow')}</p>
+        <h2 id="drafts-heading">{t('drafts.yours')}</h2>
+        <p>{t('drafts.autosave')}</p>
       </div>
-      <InternalLink className="button button--primary" to="/panel/davetiyeler/yeni">Yeni davetiye oluştur</InternalLink>
+      <InternalLink className="button button--primary" to="/panel/davetiyeler/yeni">{t('drafts.create')}</InternalLink>
     </div>
     {failed ? <div className="inline-alert" role="alert">
-      <p>Taslaklar yüklenemedi. Bağlantınızı kontrol edip yeniden deneyin.</p>
+      <p>{t('drafts.failed')}</p>
       <button className="button button--secondary" type="button" onClick={() => {
         setFailed(false)
         setPage(null)
         setAttempt(value => value + 1)
-      }}>Tekrar dene</button>
+      }}>{t('drafts.retry')}</button>
     </div> : null}
-    {!failed && !page ? <LoadingState label="Taslaklar yükleniyor" /> : null}
+    {!failed && !page ? <LoadingState label={t('drafts.loading')} /> : null}
     {page?.items.length === 0 ? <div className="catalog-empty">
-      <h3>Henüz taslağınız yok</h3>
-      <p>İlk davetiyenizi oluşturun; bütün adımları daha sonra da değiştirebilirsiniz.</p>
+      <h3>{t('drafts.emptyTitle')}</h3>
+      <p>{t('drafts.emptyBody')}</p>
     </div> : null}
     {page && page.items.length > 0 ? <ul className="draft-list">
       {page.items.map(draft => <li key={draft.id}>
         <article className="draft-list__item">
           <div>
-            <h3>{draft.headline?.trim() || `İsimsiz davetiye · ${draft.id.slice(0, 8)}`}</h3>
-            {draft.effectiveState ? <p>Durum: {publicationStateLabels[draft.effectiveState]}</p> : null}
-            <p>{draft.templateKey ? 'Şablon seçildi' : 'Şablon bekliyor'} · Son kayıt {formatUpdatedAt(draft.updatedAt)}</p>
+            <h3>{draft.headline?.trim() || `${t('drafts.unnamed')} · ${draft.id.slice(0, 8)}`}</h3>
+            {draft.effectiveState ? <p>{t('common.status')}: {t(`drafts.state.${draft.effectiveState}`)}</p> : null}
+            <p>{draft.templateKey ? t('drafts.selected') : t('drafts.waiting')} · {t('drafts.lastSaved')} {formatUpdatedAt(draft.updatedAt, i18n.language)}</p>
           </div>
           <InternalLink className="button button--secondary" to={`/panel/davetiyeler/${draft.id}/duzenle`}>
-            Düzenlemeye devam et
+            {t('drafts.continue')}
           </InternalLink>
         </article>
       </li>)}
@@ -186,9 +187,9 @@ export function FullDraftPreviewPage({ invitationId }: { invitationId: string })
   </section>
 }
 
-function formatUpdatedAt(value: string): string {
+function formatUpdatedAt(value: string, locale: string): string {
   try {
-    return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
+    return new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'tr-TR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
   } catch {
     return 'bilinmiyor'
   }

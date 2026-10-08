@@ -106,6 +106,16 @@ test('landing page is keyboard reachable in logical order and FAQ disclosures to
   await page.keyboard.press('Shift+Tab')
   await page.keyboard.press('Shift+Tab')
   await expect(page.getByRole('link', { name: 'Giriş yap' })).toBeFocused()
+  // The header's in-page section navigation sits between the skip link and the login link, in reading order.
+  for (const name of ['SSS', 'Paketler', 'Özellikler', 'Nasıl çalışır?']) {
+    await page.keyboard.press('Shift+Tab')
+    await expect(page.getByRole('navigation', { name: 'Sayfa bölümleri' }).getByRole('link', { name })).toBeFocused()
+  }
+  // The shared site header puts its own template link before the in-page section navigation.
+  await page.keyboard.press('Shift+Tab')
+  await expect(page.getByRole('navigation', { name: 'Ana gezinme' }).getByRole('link', { name: 'Şablonlar' })).toBeFocused()
+  await page.keyboard.press('Shift+Tab')
+  await expect(page.getByRole('link', { name: 'Kutlio ana sayfa' })).toBeFocused()
   await page.keyboard.press('Shift+Tab')
   await expect(page.getByRole('link', { name: 'Ana içeriğe geç' })).toBeFocused()
   await page.keyboard.press('Enter')
@@ -136,3 +146,21 @@ test('hero primary action navigates to registration within the app', async ({ pa
   await expect(page).toHaveURL(/\/giris\/kayit$/)
   await expect(page.getByRole('heading', { name: 'Hesap oluştur' })).toBeVisible()
 })
+
+// Font metrics differ between platforms (the Windows and Linux CI fonts are not the same width). Widen all text
+// deterministically so this guards against the layout relying on one platform's narrower glyphs.
+for (const [failing, label] of [[false, 'live data'], [true, 'fallback state']] as const) {
+  test(`landing page does not overflow horizontally with wider font metrics (${label})`, async ({ page }, testInfo) => {
+    await mockApi(page, { failing })
+    await page.goto('/')
+    await applyZoom(page, testInfo.project.name)
+    await page.addStyleTag({ content: '* { letter-spacing: 0.12em !important; }' })
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await page.locator('.landing-faq__item').first().evaluate(element => { (element as HTMLDetailsElement).open = true })
+    const metrics = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }))
+    expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth)
+  })
+}
