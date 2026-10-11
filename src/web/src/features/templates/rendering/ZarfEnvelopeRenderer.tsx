@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useId, useRef, useState, type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import './zarf.css'
 import { InvitationOptionalSections } from './InvitationOptionalSections'
 import { type NormalizedInvitationRenderModel } from './model'
 import { DateVenue, Program, type TemplateRendererProps } from './renderers'
+import { CallaLilies, PressedFlower, Sprig } from './ZarfFlowers'
 import { resolveZarfAccent, zarfPalettes } from './zarfAccent'
 
 /**
@@ -86,12 +87,13 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
   const { t } = useTranslation()
   const [open, setOpen] = useState(initialOpen)
   const [revealed, setRevealed] = useState(initialOpen)
+  const grainId = `zarf-grain-${useId().replace(/:/g, '')}`
   const cardRef = useRef<HTMLDivElement>(null)
   const ctaRef = useRef<HTMLButtonElement>(null)
   const stageRef = useRef<HTMLElement>(null)
   const closeTimer = useRef<number | undefined>(undefined)
   const palette = zarfPalettes[resolveZarfAccent(model.accentColor)]
-  const style = { '--z-base': palette.base, '--z-ink': palette.ink, '--z-seal': palette.seal } as CSSProperties
+  const style = { '--z-base': palette.base, '--z-ink': palette.ink, '--z-seal': palette.seal, '--z-leaf': palette.leaf, '--z-stem': palette.stem } as CSSProperties
   const date = cardDate(model)
   const monogram = model.hostNames.map(name => name.at(0)?.toLocaleUpperCase('tr-TR')).filter(Boolean).slice(0, 2).join('') || 'D'
 
@@ -152,7 +154,17 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
 
           <div className="zarf__card" ref={cardRef} tabIndex={-1} role="group" aria-label="Tarihi not edin kartı" aria-hidden={!open}>
             <svg className="zarf__card-shape" viewBox="0 0 240 327" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+              <defs>
+                <pattern id={grainId} width="7" height="7" patternUnits="userSpaceOnUse">
+                  <circle cx="1.2" cy="1.5" r="0.45" /><circle cx="4.6" cy="3.2" r="0.35" /><circle cx="2.8" cy="5.9" r="0.4" />
+                </pattern>
+              </defs>
               <path d={cardPath} />
+              <path className="zarf__card-grain" d={cardPath} fill={`url(#${grainId})`} />
+              <path className="zarf__card-emboss" d={cardPath} transform="translate(120 163.5) scale(0.955) translate(-120 -163.5)" />
+              <rect className="zarf__card-gold" x="16" y="18" width="208" height="291" rx="12" />
+              <Sprig transform="translate(8 150) rotate(-18 15 28) scale(0.8)" />
+              <Sprig transform="translate(206 150) rotate(18 15 28) scale(0.8)" />
             </svg>
             <div className="zarf__card-body">
               <p className="zarf__card-script">Tarihi Not Edin</p>
@@ -184,15 +196,16 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
             <path className="zarf__pocket-side" d="M-2 -2L150 112L-2 204Z" />
             <path className="zarf__pocket-side" d="M302 -2L150 112L302 204Z" />
             <path className="zarf__pocket-bottom" d="M-2 204L150 96L302 204Z" />
+            <path className="zarf__pocket-gold" d="M-2 204L150 96L302 204" />
           </svg>
 
           <div className="zarf__flap" aria-hidden="true">
-            <svg className="zarf__flap-face zarf__flap-face--outer" viewBox="0 0 300 110" preserveAspectRatio="none" focusable="false"><path d={flapPath} /></svg>
-            <svg className="zarf__flap-face zarf__flap-face--inner" viewBox="0 0 300 110" preserveAspectRatio="none" focusable="false"><path d={flapPath} /></svg>
+            <svg className="zarf__flap-face zarf__flap-face--outer" viewBox="0 0 300 110" preserveAspectRatio="none" focusable="false"><path d={flapPath} /><path className="zarf__flap-gold" d={flapPath} transform="translate(0 -5)" /></svg>
+            <svg className="zarf__flap-face zarf__flap-face--inner" viewBox="0 0 300 110" preserveAspectRatio="none" focusable="false"><path d={flapPath} /><PressedFlower /></svg>
           </div>
 
           <div className="zarf__seal" aria-hidden="true"><span>{monogram}</span></div>
-          <Flower className="zarf__flower zarf__flower--envelope" />
+          <CallaLilies className="zarf__calla" />
         </div>
       </div>
 

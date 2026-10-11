@@ -19,15 +19,18 @@ interface ZarfPalette {
   ink: string
   /** Wax-seal colour (white monogram on top, decorative). */
   seal: string
+  /** Foliage colours for the botanicals: muted greens tuned per palette so they read on the envelope. */
+  leaf: string
+  stem: string
 }
 
 export const zarfPalettes: Record<ZarfAccentKey, ZarfPalette> = {
-  adacayi: { base: '#9db8a0', ink: '#27402f', seal: '#4e6e57' },
-  'pudra-pembe': { base: '#e8b4bc', ink: '#5e2634', seal: '#a8506a' },
-  krem: { base: '#e6d8bb', ink: '#4d3e1f', seal: '#8a6d2f' },
-  bordo: { base: '#8c2f3f', ink: '#4a1420', seal: '#5c1522' },
-  lacivert: { base: '#2f4a78', ink: '#1b2b4a', seal: '#1d2e4d' },
-  lavanta: { base: '#b7a6d6', ink: '#35295a', seal: '#6b55a0' },
+  adacayi: { base: '#9db8a0', ink: '#27402f', seal: '#4e6e57', leaf: '#4d7658', stem: '#3e6049' },
+  'pudra-pembe': { base: '#e8b4bc', ink: '#5e2634', seal: '#a8506a', leaf: '#6d8f6c', stem: '#56764f' },
+  krem: { base: '#e6d8bb', ink: '#4d3e1f', seal: '#8a6d2f', leaf: '#7a8a52', stem: '#5f6e3e' },
+  bordo: { base: '#8c2f3f', ink: '#4a1420', seal: '#5c1522', leaf: '#8fae88', stem: '#a8c2a0' },
+  lacivert: { base: '#2f4a78', ink: '#1b2b4a', seal: '#1d2e4d', leaf: '#86a9a0', stem: '#a3c1b8' },
+  lavanta: { base: '#b7a6d6', ink: '#35295a', seal: '#6b55a0', leaf: '#5f7f66', stem: '#496b52' },
 }
 
 export function resolveZarfAccent(value: string | null | undefined): ZarfAccentKey {
