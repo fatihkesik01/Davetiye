@@ -12,6 +12,8 @@ interface InvitationRendererProps {
   previewContext: PreviewContext
   onOpenChange?: (open: boolean) => void
   initialOpen?: boolean
+  open?: boolean
+  hideInlineClose?: boolean
 }
 
 export function InvitationRenderer({
@@ -21,6 +23,8 @@ export function InvitationRenderer({
   previewContext,
   onOpenChange,
   initialOpen,
+  open,
+  hideInlineClose,
 }: InvitationRendererProps) {
   const registration = resolveTemplateRenderer(templateKey, rendererVersion)
   if (!registration) {
@@ -39,14 +43,17 @@ export function InvitationRenderer({
     className="invitation-renderer"
     data-preview-context={previewContext}
     data-renderer={`${templateKey}@${rendererVersion}`}
-  ><Renderer model={shown} onOpenChange={onOpenChange} initialOpen={initialOpen} /></div>
+  ><Renderer model={shown} onOpenChange={onOpenChange} initialOpen={initialOpen} open={open} hideInlineClose={hideInlineClose} /></div>
 }
 
 export function TemplateDemoRenderer({
   templateKey,
   rendererVersion,
   accentColor,
-}: Pick<InvitationRendererProps, 'templateKey' | 'rendererVersion'> & { accentColor?: ZarfAccentKey }) {
+  open,
+  onOpenChange,
+  hideInlineClose,
+}: Pick<InvitationRendererProps, 'templateKey' | 'rendererVersion' | 'open' | 'onOpenChange' | 'hideInlineClose'> & { accentColor?: ZarfAccentKey }) {
   const demoModel = getTemplateDemoModel(templateKey)
   const model = demoModel && accentColor ? { ...demoModel, accentColor } : demoModel
   if (!model) return <section className="renderer-unavailable" role="status">Demo içeriği bulunamadı.</section>
@@ -55,5 +62,8 @@ export function TemplateDemoRenderer({
     rendererVersion={rendererVersion}
     model={model}
     previewContext="demo"
+    open={open}
+    onOpenChange={onOpenChange}
+    hideInlineClose={hideInlineClose}
   />
 }

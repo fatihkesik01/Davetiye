@@ -263,4 +263,5 @@
 .template-fullpage-demo__bar { inset-block-end: max(0.75rem, env(safe-area-inset-bottom)); inset-inline: 0.75rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; max-width: 40rem; margin-inline: auto; padding: 0.4rem 0.75rem; border-radius: 1.2rem; color: #1f2933; }
 .template-fullpage-demo__bar legend { color: #1f2933; }
 .template-fullpage-demo__start { display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0 1.1rem; border-radius: 999px; color: #fff; background: #1f2933; font-size: 0.9rem; font-weight: 700; text-decoration: none; }
-.template-fullpage-demo__back:focus-visible, .template-fullpage-demo__start:focus-visible { outline: 3px solid #1f2933; outline-offset: 2px; }
+.template-fullpage-demo__close { display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0 1.1rem; border: 1px solid #1f2933; border-radius: 999px; color: #1f2933; background: transparent; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
+.template-fullpage-demo__close:focus-visible, .template-fullpage-demo__back:focus-visible, .template-fullpage-demo__start:focus-visible { outline: 3px solid #1f2933; outline-offset: 2px; }

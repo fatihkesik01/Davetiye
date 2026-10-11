@@ -56,6 +56,22 @@ describe('public invitation access', () => {
     fireEvent.click(open)
     expect(container.querySelector('.public-invitation-zone')).not.toBeNull()
     expect(container.textContent).toContain('Gizli duyuru')
+    expect(container.querySelector('.zarf__close')).not.toBeNull() // inline close stays on the public page
+    expect(localStorage.length + sessionStorage.length).toBe(0)
+  })
+
+  it('starts closed again on every load (a fresh mount never inherits an earlier open state)', async () => {
+    const zarf = { ...active, templateKey: 'zarf-davetiye' }
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => String(url).endsWith('/views')
+      ? Promise.resolve(new Response(null, { status: 204 }))
+      : Promise.resolve(new Response(JSON.stringify(url === '/api/v1/templates' ? [] : zarf)))))
+    const first = render(<PublicInvitationPage pathname={`/davetiye/${code}`} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Davetiyeyi Aç' }))
+    expect(first.container.querySelector('.zarf--open')).not.toBeNull()
+    first.unmount()
+    const second = render(<PublicInvitationPage pathname={`/davetiye/${code}`} />)
+    expect(await screen.findByRole('button', { name: 'Davetiyeyi Aç' })).toBeTruthy()
+    expect(second.container.querySelector('.zarf--open')).toBeNull()
   })
 
   it('requests short-lived delivery only for media in the active snapshot and renders accessible media', async () => {

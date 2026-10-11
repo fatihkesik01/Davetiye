@@ -12,6 +12,10 @@ export interface TemplateRendererProps {
   onOpenChange?: (open: boolean) => void
   /** Start already opened (the public page keeps the choice across its periodic access re-checks). */
   initialOpen?: boolean
+  /** Controlled open state: when it changes the envelope follows (opening or playing the closing animation). */
+  open?: boolean
+  /** Hide the inline close button because the host page offers its own control. */
+  hideInlineClose?: boolean
 }
 
 export function DateVenue({ model, compact = false }: TemplateRendererProps & { compact?: boolean }) {

@@ -80,7 +80,7 @@ function prefersReducedMotion(): boolean {
   return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false }: TemplateRendererProps) {
+export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false, open: controlledOpen, hideInlineClose = false }: TemplateRendererProps) {
   // `open` drives the animation classes; `revealed` mounts the rest of the invitation. Nothing but the
   // cover exists in the DOM until the envelope has been opened, and it is removed again after closing.
   const { t } = useTranslation()
@@ -105,6 +105,9 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false 
     window.requestAnimationFrame(() => cardRef.current?.focus({ preventScroll: true }))
   }
 
+  const openRef = useRef(open)
+  useEffect(() => { openRef.current = open }, [open])
+
   const closeEnvelope = () => {
     setOpen(false)
     const finish = () => {
@@ -115,6 +118,17 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false 
     if (prefersReducedMotion()) finish()
     else closeTimer.current = window.setTimeout(finish, closeAnimationMs)
   }
+
+  // Controlled mode: follow the host's request (its own control opens/closes the envelope). This
+  // synchronises with an external prop and starts a timer, so it has to be an effect.
+  useEffect(() => {
+    if (controlledOpen === undefined || controlledOpen === openRef.current) return
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (controlledOpen) openEnvelope()
+    else closeEnvelope()
+    /* eslint-enable react-hooks/set-state-in-effect */
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reacts only to the host's request
+  }, [controlledOpen])
 
   return <article className={`invitation-template zarf${open ? ' zarf--open' : ''}`} aria-label={model.headline} style={style}>
     <section className="zarf__stage">
@@ -179,7 +193,7 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false 
         {open
           ? <>
             {model.message ? <p className="zarf__hint" role="status">{model.message}</p> : null}
-            <button type="button" className="zarf__close" onClick={closeEnvelope}>{t('templateUi.zarf.close')}</button>
+            {hideInlineClose ? null : <button type="button" className="zarf__close" onClick={closeEnvelope}>{t('templateUi.zarf.close')}</button>}
           </>
           : <button type="button" className="zarf__cta" ref={ctaRef} aria-expanded={false} onClick={openEnvelope}>{t('templateUi.zarf.open')}</button>}
       </div>
