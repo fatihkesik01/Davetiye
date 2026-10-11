@@ -42,6 +42,13 @@ kopyalanmaz, CSS/SVG ile özgün çizilir.
   (`docs/DEPLOYMENT.md`: medya Phase 11 kapılarına kadar kapalı); demo ve
   önizleme paketlenmiş örnek görselle çalışır.
 
+**Demo fotoğrafı:** "two person holding hands", Belle Collective,
+[Unsplash](https://unsplash.com/photos/two-person-holding-hands-QdFkiLk5onU)
+(Unsplash Lisansı: ticari kullanım serbest, atıf zorunlu değil; yine de
+kaynak burada kayıtlıdır). Dosya: `src/web/public/template-demo/zarf-davetiye-photo.jpg`
+(900x1349). Yalnızca creator'ın Cover fotoğrafı yokken demo, editör önizlemesi
+ve `/onizleme`'de görünür; yayınlanmış public sayfada gösterilmez.
+
 **Teknik not:** Yeni code-owned şablon; mevcut sekiz şablonla aynı
 `(templateKey, rendererVersion)` sözleşmesini kullanır. `accentColor`,
 taslak içeriğe eklenen isteğe bağlı bir alandır.

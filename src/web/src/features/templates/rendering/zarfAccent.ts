@@ -5,7 +5,7 @@ export const zarfTemplateKey = 'zarf-davetiye'
  * preview and /onizleme when no real Cover image exists. Swapping the file or its extension is a
  * one-line change here.
  */
-export const zarfDemoPhotoUrl = '/template-demo/zarf-davetiye-photo.svg'
+export const zarfDemoPhotoUrl = '/template-demo/zarf-davetiye-photo.jpg'
 
 /** Curated accent keys. Content only ever carries one of these keys, never a raw colour value. */
 export const zarfAccentKeys = ['adacayi', 'pudra-pembe', 'krem', 'bordo', 'lacivert', 'lavanta'] as const
