@@ -3,6 +3,15 @@ import { describe, expect, it } from 'vitest'
 import { emptyEditableDraft, toDraftContent, toEditableDraft } from './draftModel'
 
 describe('draftModel', () => {
+  it('round-trips the zarf look (colour, ambiance, flowers) through the autosaved content', () => {
+    const content = toDraftContent({ ...emptyEditableDraft, accentColor: 'bordo', ambiance: 'gece', flora: 'kiraz' })
+    expect(content).toMatchObject({ accentColor: 'bordo', ambiance: 'gece', flora: 'kiraz' })
+    expect(toEditableDraft(content)).toMatchObject({ accentColor: 'bordo', ambiance: 'gece', flora: 'kiraz' })
+    const defaults = toDraftContent(emptyEditableDraft)
+    expect(defaults).not.toHaveProperty('ambiance')
+    expect(defaults).not.toHaveProperty('flora')
+  })
+
   it('does not persist an unconfirmed time zone', () => {
     const content = toDraftContent({
       ...emptyEditableDraft,

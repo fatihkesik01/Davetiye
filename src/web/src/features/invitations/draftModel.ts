@@ -38,6 +38,9 @@ export interface EditableDraftContent {
   additionalProgramItems: DraftProgramItemInput[]
   /** zarf-davetiye palette key; empty means the template default. */
   accentColor: string
+  /** zarf-davetiye page mood and flower type; empty means the template defaults. */
+  ambiance: string
+  flora: string
 }
 
 export const emptyEditableDraft: EditableDraftContent = {
@@ -56,6 +59,8 @@ export const emptyEditableDraft: EditableDraftContent = {
   programStartsAtLocal: '',
   additionalProgramItems: [],
   accentColor: '',
+  ambiance: '',
+  flora: '',
 }
 
 export function toEditableDraft(content: DraftContentInput): EditableDraftContent {
@@ -79,6 +84,8 @@ export function toEditableDraft(content: DraftContentInput): EditableDraftConten
     programStartsAtLocal: toLocalDateTime(firstProgramItem?.startsAt),
     additionalProgramItems: programItems.slice(1),
     accentColor: content.accentColor ?? '',
+    ambiance: content.ambiance ?? '',
+    flora: content.flora ?? '',
   }
 }
 
@@ -97,6 +104,8 @@ export function toDraftContent(content: EditableDraftContent): DraftContentInput
     ...(content.faqs.length ? { faqs: content.faqs } : {}),
     ...(content.transportStops.length ? { transportStops: content.transportStops } : {}),
     ...(content.accentColor ? { accentColor: content.accentColor } : {}),
+    ...(content.ambiance ? { ambiance: content.ambiance } : {}),
+    ...(content.flora ? { flora: content.flora } : {}),
     eventType: nullIfBlank(content.eventType),
     headline: nullIfBlank(content.headline),
     hostNames: content.hostNamesText

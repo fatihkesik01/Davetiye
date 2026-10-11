@@ -1,5 +1,6 @@
 import type { DraftContentInput } from '../../../api/generated/client'
 import { resolveZarfAccent, type ZarfAccentKey } from './zarfAccent'
+import { resolveZarfAmbiance, resolveZarfFlora, type ZarfAmbianceKey, type ZarfFloraKey } from './zarfTheme'
 
 export interface InvitationRenderVenue {
   name: string
@@ -31,6 +32,9 @@ export interface NormalizedInvitationRenderModel {
   programItems: InvitationRenderProgramItem[]
   /** Curated palette key (zarf-davetiye). Always a known key, never raw content. */
   accentColor?: ZarfAccentKey
+  /** Page mood and flower type (zarf-davetiye); always known keys, never raw content. */
+  ambiance?: ZarfAmbianceKey
+  flora?: ZarfFloraKey
   /** Short-lived delivery URL of the Cover photo, supplied by the public page for templates that place it inline. */
   coverImageUrl?: string
 }
@@ -60,6 +64,8 @@ export function normalizeDraftContent(content: DraftContentInput): NormalizedInv
     faqs: (content.faqs ?? []).map(faq => ({ question: faq.question.trim(), answer: faq.answer.trim() })).filter(faq => faq.question && faq.answer),
     transportStops: (content.transportStops ?? []).map(stop => ({ name: stop.name.trim(), address: stop.address?.trim() || undefined, departureTime: stop.departureTime?.trim() || undefined })).filter(stop => stop.name),
     accentColor: content.accentColor?.trim() ? resolveZarfAccent(content.accentColor) : undefined,
+    ambiance: content.ambiance?.trim() ? resolveZarfAmbiance(content.ambiance) : undefined,
+    flora: content.flora?.trim() ? resolveZarfFlora(content.flora) : undefined,
     eventType: content.eventType?.trim() || 'genel',
     headline: content.headline?.trim() || 'Etkinlik başlığı',
     hostNames,

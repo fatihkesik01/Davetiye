@@ -2,6 +2,7 @@ import { getTemplateDemoModel } from './demoData'
 import { templateRendersCoverInline, type NormalizedInvitationRenderModel } from './model'
 import { resolveTemplateRenderer } from './registry'
 import { zarfDemoPhotoUrl, type ZarfAccentKey } from './zarfAccent'
+import type { ZarfAmbianceKey, ZarfFloraKey } from './zarfTheme'
 
 export type PreviewContext = 'demo' | 'creator' | 'public'
 
@@ -50,12 +51,14 @@ export function TemplateDemoRenderer({
   templateKey,
   rendererVersion,
   accentColor,
+  ambiance,
+  flora,
   open,
   onOpenChange,
   hideInlineClose,
-}: Pick<InvitationRendererProps, 'templateKey' | 'rendererVersion' | 'open' | 'onOpenChange' | 'hideInlineClose'> & { accentColor?: ZarfAccentKey }) {
+}: Pick<InvitationRendererProps, 'templateKey' | 'rendererVersion' | 'open' | 'onOpenChange' | 'hideInlineClose'> & { accentColor?: ZarfAccentKey; ambiance?: ZarfAmbianceKey; flora?: ZarfFloraKey }) {
   const demoModel = getTemplateDemoModel(templateKey)
-  const model = demoModel && accentColor ? { ...demoModel, accentColor } : demoModel
+  const model = demoModel ? { ...demoModel, ...(accentColor ? { accentColor } : {}), ...(ambiance ? { ambiance } : {}), ...(flora ? { flora } : {}) } : demoModel
   if (!model) return <section className="renderer-unavailable" role="status">Demo içeriği bulunamadı.</section>
   return <InvitationRenderer
     templateKey={templateKey}

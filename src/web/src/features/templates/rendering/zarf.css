@@ -17,7 +17,10 @@
   --z-serif: Georgia, "Times New Roman", serif;
   min-height: 0;
   padding: 0;
-  color: var(--z-ink);
+  --z-text: var(--z-ink);
+  --z-cta-bg: var(--z-ink);
+  --z-cta-fg: #fff;
+  color: var(--z-text);
   background:
     radial-gradient(60rem 30rem at 50% -8%, color-mix(in srgb, var(--z-base) 24%, #fff), transparent 70%),
     var(--z-page);
@@ -170,16 +173,16 @@
   padding: 0.75rem 1.9rem;
   border: 0;
   border-radius: 999px;
-  color: #fff;
-  background: var(--z-ink);
-  box-shadow: 0 0.35rem 0.9rem color-mix(in srgb, var(--z-ink) 30%, transparent);
+  color: var(--z-cta-fg);
+  background: var(--z-cta-bg);
+  box-shadow: 0 0.35rem 0.9rem color-mix(in srgb, var(--z-text) 30%, transparent);
   font-family: var(--z-script);
   font-size: 1.35rem;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .zarf__cta:hover { transform: translateY(-2px); }
-.zarf__cta:focus-visible { outline: 3px solid var(--z-ink); outline-offset: 4px; }
+.zarf__cta:focus-visible { outline: 3px solid var(--z-text); outline-offset: 4px; }
 .zarf__hint { max-width: 30rem; margin: 0 auto; font-style: italic; line-height: 1.5; }
 
 .zarf__details {
@@ -198,7 +201,7 @@
 .zarf__details > :nth-child(4) { animation-delay: 0.24s; }
 .zarf .invitation-optional-sections { animation-delay: 0.3s; }
 @keyframes zarf-reveal { from { opacity: 0; transform: translateY(0.6rem); } to { opacity: 1; transform: none; } }
-.zarf__details .invite-facts, .zarf__details .invite-program li { border-color: color-mix(in srgb, var(--z-ink) 45%, transparent); }
+.zarf__details .invite-facts, .zarf__details .invite-program li { border-color: color-mix(in srgb, var(--z-text) 45%, transparent); }
 .zarf__details .invite-program { margin: 0; }
 .zarf__signature { margin: 0; font-family: var(--z-script); font-size: clamp(1.8rem, 7cqi, 2.6rem); }
 .zarf .invitation-optional-sections { width: min(100%, 44rem); margin-inline: auto; padding: 0 1.25rem 3rem; text-align: start; }
@@ -227,15 +230,15 @@
 .zarf__close {
   min-height: 3rem;
   padding: 0.5rem 1.4rem;
-  border: 1px solid color-mix(in srgb, var(--z-ink) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--z-text) 55%, transparent);
   border-radius: 999px;
-  color: var(--z-ink);
+  color: var(--z-text);
   background: transparent;
   font-size: 0.95rem;
   cursor: pointer;
 }
 .zarf__close:hover { background: color-mix(in srgb, var(--z-base) 25%, transparent); }
-.zarf__close:focus-visible { outline: 3px solid var(--z-ink); outline-offset: 3px; }
+.zarf__close:focus-visible { outline: 3px solid var(--z-text); outline-offset: 3px; }
 
 .zarf-accent-picker--compact { display: flex; align-items: center; gap: 0.6rem; }
 .zarf-accent-picker--compact legend { float: left; margin-inline-end: 0.6rem; font-size: 0.85rem; }
@@ -259,14 +262,9 @@
 .template-fullpage-demo__bar > * { flex: none; }
 @media (max-width: 30rem) {
   .template-fullpage-demo__bar { gap: 0.3rem; padding: 0.3rem 0.4rem; }
-  .template-fullpage-demo__bar legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .template-fullpage-demo__bar .zarf-accent-picker--compact { gap: 0; }
-  .template-fullpage-demo__bar .zarf-accent-picker__swatches { gap: 0; }
-  .template-fullpage-demo__bar .zarf-accent-picker__swatch { padding: 0.3rem 0.15rem; }
-  .template-fullpage-demo__bar .zarf-accent-picker__dot { width: 1.7rem; height: 1.7rem; border-width: 2px; }
   .template-fullpage-demo__long { display: none; }
   .template-fullpage-demo__short { display: inline; }
-  .template-fullpage-demo__close, .template-fullpage-demo__start { min-height: 2.5rem; padding: 0 0.7rem; font-size: 0.85rem; }
+  .template-fullpage-demo__close, .template-fullpage-demo__start, .template-fullpage-demo__custom { min-height: 2.5rem; padding: 0 0.7rem; font-size: 0.85rem; }
 }
 
 /* Reserve the scrollbar on any page showing the envelope so opening it (which makes the page taller)
@@ -303,13 +301,16 @@ html:has(.zarf) { scrollbar-gutter: stable; }
 .zarf__card-gold { fill: none; stroke: var(--z-gold); stroke-width: 0.8; opacity: 0.65; }
 .zarf__flap-gold { fill: none; stroke: var(--z-gold); stroke-width: 1.1; opacity: 0.6; }
 .zarf__pocket-gold { fill: none; stroke: var(--z-gold); stroke-width: 1; opacity: 0.55; }
-.zarf__card-shape .zarf-art__rose-1, .zarf__card-shape .zarf-art__rose-2 { stroke: none; }
+.zarf__card-shape .zarf-art__rose-1, .zarf__card-shape .zarf-art__rose-2, .zarf__card-shape .zarf-art__fl-1, .zarf__card-shape .zarf-art__fl-2, .zarf__card-shape .zarf-art__fl-3 { stroke: none; }
+.zarf__card-shape .zarf-art__fl-line { stroke: var(--z-fl2); }
 
 
 /* Roses: layered petals tinted by the palette's rose colour. */
-.zarf-art__rose-1 { fill: var(--z-rose); }
-.zarf-art__rose-2 { fill: color-mix(in srgb, var(--z-rose) 82%, var(--z-ink)); }
-.zarf-art__rose-swirl { stroke: color-mix(in srgb, var(--z-rose) 50%, var(--z-ink)); stroke-width: 1; }
+.zarf-art__rose-1, .zarf-art__fl-1 { fill: var(--z-fl1); }
+.zarf-art__rose-2, .zarf-art__fl-2 { fill: var(--z-fl2); }
+.zarf-art__fl-3 { fill: var(--z-fl3); }
+.zarf-art__fl-line { stroke: var(--z-fl2); stroke-width: 1.6; }
+.zarf-art__rose-swirl { stroke: var(--z-fl3); stroke-width: 1; }
 .zarf__roses { position: absolute; z-index: 6; inset-block-end: 2%; inset-inline-end: 3%; width: 30%; height: auto; pointer-events: none; }
 .zarf__card-gold { stroke-width: 0.9; }
 
@@ -333,4 +334,102 @@ html:has(.zarf) { scrollbar-gutter: stable; }
 .zarf-garden__layer--blooms { animation-name: zarf-pop; animation-duration: 0.6s; animation-delay: 0.7s; }
 @keyframes zarf-grow { from { opacity: 0; transform: scale(0.08) rotate(-8deg); } 55% { opacity: 1; } to { opacity: 1; transform: none; } }
 @keyframes zarf-pop { from { opacity: 0; transform: scale(0.4); } 70% { opacity: 1; transform: scale(1.04); } to { opacity: 1; transform: none; } }
-.zarf-art__blossom { fill: color-mix(in srgb, var(--z-rose) 70%, #fff); stroke: color-mix(in srgb, var(--z-rose) 40%, var(--z-ink)); stroke-width: 0.4; }
+.zarf-art__blossom { fill: color-mix(in srgb, var(--z-fl1) 70%, #fff); stroke: color-mix(in srgb, var(--z-fl2) 80%, #fff); stroke-width: 0.4; }
+
+/* ---------- ambiances: the whole surrounding mood (background tokens, text tokens, creatures) ---------- */
+.zarf { --z-wash: color-mix(in srgb, var(--z-base) 9%, transparent); }
+.zarf--amb-sabah {
+  background:
+    linear-gradient(112deg, rgb(255 255 255 / 0.55) 0 5%, transparent 5% 17%, rgb(255 255 255 / 0.38) 17% 21%, transparent 21% 100%) top / 100% 58% no-repeat,
+    radial-gradient(60rem 30rem at 50% -8%, color-mix(in srgb, var(--z-base) 24%, #fff), transparent 70%),
+    var(--z-page);
+}
+.zarf--amb-cayir {
+  background:
+    linear-gradient(var(--z-wash), var(--z-wash)),
+    radial-gradient(40rem 22rem at 82% -6%, rgb(255 238 176 / 0.85), transparent 70%),
+    linear-gradient(180deg, #fff4d2 0%, #f9e0a0 55%, #f3cf78 100%);
+}
+.zarf--amb-gunbatimi {
+  background:
+    linear-gradient(var(--z-wash), var(--z-wash)),
+    radial-gradient(34rem 18rem at 50% 6%, rgb(255 226 160 / 0.75), transparent 70%),
+    linear-gradient(180deg, #ffe7d6 0%, #ffc9a6 48%, #ffb184 100%);
+}
+.zarf--amb-safak {
+  background:
+    linear-gradient(var(--z-wash), var(--z-wash)),
+    radial-gradient(40rem 20rem at 20% -4%, rgb(255 255 255 / 0.6), transparent 70%),
+    linear-gradient(180deg, #ffe8ef 0%, #ffd3e0 55%, #f7bacb 100%);
+}
+.zarf--amb-gece {
+  --z-text: #f6f1e5;
+  --z-cta-bg: #f6f1e5;
+  --z-cta-fg: #14204a;
+  background:
+    radial-gradient(1.5px 1.5px at 8% 5%, #fff 98%, transparent), radial-gradient(1.2px 1.2px at 23% 11%, #fff 98%, transparent),
+    radial-gradient(1.6px 1.6px at 41% 4%, #fff 98%, transparent), radial-gradient(1.2px 1.2px at 57% 14%, #fff 98%, transparent),
+    radial-gradient(1.5px 1.5px at 72% 6%, #fff 98%, transparent), radial-gradient(1.3px 1.3px at 90% 12%, #fff 98%, transparent),
+    radial-gradient(1.2px 1.2px at 15% 24%, #fff 98%, transparent), radial-gradient(1.5px 1.5px at 33% 31%, #fff 98%, transparent),
+    radial-gradient(1.2px 1.2px at 66% 27%, #fff 98%, transparent), radial-gradient(1.6px 1.6px at 84% 35%, #fff 98%, transparent),
+    radial-gradient(1.2px 1.2px at 6% 46%, #fff 98%, transparent), radial-gradient(1.3px 1.3px at 94% 52%, #fff 98%, transparent),
+    linear-gradient(180deg, #0e1738 0%, #19265c 55%, #2a2d72 100%);
+}
+.zarf--amb-gece .zarf__details a, .zarf--amb-gece .invitation-optional-sections a { color: #ffe9a8; }
+
+/* ---------- flora: petal colours per flower type, tinted by the envelope accent ---------- */
+.zarf--flora-gul { --z-fl1: var(--z-rose); --z-fl2: color-mix(in srgb, var(--z-rose) 82%, var(--z-ink)); --z-fl3: color-mix(in srgb, var(--z-rose) 50%, var(--z-ink)); }
+.zarf--flora-papatya { --z-fl1: #fffdf6; --z-fl2: color-mix(in srgb, #efe3c4 80%, var(--z-base)); --z-fl3: #f0b92b; }
+.zarf--flora-lale { --z-fl1: color-mix(in srgb, #ea6f8b 80%, var(--z-seal)); --z-fl2: color-mix(in srgb, #c24668 82%, var(--z-ink)); --z-fl3: #f6d3dd; }
+.zarf--flora-lavanta { --z-fl1: color-mix(in srgb, #a48fd4 82%, var(--z-seal)); --z-fl2: color-mix(in srgb, #7a64b2 82%, var(--z-ink)); --z-fl3: #c9bde6; }
+.zarf--flora-kiraz { --z-fl1: color-mix(in srgb, #fcdde7 88%, var(--z-base)); --z-fl2: color-mix(in srgb, #f3a9bd 85%, var(--z-seal)); --z-fl3: #e2708d; }
+
+/* ---------- creatures (butterflies, bees, dragonflies, fireflies, ladybugs) and cherry petals ---------- */
+.zarf-critter, .zarf-petal { position: absolute; z-index: 2; pointer-events: none; }
+.zarf-critter { font-size: var(--gw); width: max(1.1rem, 0.15em); animation: zarf-drift-a 16s ease-in-out infinite; animation-delay: calc(var(--i) * -5.3s); }
+.zarf-critter--path-1 { animation-name: zarf-drift-b; animation-duration: 21s; }
+.zarf-critter--path-2 { animation-name: zarf-drift-c; animation-duration: 18s; }
+.zarf-critter--ladybug { width: max(0.9rem, 0.1em); animation-name: zarf-crawl; animation-duration: 15s; animation-direction: alternate; }
+.zarf-critter svg, .zarf-petal svg { display: block; width: 100%; height: auto; overflow: visible; }
+/* Wing beat and glow animate the whole (tiny) SVG element so they stay compositor-only. */
+.zarf-critter--butterfly svg, .zarf-critter--bee svg, .zarf-critter--dragonfly svg { animation: zarf-flap 0.45s ease-in-out infinite alternate; }
+.zarf-critter--firefly svg { animation: zarf-glow 2.8s ease-in-out infinite; animation-delay: calc(var(--i) * -0.9s); }
+.zarf-critter__wing-a { fill: color-mix(in srgb, var(--z-fl1) 78%, #fff); stroke: color-mix(in srgb, var(--z-fl2) 70%, #fff); stroke-width: 0.5; }
+.zarf-critter__wing-b { fill: #f5c660; }
+.zarf-critter__wing { fill: rgb(255 255 255 / 0.72); stroke: rgb(0 0 0 / 0.15); stroke-width: 0.4; }
+.zarf-critter__bee { fill: #f2b632; }
+.zarf-critter__stripe { stroke: #3a2a1f; stroke-width: 2; }
+.zarf-critter__stripe-fill { fill: #3a2a1f; }
+.zarf-critter__dragon { fill: #e0566c; }
+.zarf-critter__lady { fill: #d63b3b; }
+.zarf-critter__halo { fill: #ffe98a; opacity: 0.4; }
+.zarf-critter__spark { fill: #fff6b0; }
+.zarf-petal { top: -2%; font-size: var(--gw); width: 0.07em; animation: zarf-fall 11s linear infinite; animation-delay: calc(var(--i) * -3.7s); }
+.zarf-petal__shape { fill: var(--z-fl1); stroke: color-mix(in srgb, var(--z-fl2) 80%, #fff); stroke-width: 0.4; }
+@keyframes zarf-drift-a { 0%, 100% { transform: translate(0, 0) rotate(-6deg); } 25% { transform: translate(0.18em, -0.12em) rotate(8deg); } 50% { transform: translate(0.3em, 0.05em) rotate(-4deg); } 75% { transform: translate(0.12em, 0.16em) rotate(6deg); } }
+@keyframes zarf-drift-b { 0%, 100% { transform: translate(0, 0) rotate(4deg); } 30% { transform: translate(-0.1em, 0.14em) rotate(-8deg); } 60% { transform: translate(0.2em, 0.22em) rotate(6deg); } 80% { transform: translate(0.26em, -0.06em) rotate(-3deg); } }
+@keyframes zarf-drift-c { 0%, 100% { transform: translate(0, 0) rotate(-3deg); } 35% { transform: translate(0.24em, 0.1em) rotate(7deg); } 70% { transform: translate(0.1em, -0.18em) rotate(-7deg); } }
+@keyframes zarf-crawl { from { transform: translate(0, 0) rotate(38deg); } to { transform: translate(0.11em, -0.13em) rotate(38deg); } }
+@keyframes zarf-flap { from { transform: scaleX(1); } to { transform: scaleX(0.55); } }
+@keyframes zarf-glow { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+@keyframes zarf-fall { 0% { opacity: 0; transform: translate(0, 0) rotate(0deg); } 12% { opacity: 0.95; } 100% { opacity: 0; transform: translate(0.28em, 1.5em) rotate(240deg); } }
+@media (prefers-reduced-motion: reduce) { .zarf-critter, .zarf-petal { display: none; } }
+
+/* ---------- look pickers (editor and demo panel) ---------- */
+.zarf-look-pickers { display: grid; gap: 1rem; }
+.zarf-chip-amb { border-color: #fff; }
+.zarf-chip-amb--sabah { background: linear-gradient(135deg, #dff0cf, #fff6d6); }
+.zarf-chip-amb--cayir { background: linear-gradient(135deg, #ffeaa8, #f1c25a); }
+.zarf-chip-amb--gunbatimi { background: linear-gradient(160deg, #ffd3b2, #ff9d86 60%, #f7c768); }
+.zarf-chip-amb--gece { background: linear-gradient(160deg, #121c47, #3a3d86); }
+.zarf-chip-amb--safak { background: linear-gradient(160deg, #ffdbe7, #f3a5be); }
+.zarf-chip-flora { display: grid; place-items: center; background: #f4f1ea; }
+.zarf-chip-flora svg { display: block; width: 84%; height: 84%; }
+
+/* ---------- demo bar: a compact control with a customise panel ---------- */
+.template-fullpage-demo__custom { display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0 1.1rem; border: 1px solid #1f2933; border-radius: 999px; color: #1f2933; background: #fff; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
+.template-fullpage-demo__custom[aria-expanded="true"] { color: #fff; background: #1f2933; }
+.template-fullpage-demo__custom:focus-visible { outline: 3px solid #1f2933; outline-offset: 2px; }
+.template-fullpage-demo__panel { position: absolute; inset-block-end: calc(100% + 0.5rem); inset-inline: 0; display: grid; max-height: 62svh; padding: 0.9rem 1rem; overflow: auto; border-radius: 1.2rem; color: #1f2933; background: #fff; box-shadow: 0 0.4rem 1.4rem rgb(0 0 0 / 0.28); }
+.template-fullpage-demo__panel legend { color: #1f2933; font-size: 0.85rem; }
+.template-fullpage-demo__panel .zarf-accent-picker__dot { width: 2.4rem; height: 2.4rem; }

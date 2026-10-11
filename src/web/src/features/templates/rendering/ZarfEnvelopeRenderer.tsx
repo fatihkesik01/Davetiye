@@ -5,8 +5,9 @@ import './zarf.css'
 import { InvitationOptionalSections } from './InvitationOptionalSections'
 import { type NormalizedInvitationRenderModel } from './model'
 import { DateVenue, Program, type TemplateRendererProps } from './renderers'
-import { CallaLilies, Garden, PressedFlower, Rose, RoseCluster } from './ZarfFlowers'
+import { CallaLilies, FloraCluster, FloraHead, Garden, PressedFlower } from './ZarfFlowers'
 import { resolveZarfAccent, zarfPalettes } from './zarfAccent'
+import { resolveZarfAmbiance, resolveZarfFlora } from './zarfTheme'
 
 /**
  * Scalloped heart outline for the Save-the-Date card: the classic parametric heart sampled at equal
@@ -113,7 +114,15 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
   const closeTimer = useRef<number | undefined>(undefined)
   const revealTimer = useRef<number | undefined>(undefined)
   const palette = zarfPalettes[resolveZarfAccent(model.accentColor)]
-  const style = { '--z-base': palette.base, '--z-ink': palette.ink, '--z-seal': palette.seal, '--z-leaf': palette.leaf, '--z-stem': palette.stem, '--z-rose': palette.rose } as CSSProperties
+  const ambiance = resolveZarfAmbiance(model.ambiance)
+  const flora = resolveZarfFlora(model.flora)
+  // On the dark ambiance the foliage is lightened so the frame stays visible against the night sky.
+  const night = ambiance === 'gece'
+  const style = {
+    '--z-base': palette.base, '--z-ink': palette.ink, '--z-seal': palette.seal, '--z-rose': palette.rose,
+    '--z-leaf': night ? `color-mix(in srgb, ${palette.leaf} 55%, #cfe6d3)` : palette.leaf,
+    '--z-stem': night ? `color-mix(in srgb, ${palette.stem} 50%, #d5ead8)` : palette.stem,
+  } as CSSProperties
   const date = cardDate(model)
   const names = model.hostNames.join(' & ') || model.headline
   // Longer names get a smaller script size so they stay on at most two lines inside the heart.
@@ -183,9 +192,9 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reacts only to the host's request
   }, [controlledOpen])
 
-  return <article className={`invitation-template zarf${open ? ' zarf--open' : ''}`} aria-label={model.headline} style={style}>
+  return <article className={`invitation-template zarf zarf--amb-${ambiance} zarf--flora-${flora}${open ? ' zarf--open' : ''}`} aria-label={model.headline} style={style}>
     <section className="zarf__stage" ref={stageRef}>
-      {garden ? <Garden leaving={leaving} /> : null}
+      {garden ? <Garden leaving={leaving} ambiance={ambiance} flora={flora} /> : null}
       <h1 className="visually-hidden">{model.headline}</h1>
 
       <div className="zarf__scene">
@@ -199,8 +208,8 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
               <path d={cardPath} />
               <path className="zarf__card-emboss" d={cardPath} transform="translate(120 114) scale(0.94) translate(-120 -114)" />
               <path className="zarf__card-gold" d={cardPath} transform="translate(120 114) scale(0.88) translate(-120 -114)" />
-              <Rose transform="translate(58 30) scale(0.78)" />
-              <Rose transform="translate(190 34) scale(0.62) rotate(30)" />
+              <FloraHead kind={flora} transform="translate(58 30) scale(0.78)" full />
+              <FloraHead kind={flora} transform="translate(190 34) scale(0.62) rotate(30)" full />
             </svg>
             <div className="zarf__card-body">
               <p className={`zarf__card-names zarf__card-names--${nameSize}`}>{names}</p>
@@ -236,8 +245,8 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
           </div>
 
           <div className="zarf__seal" aria-hidden="true"><span>{monogram}</span></div>
-          <CallaLilies className="zarf__calla" />
-          <RoseCluster className="zarf__roses" />
+          <CallaLilies className="zarf__calla" flora={flora} />
+          <FloraCluster className="zarf__roses" flora={flora} />
         </div>
       </div>
 

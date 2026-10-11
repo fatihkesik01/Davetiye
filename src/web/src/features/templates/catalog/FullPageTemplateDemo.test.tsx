@@ -17,10 +17,27 @@ describe('FullPageTemplateDemo (zarf-davetiye)', () => {
     expect(screen.getByRole('article', { name: 'Hande & Fatih' })).toBeTruthy()
 
     const article = () => container.querySelector('article') as HTMLElement
-    expect(screen.getByRole('group', { name: 'Zarf rengi' })).toBeTruthy()
+    expect(article().className).toContain('zarf--amb-sabah')
+    expect(article().className).toContain('zarf--flora-gul')
     expect(article().style.getPropertyValue('--z-base')).toBe(zarfPalettes.adacayi.base)
+
+    // The pickers live in a panel opened from the bar.
+    const toggle = screen.getByRole('button', { name: 'Özelleştir' })
+    expect(toggle.getAttribute('aria-expanded')).toBe('false')
+    expect(screen.queryByRole('group', { name: 'Zarf rengi' })).toBeNull()
+    fireEvent.click(toggle)
+    expect(toggle.getAttribute('aria-expanded')).toBe('true')
+    expect(screen.getByRole('dialog')).toBeTruthy()
     fireEvent.click(screen.getByRole('radio', { name: 'Bordo' }))
     expect(article().style.getPropertyValue('--z-base')).toBe(zarfPalettes.bordo.base)
+    fireEvent.click(screen.getByRole('radio', { name: 'Yıldızlı gece' }))
+    expect(article().className).toContain('zarf--amb-gece')
+    fireEvent.click(screen.getByRole('radio', { name: 'Papatya' }))
+    expect(article().className).toContain('zarf--flora-papatya')
+    // Escape closes the panel and returns focus to the button.
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(document.activeElement).toBe(toggle)
   })
 
   it('closes from the bottom bar only (no inline close button), and a reload starts closed with nothing stored', () => {

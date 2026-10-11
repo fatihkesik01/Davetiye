@@ -18,7 +18,7 @@ import {
 import { LoadingState } from '../../components/feedback/LoadingState'
 import { InternalLink } from '../../components/ui/InternalLink'
 import { DevicePreview } from './DevicePreview'
-import { ZarfAccentPicker } from '../templates/rendering/ZarfAccentPicker'
+import { ZarfLookPickers } from '../templates/rendering/ZarfLookPickers'
 import { zarfTemplateKey } from '../templates/rendering/zarfAccent'
 import { DraftValidationSummary } from './DraftValidationSummary'
 import { PublicationPanel } from './PublicationPanel'
@@ -533,7 +533,7 @@ function WizardStep({
       </span>
     </label>)}
   </fieldset>
-  {draft.templateKey === zarfTemplateKey ? <ZarfAccentPicker value={content.accentColor} onChange={key => update('accentColor', key)} /> : null}
+  {draft.templateKey === zarfTemplateKey ? <ZarfLookPickers values={content} onAccent={key => update('accentColor', key)} onAmbiance={key => update('ambiance', key)} onFlora={key => update('flora', key)} /> : null}
   </>
 
   if (step === 3) return <div className="wizard-fields">

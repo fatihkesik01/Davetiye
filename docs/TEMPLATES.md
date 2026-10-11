@@ -28,8 +28,10 @@ kopyalanmaz, CSS/SVG ile özgün çizilir.
 | Parametre | Açıklama |
 |---|---|
 | Renk (`accentColor`) | **Tek** renk. Hazır paletten bir anahtar: `adacayi` (varsayılan), `pudra-pembe`, `krem`, `bordo`, `lacivert`, `lavanta`. Zarf, kapak/mühür, vurgular ve arka planın açık tonu bu tek renkten türetilir. Serbest hex kabul edilmez. |
+| Ortam (`ambiance`) | Sayfanın tüm atmosferi, **tek** seçim: `sabah` (sabah bahçesi, ışık huzmeleri, **kelebekler**; varsayılan), `cayir` (bal rengi çayır, **arılar**), `gunbatimi` (şeftali/mercan/altın gökyüzü, **yusufçuklar**), `gece` (yıldızlı lacivert gece, **ateş böcekleri**; metin ve düğme renkleri koyu zemine göre açık tonlara geçer), `safak` (pembe şafak, dallarda **uğur böcekleri**). Arka plan degradesi ve metin renkleri ortama göre değişir; küçük canlılar yalnızca zarf açıkken yan dallar boyunca süzülür. Bilinmeyen değer varsayılana düşer. |
+| Çiçek (`flora`) | Yan dallardaki büyüyen çerçevenin, zarf cebinin ve kartın üst loblarındaki çiçek türü, **tek** seçim: `gul` (varsayılan), `papatya`, `lale`, `lavanta`, `kiraz` (kiraz çiçeği; birkaç yaprağı yavaşça düşer). Her türün kendi doğal renkleri zarf rengiyle hafifçe tonlanır. Bilinmeyen değer varsayılana düşer. |
 | Fotoğraf | **Bir** fotoğraf, mevcut Cover medya rolüyle. Zarftan çıkan kartın yanındaki çerçeveli baskıda görünür. Fotoğraf yoksa zarif bir yer tutucu gösterilir. |
-| Metinler | İsimler (`hostNames`), başlık, tarih, mekan, kısa mesaj. |
+| Metinler | İsimler (`hostNames`), başlık, tarih, mekan, kısa mesaj. Kartta yalnızca isimler ve tarih görünür; mekan, saat ve program altta akar. Mesaj girilmezse sıcak bir varsayılan cümle gösterilir (TR/EN). |
 
 **Davranış ve kısıtlar**
 
@@ -48,6 +50,8 @@ kopyalanmaz, CSS/SVG ile özgün çizilir.
 kaynak burada kayıtlıdır). Dosya: `src/web/public/template-demo/zarf-davetiye-photo.jpg`
 (900x1349). Yalnızca creator'ın Cover fotoğrafı yokken demo, editör önizlemesi
 ve `/onizleme`'de görünür; yayınlanmış public sayfada gösterilmez.
+
+**Demo ve editör:** `/sablonlar/zarf-davetiye` tam sayfa demodur; alttaki çubukta "Özelleştir" paneli üç seçiciyi (Zarf rengi, Ortam, Çiçek) açar, "Zarfı kapat" ve "Bu şablonla başla" çubukta kalır. Creator editöründe aynı üç seçici şablon adımında yalnızca bu şablon seçiliyken görünür ve mevcut taslak otomatik kaydıyla (`accentColor`, `ambiance`, `flora`) kaydedilir. Varsayılan: sabah + gül + adaçayı.
 
 **Teknik not:** Yeni code-owned şablon; mevcut sekiz şablonla aynı
 `(templateKey, rendererVersion)` sözleşmesini kullanır. `accentColor`,

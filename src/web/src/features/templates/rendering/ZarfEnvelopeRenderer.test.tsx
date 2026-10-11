@@ -158,4 +158,32 @@ describe('zarf-davetiye renderer', () => {
     expect(container.querySelector('.zarf-garden')).toBeNull()
     vi.unstubAllGlobals()
   })
+
+  it('maps ambiance and flora keys to classes, falls back to the defaults for unknown values', () => {
+    const base = getTemplateDemoModel('zarf-davetiye')!
+    expect(normalizeDraftContent({ ambiance: 'gece', flora: 'kiraz' })).toMatchObject({ ambiance: 'gece', flora: 'kiraz' })
+    expect(normalizeDraftContent({ ambiance: 'url(x)', flora: '<script>' })).toMatchObject({ ambiance: 'sabah', flora: 'gul' })
+    expect(normalizeDraftContent({}).ambiance).toBeUndefined()
+    const known = renderZarf({ ...base, ambiance: 'safak', flora: 'lale' })
+    expect(known.container.querySelector('article')?.className).toContain('zarf--amb-safak zarf--flora-lale')
+    known.unmount()
+    const none = renderZarf({ ...base, ambiance: undefined, flora: undefined })
+    expect(none.container.querySelector('article')?.className).toContain('zarf--amb-sabah zarf--flora-gul')
+  })
+
+  it.each([
+    ['sabah', 'butterfly'], ['cayir', 'bee'], ['gunbatimi', 'dragonfly'], ['gece', 'firefly'], ['safak', 'ladybug'],
+  ] as const)('shows the %s creature (%s) only while open and leaves none behind', (ambiance, critter) => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
+    const { container } = renderZarf({ ...getTemplateDemoModel('zarf-davetiye')!, ambiance, flora: 'kiraz' })
+    expect(container.querySelector('.zarf-critter')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Davetiyeyi Aç' }))
+    expect(container.querySelectorAll(`.zarf-critter--${critter}`)).toHaveLength(6)
+    expect(container.querySelectorAll('.zarf-petal')).toHaveLength(6)
+    expect(container.querySelector('.zarf-garden')?.getAttribute('aria-hidden')).toBe('true')
+    act(() => { fireEvent.click(screen.getByRole('button', { name: 'Zarfı kapat' })) })
+    expect(container.querySelector('.zarf-critter')).toBeNull()
+    expect(container.querySelector('.zarf-petal')).toBeNull()
+    vi.unstubAllGlobals()
+  })
 })
