@@ -29,8 +29,8 @@ export function FullPageTemplateDemo({ templateKey }: { templateKey: string }) {
     <InternalLink className="template-fullpage-demo__back" to="/sablonlar">← {t('templateUi.zarf.back')}</InternalLink>
     <div className="template-fullpage-demo__bar" role="region" aria-label={t('templateUi.zarf.controls')}>
       <ZarfAccentPicker value={accent} onChange={setAccent} compact />
-      {open ? <button type="button" className="template-fullpage-demo__close" onClick={() => setOpen(false)}>{t('templateUi.zarf.close')}</button> : null}
-      <InternalLink className="template-fullpage-demo__start" to={`/panel/davetiyeler/yeni?template=${encodeURIComponent(templateKey)}`}>{t('templateUi.zarf.start')}</InternalLink>
+      {open ? <button type="button" className="template-fullpage-demo__close" aria-label={t('templateUi.zarf.close')} onClick={() => setOpen(false)}><span className="template-fullpage-demo__long">{t('templateUi.zarf.close')}</span><span className="template-fullpage-demo__short" aria-hidden="true">{t('templateUi.zarf.closeShort')}</span></button> : null}
+      <InternalLink className="template-fullpage-demo__start" to={`/panel/davetiyeler/yeni?template=${encodeURIComponent(templateKey)}`} aria-label={t('templateUi.zarf.start')}><span className="template-fullpage-demo__long">{t('templateUi.zarf.start')}</span><span className="template-fullpage-demo__short" aria-hidden="true">{t('templateUi.zarf.startShort')}</span></InternalLink>
     </div>
   </div>
 }

@@ -260,8 +260,22 @@
 .template-fullpage-demo__canvas .zarf__stage { min-height: calc(100svh - 5rem); padding-block-start: 4.75rem; }
 .template-fullpage-demo__back, .template-fullpage-demo__bar { position: fixed; z-index: 50; background: rgb(255 255 255 / 0.94); box-shadow: 0 0.2rem 0.9rem rgb(0 0 0 / 0.2); backdrop-filter: blur(6px); }
 .template-fullpage-demo__back { inset-block-start: 0.75rem; inset-inline-start: 0.75rem; display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0 0.9rem; border-radius: 999px; color: #1f2933; font-size: 0.9rem; font-weight: 700; text-decoration: none; }
-.template-fullpage-demo__bar { inset-block-end: max(0.75rem, env(safe-area-inset-bottom)); inset-inline: 0.75rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; max-width: 40rem; margin-inline: auto; padding: 0.4rem 0.75rem; border-radius: 1.2rem; color: #1f2933; }
+.template-fullpage-demo__bar { inset-block-end: max(0.5rem, env(safe-area-inset-bottom)); inset-inline: 0.5rem; display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 0.4rem 0.75rem; max-width: 40rem; margin-inline: auto; padding: 0.4rem 0.75rem; border-radius: 1.2rem; color: #1f2933; }
 .template-fullpage-demo__bar legend { color: #1f2933; }
 .template-fullpage-demo__start { display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0 1.1rem; border-radius: 999px; color: #fff; background: #1f2933; font-size: 0.9rem; font-weight: 700; text-decoration: none; }
 .template-fullpage-demo__close { display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0 1.1rem; border: 1px solid #1f2933; border-radius: 999px; color: #1f2933; background: transparent; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
 .template-fullpage-demo__close:focus-visible, .template-fullpage-demo__back:focus-visible, .template-fullpage-demo__start:focus-visible { outline: 3px solid #1f2933; outline-offset: 2px; }
+
+.template-fullpage-demo__short { display: none; }
+.template-fullpage-demo__bar > * { flex: none; }
+@media (max-width: 30rem) {
+  .template-fullpage-demo__bar { gap: 0.3rem; padding: 0.3rem 0.4rem; }
+  .template-fullpage-demo__bar legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .template-fullpage-demo__bar .zarf-accent-picker--compact { gap: 0; }
+  .template-fullpage-demo__bar .zarf-accent-picker__swatches { gap: 0; }
+  .template-fullpage-demo__bar .zarf-accent-picker__swatch { padding: 0.3rem 0.15rem; }
+  .template-fullpage-demo__bar .zarf-accent-picker__dot { width: 1.7rem; height: 1.7rem; border-width: 2px; }
+  .template-fullpage-demo__long { display: none; }
+  .template-fullpage-demo__short { display: inline; }
+  .template-fullpage-demo__close, .template-fullpage-demo__start { min-height: 2.5rem; padding: 0 0.7rem; font-size: 0.85rem; }
+}
