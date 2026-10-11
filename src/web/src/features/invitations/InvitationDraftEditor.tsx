@@ -25,6 +25,7 @@ import { PublicationPanel } from './PublicationPanel'
 import { TrashInvitationControl } from './TrashInvitationControl'
 import { CreatorSharePanel } from './CreatorSharePanel'
 import { OptionalContentEditor } from './OptionalContentEditor'
+import { ProgramListEditor } from './ProgramListEditor'
 import { CreatorMediaPanel } from './CreatorMediaPanel'
 import { MemoriesManagementPanel } from './MemoriesManagementPanel'
 import { GiftRegistryManagementPanel } from './GiftRegistryManagementPanel'
@@ -438,10 +439,7 @@ export function InvitationDraftEditor({ invitationId }: { invitationId: string }
       <div className="wizard-actions">
         {step > 0 ? <button disabled={publicationBusy} className="button button--secondary" type="button" onClick={() => setStep(value => value - 1)}>{t('creatorFormsUi.editor.back')}</button> : <span />}
         {step === 4 ? <button disabled={publicationBusy} className="button button--secondary" type="button" onClick={() => {
-          update('programTitle', '')
-          update('programDescription', '')
-          update('programStartsAtLocal', '')
-          update('additionalProgramItems', [])
+          update('programItems', [])
           setStep(5)
         }}>{t('creatorFormsUi.editor.skip')}</button> : null}
         {step < steps.length - 1 ? <button disabled={publicationBusy} className="button button--primary" type="button" onClick={() => setStep(value => value + 1)}>{t('creatorFormsUi.editor.continue')}</button> : null}
@@ -544,10 +542,7 @@ function WizardStep({
   </div>
 
   if (step === 4) return <div className="wizard-fields">
-    <p>{t('creatorFormsUi.editor.optionalIntro')}</p>
-    <EditorField id="draft-program-title" label={t('creatorFormsUi.editor.programTitle')} value={content.programTitle} onChange={value => update('programTitle', value)} maxLength={200} help={t('creatorFormsUi.editor.programTitleHelp')} />
-    <EditorDateTime id="draft-program-start" label={t('creatorFormsUi.editor.programTime')} value={content.programStartsAtLocal} onChange={value => update('programStartsAtLocal', value)} />
-    <EditorTextArea id="draft-program-description" label={t('creatorFormsUi.editor.programDescription')} value={content.programDescription} onChange={value => update('programDescription', value)} maxLength={1000} />
+    <ProgramListEditor items={content.programItems} onChange={items => update('programItems', items)} />
     <OptionalContentEditor content={content} update={update} />
     {rsvpPanel}
     {memoriesPanel}

@@ -18,6 +18,43 @@ export const eventTypes = [
   { value: 'acilis-genel', label: 'Açılış / Genel' },
 ] as const
 
+/** One schedule line as edited: the time is a browser-local date-time, like the event date. */
+export interface EditableProgramItem {
+  title: string
+  description: string
+  startsAtLocal: string
+}
+
+/** Backend limits for the schedule (InvitationDraftService): at most 20 items, 200 / 1000 characters. */
+export const programLimits = { maxItems: 20, maxTitle: 200, maxDescription: 1000 } as const
+
+export interface ProgramItemProblems { titleTooLong?: boolean; descriptionTooLong?: boolean; controlCharacters?: boolean }
+
+const hasControlCharacter = (value: string) => [...value].some(character => {
+  const code = character.codePointAt(0) ?? 0
+  return code < 32 || (code >= 127 && code < 160)
+})
+
+/** Mirrors the backend's schedule validation so the Creator sees problems before the save fails. */
+export function validateProgramItems(items: EditableProgramItem[]): { tooMany: boolean; items: ProgramItemProblems[]; outOfOrder: boolean } {
+  const times = items.map(item => item.startsAtLocal).filter(Boolean)
+  return {
+    tooMany: items.length > programLimits.maxItems,
+    items: items.map(item => ({
+      ...(item.title.trim().length > programLimits.maxTitle ? { titleTooLong: true } : {}),
+      ...(item.description.trim().length > programLimits.maxDescription ? { descriptionTooLong: true } : {}),
+      ...(hasControlCharacter(item.title) || hasControlCharacter(item.description) ? { controlCharacters: true } : {}),
+    })),
+    // Times are compared as the strings the browser produces (YYYY-MM-DDTHH:mm), which sort chronologically.
+    outOfOrder: times.some((time, index) => index > 0 && time < times[index - 1]!),
+  }
+}
+
+export function sortProgramItemsByTime(items: EditableProgramItem[]): EditableProgramItem[] {
+  // Stable: lines without a time keep their relative place after the timed ones.
+  return [...items].sort((a, b) => (a.startsAtLocal || '9999').localeCompare(b.startsAtLocal || '9999'))
+}
+
 export interface EditableDraftContent {
   contacts: InvitationContactInput[]
   announcement: string
@@ -32,10 +69,8 @@ export interface EditableDraftContent {
   venueName: string
   venueAddress: string
   mapUrl: string
-  programTitle: string
-  programDescription: string
-  programStartsAtLocal: string
-  additionalProgramItems: DraftProgramItemInput[]
+  /** The schedule ("Günün akışı"), in the order the Creator listed it. */
+  programItems: EditableProgramItem[]
   /** zarf-davetiye palette key; empty means the template default. */
   accentColor: string
   /** zarf-davetiye page mood and flower type; empty means the template defaults. */
@@ -54,10 +89,7 @@ export const emptyEditableDraft: EditableDraftContent = {
   venueName: '',
   venueAddress: '',
   mapUrl: '',
-  programTitle: '',
-  programDescription: '',
-  programStartsAtLocal: '',
-  additionalProgramItems: [],
+  programItems: [],
   accentColor: '',
   ambiance: '',
   flora: '',
@@ -67,7 +99,6 @@ export function toEditableDraft(content: DraftContentInput): EditableDraftConten
   const programItems = (content.programItems ?? []).filter(
     (item): item is DraftProgramItemInput => item !== null,
   )
-  const firstProgramItem = programItems[0]
   return {
     contacts: content.contacts ?? [], announcement: content.announcement ?? '', faqs: content.faqs ?? [], transportStops: content.transportStops ?? [],
     eventType: content.eventType ?? '',
@@ -79,10 +110,11 @@ export function toEditableDraft(content: DraftContentInput): EditableDraftConten
     venueName: content.venue?.name ?? '',
     venueAddress: content.venue?.address ?? '',
     mapUrl: content.venue?.mapUrl ?? '',
-    programTitle: firstProgramItem?.title ?? '',
-    programDescription: firstProgramItem?.description ?? '',
-    programStartsAtLocal: toLocalDateTime(firstProgramItem?.startsAt),
-    additionalProgramItems: programItems.slice(1),
+    programItems: programItems.map(item => ({
+      title: item.title ?? '',
+      description: item.description ?? '',
+      startsAtLocal: toLocalDateTime(item.startsAt),
+    })),
     accentColor: content.accentColor ?? '',
     ambiance: content.ambiance ?? '',
     flora: content.flora ?? '',
@@ -91,9 +123,6 @@ export function toEditableDraft(content: DraftContentInput): EditableDraftConten
 
 export function toDraftContent(content: EditableDraftContent): DraftContentInput {
   const hasVenue = Boolean(content.venueName.trim() || content.venueAddress.trim() || content.mapUrl.trim())
-  const hasProgram = Boolean(
-    content.programTitle.trim() || content.programDescription.trim() || content.programStartsAtLocal,
-  )
 
   // The editor does not yet ask the Creator to choose an IANA time zone. The
   // browser's local clock is used to create the instant, but an unconfirmed
@@ -120,14 +149,14 @@ export function toDraftContent(content: EditableDraftContent): DraftContentInput
       address: nullIfBlank(content.venueAddress),
       mapUrl: nullIfBlank(content.mapUrl),
     } : null,
-    programItems: [
-      ...(hasProgram ? [{
-        title: nullIfBlank(content.programTitle),
-        description: nullIfBlank(content.programDescription),
-        startsAt: toIsoDateTime(content.programStartsAtLocal),
-      }] : []),
-      ...content.additionalProgramItems,
-    ],
+    // Lines the Creator left completely blank are not sent; order is the order of the list.
+    programItems: content.programItems
+      .filter(item => item.title.trim() || item.description.trim() || item.startsAtLocal)
+      .map(item => ({
+        title: nullIfBlank(item.title),
+        description: nullIfBlank(item.description),
+        startsAt: toIsoDateTime(item.startsAtLocal),
+      })),
   }
 }
 
@@ -145,7 +174,16 @@ export function parseRecoverySnapshot(value: string | null): DraftRecoverySnapsh
   try {
     const candidate = JSON.parse(value) as Partial<DraftRecoverySnapshot>
     if (!candidate.content || typeof candidate.baseContentRevision !== 'number') return null
-    return { content: { ...emptyEditableDraft, ...candidate.content }, baseContentRevision: candidate.baseContentRevision }
+    const legacy = candidate.content as Partial<EditableDraftContent> & { programTitle?: string; programDescription?: string; programStartsAtLocal?: string; additionalProgramItems?: Array<{ title?: string | null; description?: string | null; startsAt?: string | null }> }
+    const content = { ...emptyEditableDraft, ...candidate.content }
+    // Recovery snapshots written before the schedule became a list carry the single-line fields.
+    if (!Array.isArray(legacy.programItems) && (legacy.programTitle || legacy.programDescription || legacy.programStartsAtLocal || legacy.additionalProgramItems?.length)) {
+      content.programItems = [
+        ...(legacy.programTitle || legacy.programDescription || legacy.programStartsAtLocal ? [{ title: legacy.programTitle ?? '', description: legacy.programDescription ?? '', startsAtLocal: legacy.programStartsAtLocal ?? '' }] : []),
+        ...(legacy.additionalProgramItems ?? []).map(item => ({ title: item.title ?? '', description: item.description ?? '', startsAtLocal: toLocalDateTime(item.startsAt) })),
+      ]
+    }
+    return { content, baseContentRevision: candidate.baseContentRevision }
   } catch {
     return null
   }

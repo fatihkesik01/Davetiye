@@ -8,7 +8,7 @@ export const invitationFields: Record<string, { label: string; step: number; id?
   'venue.name': { label: 'Mekân adı', step: 3, id: 'draft-venue' },
   'venue.address': { label: 'Adres', step: 3, id: 'draft-address' },
   'venue.mapUrl': { label: 'Harita bağlantısı', step: 3, id: 'draft-map-url' },
-  programItems: { label: 'Program', step: 4, id: 'draft-program-title' },
+  programItems: { label: 'Program', step: 4, id: 'draft-program-section' },
 }
 
 export function invitationFieldLabel(field: string): string {
