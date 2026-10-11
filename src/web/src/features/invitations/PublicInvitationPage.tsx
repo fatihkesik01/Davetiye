@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import { ApiRequestError, DavetiyeApiClient, type PublicInvitationMedia as PublicMediaSnapshotItem, type PublicInvitationResponse } from '../../api/generated/client'
 import { InvitationRenderer } from '../templates/rendering/InvitationRenderer'
-import { normalizeDraftContent } from '../templates/rendering/model'
+import { normalizeDraftContent, templateRendersCoverInline } from '../templates/rendering/model'
 import { isRenderablePublicInvitation, publicCodeFromPath } from './publicInvitationModel'
 import { PublicEventTools } from './PublicEventTools'
 import { PublicInvitationMedia } from './PublicInvitationMedia'
@@ -30,6 +30,7 @@ export function PublicInvitationPage({ pathname }: { pathname: string }) {
   const [attempt, setAttempt] = useState(0)
   const mainRef = useRef<HTMLElement>(null)
   const countedPublicCode = useRef<string | null>(null)
+  const [inlineCoverUrl, setInlineCoverUrl] = useState<string | undefined>()
 
   useEffect(() => {
     if (view.state !== 'active' || !publicCode || countedPublicCode.current === publicCode) return
@@ -113,11 +114,12 @@ export function PublicInvitationPage({ pathname }: { pathname: string }) {
     <main id="public-invitation-content" ref={mainRef} tabIndex={-1} aria-busy={view.state === 'loading'}>
       {view.state === 'active' ? <>
         <PublicInvitationMedia key={`${publicCode ?? ''}-cover`} api={api} publicCode={publicCode ?? ''} templateKey={view.invitation.templateKey}
-          media={view.invitation.media ?? noPublicMedia} role="Cover" />
+          media={view.invitation.media ?? noPublicMedia} role="Cover"
+          onCoverImage={templateRendersCoverInline(view.invitation.templateKey) ? setInlineCoverUrl : undefined} />
         <InvitationRenderer
           templateKey={view.invitation.templateKey}
           rendererVersion={view.invitation.rendererVersion}
-          model={normalizeDraftContent(view.invitation.content)}
+          model={{ ...normalizeDraftContent(view.invitation.content), ...(templateRendersCoverInline(view.invitation.templateKey) && inlineCoverUrl ? { coverImageUrl: inlineCoverUrl } : {}) }}
           previewContext="public"
         />
         <PublicInvitationMedia key={`${publicCode ?? ''}-gallery`} api={api} publicCode={publicCode ?? ''} templateKey={view.invitation.templateKey}

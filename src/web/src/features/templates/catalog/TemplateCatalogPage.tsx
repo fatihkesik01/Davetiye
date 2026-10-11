@@ -8,6 +8,8 @@ import {
 import { LoadingState } from '../../../components/feedback/LoadingState'
 import { InternalLink } from '../../../components/ui/InternalLink'
 import { TemplateDemoRenderer } from '../rendering/InvitationRenderer'
+import { ZarfAccentPicker } from '../rendering/ZarfAccentPicker'
+import { defaultZarfAccent, zarfTemplateKey, type ZarfAccentKey } from '../rendering/zarfAccent'
 
 interface TemplateCatalogPageProps {
   demoTemplateKey?: string
@@ -100,6 +102,7 @@ export function TemplateCatalogCard({ template }: { template: TemplateCatalogIte
 
 function TemplateDemoPage({ template }: { template: TemplateCatalogItem }) {
   const { t } = useTranslation()
+  const [accent, setAccent] = useState<ZarfAccentKey>(defaultZarfAccent)
   return <section className="template-demo" aria-labelledby="template-demo-heading">
     <nav className="template-demo__actions" aria-label={t('templateUi.demoActions')}>
       <InternalLink to="/sablonlar">← {t('templateUi.allTemplates')}</InternalLink>
@@ -113,8 +116,9 @@ function TemplateDemoPage({ template }: { template: TemplateCatalogItem }) {
       <h2 id="template-demo-heading">{template.name}</h2>
       <p>{t('templateUi.sampleData')}</p>
     </header>
+    {template.key === zarfTemplateKey ? <ZarfAccentPicker value={accent} onChange={setAccent} /> : null}
     <div className="template-demo__canvas">
-      <TemplateDemoRenderer templateKey={template.key} rendererVersion={template.rendererVersion} />
+      <TemplateDemoRenderer templateKey={template.key} rendererVersion={template.rendererVersion} accentColor={template.key === zarfTemplateKey ? accent : undefined} />
     </div>
   </section>
 }

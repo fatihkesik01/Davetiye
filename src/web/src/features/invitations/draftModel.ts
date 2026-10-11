@@ -1,11 +1,11 @@
 import type {
-  DraftContentInput,
   DraftProgramItemInput,
   InvitationDraftDetails,
   InvitationContactInput,
   InvitationFaqInput,
   InvitationTransportStopInput,
 } from '../../api/generated/client'
+import type { DraftContentWithAccent } from '../templates/rendering/zarfAccent'
 
 export const eventTypes = [
   { value: 'dugun', label: 'Düğün' },
@@ -36,6 +36,8 @@ export interface EditableDraftContent {
   programDescription: string
   programStartsAtLocal: string
   additionalProgramItems: DraftProgramItemInput[]
+  /** zarf-davetiye palette key; empty means the template default. */
+  accentColor: string
 }
 
 export const emptyEditableDraft: EditableDraftContent = {
@@ -53,9 +55,10 @@ export const emptyEditableDraft: EditableDraftContent = {
   programDescription: '',
   programStartsAtLocal: '',
   additionalProgramItems: [],
+  accentColor: '',
 }
 
-export function toEditableDraft(content: DraftContentInput): EditableDraftContent {
+export function toEditableDraft(content: DraftContentWithAccent): EditableDraftContent {
   const programItems = (content.programItems ?? []).filter(
     (item): item is DraftProgramItemInput => item !== null,
   )
@@ -75,10 +78,11 @@ export function toEditableDraft(content: DraftContentInput): EditableDraftConten
     programDescription: firstProgramItem?.description ?? '',
     programStartsAtLocal: toLocalDateTime(firstProgramItem?.startsAt),
     additionalProgramItems: programItems.slice(1),
+    accentColor: content.accentColor ?? '',
   }
 }
 
-export function toDraftContent(content: EditableDraftContent): DraftContentInput {
+export function toDraftContent(content: EditableDraftContent): DraftContentWithAccent {
   const hasVenue = Boolean(content.venueName.trim() || content.venueAddress.trim() || content.mapUrl.trim())
   const hasProgram = Boolean(
     content.programTitle.trim() || content.programDescription.trim() || content.programStartsAtLocal,
@@ -92,6 +96,7 @@ export function toDraftContent(content: EditableDraftContent): DraftContentInput
     ...(content.announcement.trim() ? { announcement: content.announcement.trim() } : {}),
     ...(content.faqs.length ? { faqs: content.faqs } : {}),
     ...(content.transportStops.length ? { transportStops: content.transportStops } : {}),
+    ...(content.accentColor ? { accentColor: content.accentColor } : {}),
     eventType: nullIfBlank(content.eventType),
     headline: nullIfBlank(content.headline),
     hostNames: content.hostNamesText

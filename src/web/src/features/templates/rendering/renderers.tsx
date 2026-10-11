@@ -10,14 +10,14 @@ export interface TemplateRendererProps {
   model: NormalizedInvitationRenderModel
 }
 
-function DateVenue({ model, compact = false }: TemplateRendererProps & { compact?: boolean }) {
+export function DateVenue({ model, compact = false }: TemplateRendererProps & { compact?: boolean }) {
   return <div className={`invite-facts${compact ? ' invite-facts--compact' : ''}`}>
     <p><span>Tarih</span><time dateTime={model.startsAt}>{formatInvitationDate(model.startsAt, model.timeZoneId)}</time></p>
     <p><span>Mekân</span><strong>{model.venue?.name ?? 'Mekân daha sonra duyurulacak'}</strong>{model.venue?.address ? <small>{model.venue.address}</small> : null}</p>
   </div>
 }
 
-function Program({ model, title = 'Program' }: TemplateRendererProps & { title?: string }) {
+export function Program({ model, title = 'Program' }: TemplateRendererProps & { title?: string }) {
   if (model.programItems.length === 0) return null
   return <section className="invite-program" aria-labelledby={`program-${model.eventType}`}>
     <h2 id={`program-${model.eventType}`}>{title}</h2>

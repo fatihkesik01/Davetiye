@@ -13,6 +13,7 @@ import {
   TimelessWeddingRenderer,
   type TemplateRendererProps,
 } from './renderers'
+import { ZarfEnvelopeRenderer } from './ZarfEnvelopeRenderer'
 
 export interface TemplateRendererRegistration {
   templateKey: string
@@ -36,6 +37,9 @@ for (const [id, Original] of Object.entries({ ...rendererComponents })) {
     return <><Original model={model} /><InvitationOptionalSections model={model} /></>
   }
 }
+
+// Zarf Davetiye is born at V1 and renders the additive optional sections itself.
+rendererComponents['zarf-davetiye@1'] = ZarfEnvelopeRenderer
 
 const manifestIds = rendererManifest.supportedRenderers.map(
   ({ templateKey, rendererVersion }) => `${templateKey}@${rendererVersion}`,

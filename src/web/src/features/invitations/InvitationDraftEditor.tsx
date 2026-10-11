@@ -18,6 +18,8 @@ import {
 import { LoadingState } from '../../components/feedback/LoadingState'
 import { InternalLink } from '../../components/ui/InternalLink'
 import { DevicePreview } from './DevicePreview'
+import { ZarfAccentPicker } from '../templates/rendering/ZarfAccentPicker'
+import { zarfTemplateKey } from '../templates/rendering/zarfAccent'
 import { DraftValidationSummary } from './DraftValidationSummary'
 import { PublicationPanel } from './PublicationPanel'
 import { TrashInvitationControl } from './TrashInvitationControl'
@@ -506,7 +508,8 @@ function WizardStep({
     <EditorTextArea id="draft-message" label={t('creatorFormsUi.editor.message')} value={content.message} onChange={value => update('message', value)} maxLength={4000} />
   </div>
 
-  if (step === 2) return <fieldset className="template-choice-grid">
+  if (step === 2) return <>
+  <fieldset className="template-choice-grid">
     <legend>{t('creatorFormsUi.editor.chooseTemplate')}</legend>
     <p className="fieldset-help">{t('creatorFormsUi.editor.premiumDraft')}</p>
     {templateLocked ? <div className="fieldset-help publication-notice">
@@ -530,6 +533,8 @@ function WizardStep({
       </span>
     </label>)}
   </fieldset>
+  {draft.templateKey === zarfTemplateKey ? <ZarfAccentPicker value={content.accentColor} onChange={key => update('accentColor', key)} /> : null}
+  </>
 
   if (step === 3) return <div className="wizard-fields">
     <EditorDateTime id="draft-starts-at" label={t('creatorFormsUi.editor.eventDate')} value={content.startsAtLocal} onChange={value => update('startsAtLocal', value)} />

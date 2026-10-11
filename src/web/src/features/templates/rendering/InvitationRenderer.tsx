@@ -1,6 +1,7 @@
 import { getTemplateDemoModel } from './demoData'
 import type { NormalizedInvitationRenderModel } from './model'
 import { resolveTemplateRenderer } from './registry'
+import type { ZarfAccentKey } from './zarfAccent'
 
 export type PreviewContext = 'demo' | 'creator' | 'public'
 
@@ -35,8 +36,10 @@ export function InvitationRenderer({
 export function TemplateDemoRenderer({
   templateKey,
   rendererVersion,
-}: Pick<InvitationRendererProps, 'templateKey' | 'rendererVersion'>) {
-  const model = getTemplateDemoModel(templateKey)
+  accentColor,
+}: Pick<InvitationRendererProps, 'templateKey' | 'rendererVersion'> & { accentColor?: ZarfAccentKey }) {
+  const demoModel = getTemplateDemoModel(templateKey)
+  const model = demoModel && accentColor ? { ...demoModel, accentColor } : demoModel
   if (!model) return <section className="renderer-unavailable" role="status">Demo içeriği bulunamadı.</section>
   return <InvitationRenderer
     templateKey={templateKey}

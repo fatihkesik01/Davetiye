@@ -1,7 +1,14 @@
-import type { DraftContentInput } from '../../../api/generated/client'
 import { normalizeDraftContent, type NormalizedInvitationRenderModel } from './model'
+import type { DraftContentWithAccent } from './zarfAccent'
 
-const demos: Record<string, DraftContentInput> = {
+const demos: Record<string, DraftContentWithAccent> = {
+  'zarf-davetiye': {
+    eventType: 'dugun', headline: 'Defne & Arda', hostNames: ['Defne', 'Arda'],
+    message: 'Bu mektubu bir davetle kapatıyoruz: en güzel günümüzde yanımızda olun.',
+    startsAt: '2027-09-11T17:00:00+03:00', timeZoneId: 'Europe/Istanbul', accentColor: 'adacayi',
+    venue: { name: 'Zeytinlik Bahçe', address: 'Urla, İzmir' },
+    programItems: [{ title: 'Karşılama', startsAt: '2027-09-11T17:00:00+03:00' }, { title: 'Akşam yemeği', startsAt: '2027-09-11T19:30:00+03:00' }],
+  },
   'zamansiz-dugun': {
     eventType: 'dugun', headline: 'Zeynep & Kerem', hostNames: ['Zeynep', 'Kerem'],
     message: 'Bu güzel başlangıcımızda sizleri de aramızda görmekten mutluluk duyarız.',
@@ -57,5 +64,8 @@ const demos: Record<string, DraftContentInput> = {
 
 export function getTemplateDemoModel(templateKey: string): NormalizedInvitationRenderModel | null {
   const content = demos[templateKey]
-  return content ? normalizeDraftContent(content) : null
+  if (!content) return null
+  const model = normalizeDraftContent(content)
+  // Bundled illustrative photo (no real people) so the demo shows the photo print.
+  return templateKey === 'zarf-davetiye' ? { ...model, coverImageUrl: '/template-demo/zarf-davetiye-photo.svg' } : model
 }

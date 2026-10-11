@@ -15,6 +15,7 @@
     { "templateKey": "renkli-dogum-gunu", "rendererVersion": 2 },
     { "templateKey": "pastel-baby-shower", "rendererVersion": 2 },
     { "templateKey": "modern-mezuniyet", "rendererVersion": 2 },
-    { "templateKey": "minimal-acilis", "rendererVersion": 2 }
+    { "templateKey": "minimal-acilis", "rendererVersion": 2 },
+    { "templateKey": "zarf-davetiye", "rendererVersion": 1 }
   ]
 }

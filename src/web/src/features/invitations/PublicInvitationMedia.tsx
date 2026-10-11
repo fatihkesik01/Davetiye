@@ -12,9 +12,11 @@ interface Props {
   templateKey: string
   media: PublicMediaSnapshotItem[]
   role: 'Cover' | 'Gallery'
+  /** When set, the first resolved Cover image is handed to the template (drawn inside its design) instead of rendering the generic cover block. */
+  onCoverImage?: (url: string | undefined) => void
 }
 
-export function PublicInvitationMedia({ api, publicCode, templateKey, media, role }: Props) {
+export function PublicInvitationMedia({ api, publicCode, templateKey, media, role, onCoverImage }: Props) {
   const [attempt, setAttempt] = useState(0)
   const [sessions, setSessions] = useState<Record<string, PublicMediaDeliverySession>>({})
   const roleMedia = useMemo(() => media.filter(item => item.role === role).sort((a, b) => a.sortOrder - b.sortOrder), [media, role])
@@ -65,7 +67,11 @@ export function PublicInvitationMedia({ api, publicCode, templateKey, media, rol
   }, [api, attempt, mediaKey, publicCode, role, roleMedia, templateKey])
 
   const visible = roleMedia.filter(item => sessions[item.assetId])
-  if (!visible.length) return null
+  const inlineImageUrl = onCoverImage
+    ? visible.map(item => ({ item, session: sessions[item.assetId]! })).find(({ item, session }) => item.kind === 'Image' && session.kind === 'image')?.session.url
+    : undefined
+  useEffect(() => { onCoverImage?.(inlineImageUrl) }, [inlineImageUrl, onCoverImage])
+  if (onCoverImage || !visible.length) return null
 
   return <section className={`public-invitation-media public-invitation-media--${role.toLowerCase()}`} aria-label={role === 'Cover' ? 'Davetiye kapağı' : 'Fotoğraf galerisi'}>
     {visible.map((item, index) => {

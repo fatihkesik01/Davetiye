@@ -1,4 +1,4 @@
-import type { DraftContentInput } from '../../../api/generated/client'
+import { resolveZarfAccent, type DraftContentWithAccent, type ZarfAccentKey } from './zarfAccent'
 
 export interface InvitationRenderVenue {
   name: string
@@ -28,9 +28,18 @@ export interface NormalizedInvitationRenderModel {
   timeZoneId?: string
   venue?: InvitationRenderVenue
   programItems: InvitationRenderProgramItem[]
+  /** Curated palette key (zarf-davetiye). Always a known key, never raw content. */
+  accentColor?: ZarfAccentKey
+  /** Short-lived delivery URL of the Cover photo, supplied by the public page for templates that place it inline. */
+  coverImageUrl?: string
 }
 
-export function normalizeDraftContent(content: DraftContentInput): NormalizedInvitationRenderModel {
+/** Templates that draw the Cover photo inside the design instead of the generic cover block above it. */
+export function templateRendersCoverInline(templateKey: string): boolean {
+  return templateKey === 'zarf-davetiye'
+}
+
+export function normalizeDraftContent(content: DraftContentWithAccent): NormalizedInvitationRenderModel {
   const hostNames = (content.hostNames ?? []).map(value => value.trim()).filter(Boolean)
   const venueName = content.venue?.name?.trim()
 
@@ -39,6 +48,7 @@ export function normalizeDraftContent(content: DraftContentInput): NormalizedInv
     announcement: content.announcement?.trim() || undefined,
     faqs: (content.faqs ?? []).map(faq => ({ question: faq.question.trim(), answer: faq.answer.trim() })).filter(faq => faq.question && faq.answer),
     transportStops: (content.transportStops ?? []).map(stop => ({ name: stop.name.trim(), address: stop.address?.trim() || undefined, departureTime: stop.departureTime?.trim() || undefined })).filter(stop => stop.name),
+    accentColor: content.accentColor?.trim() ? resolveZarfAccent(content.accentColor) : undefined,
     eventType: content.eventType?.trim() || 'genel',
     headline: content.headline?.trim() || 'Etkinlik başlığı',
     hostNames,

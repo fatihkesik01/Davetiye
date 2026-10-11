@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { DraftContentInput } from '../../api/generated/client'
 import { InvitationRenderer } from '../templates/rendering/InvitationRenderer'
 import { normalizeDraftContent } from '../templates/rendering/model'
+import type { DraftContentWithAccent } from '../templates/rendering/zarfAccent'
 
 type PreviewDevice = 'phone' | 'tablet' | 'desktop'
 
@@ -11,7 +11,7 @@ interface DevicePreviewProps {
   invitationId: string
   templateKey: string | null
   rendererVersion: number | null
-  content: DraftContentInput
+  content: DraftContentWithAccent
 }
 
 export function DevicePreview({ invitationId, templateKey, rendererVersion, content }: DevicePreviewProps) {

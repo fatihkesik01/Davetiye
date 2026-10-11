@@ -1,0 +1,233 @@
+/* Zarf Davetiye: a code-owned envelope template. One curated accent (--z-base, --z-ink, --z-seal set
+   inline from the palette map) drives every colour; tints and shades are derived with color-mix so text
+   stays on the dark --z-ink over very light tints. Motion is CSS only and is switched off for
+   prefers-reduced-motion (the envelope then opens instantly). */
+.zarf {
+  --z-page: color-mix(in srgb, var(--z-base) 14%, #fff);
+  --z-paper: color-mix(in srgb, var(--z-base) 6%, #fff);
+  --z-flap-shade: color-mix(in srgb, var(--z-base) 82%, #000);
+  --z-inner: color-mix(in srgb, var(--z-base) 62%, #000);
+  --z-side: color-mix(in srgb, var(--z-base) 90%, #000);
+  --z-bottom: color-mix(in srgb, var(--z-base) 94%, #fff);
+  --zw: min(86cqi, 27rem);
+  --zh: calc(var(--zw) * 2 / 3);
+  --z-script: "Snell Roundhand", "Segoe Script", "Lucida Handwriting", "Apple Chancery", "Brush Script MT", cursive;
+  --z-serif: Georgia, "Times New Roman", serif;
+  min-height: 0;
+  padding: 0;
+  color: var(--z-ink);
+  background:
+    radial-gradient(60rem 30rem at 50% -8%, color-mix(in srgb, var(--z-base) 24%, #fff), transparent 70%),
+    var(--z-page);
+  font-family: var(--z-serif);
+}
+
+.zarf__stage {
+  display: grid;
+  min-height: min(52rem, 100svh);
+  padding: clamp(2rem, 8cqi, 4.5rem) 1.25rem clamp(2rem, 6cqi, 3.5rem);
+  align-content: center;
+  justify-items: center;
+  gap: clamp(1rem, 4cqi, 2rem);
+}
+
+.zarf__intro { max-width: 34rem; }
+.zarf__kicker {
+  margin-block-end: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.zarf h1 {
+  max-width: 16ch;
+  margin-block-end: 0;
+  font-family: var(--z-script);
+  font-size: clamp(2.4rem, 11cqi, 4.6rem);
+  font-weight: 400;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+/* The scene reserves the space above the envelope that the card and the opened flap move into, so
+   opening never shifts the layout. */
+.zarf__scene {
+  width: var(--zw);
+  padding-block-start: calc(var(--zw) * 0.55);
+  perspective: 1100px;
+}
+
+.zarf__envelope {
+  position: relative;
+  width: 100%;
+  height: var(--zh);
+  /* Clip only the bottom: the card and flap must be free to leave through the top. */
+  clip-path: inset(-150% -15% 0 -15%);
+  filter: drop-shadow(0 0.7rem 0.9rem color-mix(in srgb, var(--z-ink) 24%, transparent));
+}
+
+.zarf__envelope > svg, .zarf__flap, .zarf__flap-face { position: absolute; display: block; }
+.zarf__back { inset: 0; width: 100%; height: 100%; fill: var(--z-inner); }
+.zarf__pocket { inset: 0; z-index: 3; width: 100%; height: 100%; }
+.zarf__pocket-side { fill: var(--z-side); }
+.zarf__pocket-bottom { fill: var(--z-base); }
+
+.zarf__flap {
+  inset: 0 0 auto;
+  z-index: 5;
+  height: 55%;
+  transform-origin: top center;
+  transform-style: preserve-3d;
+  transition: transform 0.75s cubic-bezier(0.5, 0, 0.2, 1), z-index 0s 0.35s;
+}
+.zarf__flap-face { inset: 0; width: 100%; height: 100%; backface-visibility: hidden; }
+.zarf__flap-face--outer { fill: var(--z-flap-shade); }
+.zarf__flap-face--inner { fill: var(--z-inner); transform: rotateX(180deg); }
+.zarf--open .zarf__flap { z-index: 1; transform: rotateX(180deg); }
+
+.zarf__seal {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  z-index: 6;
+  display: grid;
+  width: calc(var(--zw) * 0.16);
+  height: calc(var(--zw) * 0.16);
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--z-seal) 70%, #fff), var(--z-seal) 60%);
+  box-shadow: 0 0.15rem 0.4rem rgb(0 0 0 / 0.35), inset 0 0 0 0.12rem color-mix(in srgb, var(--z-seal) 70%, #000);
+  font-family: var(--z-script);
+  font-size: calc(var(--zw) * 0.058);
+  line-height: 1;
+  transform: translate(-50%, -62%);
+  transition: opacity 0.25s ease, transform 0.4s ease;
+}
+.zarf--open .zarf__seal { opacity: 0; transform: translate(-50%, -62%) scale(0.6); pointer-events: none; }
+
+.zarf__flower { position: absolute; z-index: 7; width: calc(var(--zw) * 0.12); fill: color-mix(in srgb, var(--z-base) 35%, #fff); stroke: var(--z-seal); stroke-width: 0.6; }
+.zarf__flower-heart { fill: var(--z-seal); stroke: none; }
+.zarf__flower--envelope { inset-block-end: 5%; inset-inline-start: 5%; transform: rotate(-12deg); }
+.zarf__flower--card { inset-block-start: -3%; inset-inline-end: -4%; z-index: 1; width: calc(var(--zw) * 0.1); }
+
+/* Card: slides up out of the pocket. */
+.zarf__card {
+  position: absolute;
+  inset-block-start: 12%;
+  inset-inline-start: 4%;
+  z-index: 2;
+  width: 66%;
+  height: 135%;
+  color: var(--z-ink);
+  outline: none;
+  transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.2, 1) 0.45s;
+}
+.zarf__card:focus-visible { outline: 2px solid var(--z-ink); outline-offset: 4px; }
+.zarf--open .zarf__card { transform: translateY(-66%); }
+.zarf__card-shape { position: absolute; inset: 0; width: 100%; height: 100%; fill: var(--z-paper); stroke: color-mix(in srgb, var(--z-base) 55%, #fff); stroke-width: 1.5; filter: drop-shadow(0 0.2rem 0.35rem rgb(0 0 0 / 0.18)); }
+.zarf__card-body {
+  position: relative;
+  display: grid;
+  height: 76%;
+  padding: calc(var(--zw) * 0.06) calc(var(--zw) * 0.05) 0;
+  align-content: start;
+  justify-items: center;
+  gap: calc(var(--zw) * 0.012);
+  text-align: center;
+}
+.zarf__card-script { margin: 0; font-family: var(--z-script); font-size: calc(var(--zw) * 0.06); line-height: 1.1; }
+.zarf__heart { width: calc(var(--zw) * 0.05); fill: var(--z-seal); }
+.zarf__date { display: grid; justify-items: center; margin: 0; line-height: 1.15; }
+.zarf__date-weekday { font-size: calc(var(--zw) * 0.034); letter-spacing: 0.14em; text-transform: uppercase; }
+.zarf__date-day { font-family: var(--z-script); font-size: calc(var(--zw) * 0.15); line-height: 1; }
+.zarf__date-month { font-size: calc(var(--zw) * 0.05); font-weight: 700; text-transform: capitalize; }
+.zarf__date-time { font-size: calc(var(--zw) * 0.04); }
+.zarf__date--tbd { font-size: calc(var(--zw) * 0.045); }
+.zarf__card-venue { max-width: 100%; margin: calc(var(--zw) * 0.02) 0 0; font-size: calc(var(--zw) * 0.034); line-height: 1.3; overflow-wrap: anywhere; }
+
+/* Photo-booth style print tucked beside the card. */
+.zarf__photo {
+  position: absolute;
+  inset-block-start: 34%;
+  inset-inline-end: 2%;
+  z-index: 2;
+  width: 34%;
+  margin: 0;
+  transform: rotate(0deg);
+  transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.2, 1) 0.6s;
+}
+.zarf--open .zarf__photo { transform: translateY(-92%) rotate(6deg); }
+.zarf__photo-frame {
+  position: relative;
+  padding: 6% 6% 16%;
+  background: #fff;
+  box-shadow: 0 0.25rem 0.6rem rgb(0 0 0 / 0.28);
+}
+.zarf__photo-frame::before {
+  position: absolute;
+  inset-block-start: -0.55rem;
+  inset-inline-start: 50%;
+  width: 38%;
+  height: 1.1rem;
+  background: color-mix(in srgb, var(--z-base) 55%, #fff);
+  opacity: 0.85;
+  content: "";
+  transform: translateX(-50%) rotate(-3deg);
+}
+.zarf__photo-frame img, .zarf__photo-placeholder { display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover; }
+.zarf__photo-placeholder { display: grid; place-items: center; background: linear-gradient(160deg, color-mix(in srgb, var(--z-base) 45%, #fff), color-mix(in srgb, var(--z-base) 85%, #fff)); }
+.zarf__photo-placeholder svg { width: 38%; fill: color-mix(in srgb, var(--z-seal) 70%, #fff); }
+
+.zarf__cta-row { min-height: 3.2rem; display: grid; align-items: center; justify-items: center; }
+.zarf__cta {
+  min-height: 3rem;
+  padding: 0.75rem 1.9rem;
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--z-ink);
+  box-shadow: 0 0.35rem 0.9rem color-mix(in srgb, var(--z-ink) 30%, transparent);
+  font-family: var(--z-script);
+  font-size: 1.35rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.zarf__cta:hover { transform: translateY(-2px); }
+.zarf__cta:focus-visible { outline: 3px solid var(--z-ink); outline-offset: 4px; }
+.zarf__hint { max-width: 30rem; margin: 0; font-style: italic; line-height: 1.5; animation: zarf-fade 0.6s ease 1.3s both; }
+
+.zarf__details {
+  display: grid;
+  width: min(100%, 44rem);
+  margin-inline: auto;
+  padding: 2rem 1.25rem 3rem;
+  gap: 1.75rem;
+  opacity: 0.55;
+  transition: opacity 0.6s ease 0.6s;
+}
+.zarf--open .zarf__details { opacity: 1; }
+.zarf__details .invite-facts, .zarf__details .invite-program li { border-color: color-mix(in srgb, var(--z-ink) 45%, transparent); }
+.zarf__details .invite-program { margin: 0; }
+.zarf__signature { margin: 0; font-family: var(--z-script); font-size: clamp(1.8rem, 7cqi, 2.6rem); }
+.zarf .invitation-optional-sections { width: min(100%, 44rem); margin-inline: auto; padding: 0 1.25rem 3rem; text-align: start; }
+
+@keyframes zarf-fade { from { opacity: 0; } to { opacity: 1; } }
+
+@media (min-width: 48rem) {
+  .zarf { --zw: min(60cqi, 30rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zarf *, .zarf *::before { transition: none !important; animation: none !important; }
+}
+
+/* Accent swatch picker (Creator editor and catalog demo). */
+.zarf-accent-picker { display: grid; gap: 0.5rem; margin: 0; padding: 0; border: 0; }
+.zarf-accent-picker legend { padding: 0; font-weight: 700; }
+.zarf-accent-picker__swatches { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.zarf-accent-picker__swatch { position: relative; display: inline-flex; cursor: pointer; }
+.zarf-accent-picker__swatch input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.zarf-accent-picker__dot { display: block; width: 2.75rem; height: 2.75rem; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35); }
+.zarf-accent-picker__swatch input:checked + .zarf-accent-picker__dot { box-shadow: 0 0 0 3px currentcolor; }
+.zarf-accent-picker__swatch input:focus-visible + .zarf-accent-picker__dot { outline: 3px solid currentcolor; outline-offset: 3px; }
