@@ -40,10 +40,10 @@
   text-transform: uppercase;
 }
 .zarf h1 {
-  max-width: 16ch;
+  max-width: 22ch;
   margin-block-end: 0;
   font-family: var(--z-script);
-  font-size: clamp(2.4rem, 11cqi, 4.6rem);
+  font-size: clamp(2.2rem, min(11cqi, 8.5svh), 4.6rem);
   font-weight: 400;
   line-height: 1.12;
   text-wrap: balance;
@@ -151,7 +151,7 @@
 .zarf__photo {
   position: absolute;
   inset-block-start: 34%;
-  inset-inline-end: -2%;
+  inset-inline-end: 4%;
   z-index: 2;
   width: 29%;
   margin: 0;
@@ -182,7 +182,7 @@
 .zarf__photo-placeholder svg { width: 38%; fill: color-mix(in srgb, var(--z-seal) 70%, #fff); }
 
 .zarf__envelope--closed { cursor: pointer; }
-.zarf__cta-row { min-height: 3.2rem; display: grid; align-items: center; justify-items: center; }
+.zarf__cta-row { height: 3.25rem; display: grid; align-items: center; justify-items: center; }
 .zarf__cta {
   min-height: 3rem;
   padding: 0.75rem 1.9rem;
@@ -198,7 +198,7 @@
 }
 .zarf__cta:hover { transform: translateY(-2px); }
 .zarf__cta:focus-visible { outline: 3px solid var(--z-ink); outline-offset: 4px; }
-.zarf__hint { max-width: 30rem; margin: 0; font-style: italic; line-height: 1.5; animation: zarf-fade 0.6s ease 1.3s both; }
+.zarf__hint { max-width: 30rem; margin: 0 auto; font-style: italic; line-height: 1.5; }
 
 .zarf__details {
   display: grid;
@@ -216,7 +216,8 @@
 @keyframes zarf-fade { from { opacity: 0; } to { opacity: 1; } }
 
 @media (min-width: 48rem) {
-  .zarf { --zw: min(60cqi, 30rem); }
+  /* The svh term keeps cover, envelope and button inside a short desktop window. */
+  .zarf { --zw: min(60cqi, 30rem, 36svh); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -234,9 +235,8 @@
 .zarf-accent-picker__swatch input:focus-visible + .zarf-accent-picker__dot { outline: 3px solid currentcolor; outline-offset: 3px; }
 
 .zarf__close {
-  min-height: 2.75rem;
-  margin-block-start: 0.75rem;
-  padding: 0.5rem 1.1rem;
+  min-height: 3rem;
+  padding: 0.5rem 1.4rem;
   border: 1px solid color-mix(in srgb, var(--z-ink) 55%, transparent);
   border-radius: 999px;
   color: var(--z-ink);
@@ -279,3 +279,7 @@
   .template-fullpage-demo__short { display: inline; }
   .template-fullpage-demo__close, .template-fullpage-demo__start { min-height: 2.5rem; padding: 0 0.7rem; font-size: 0.85rem; }
 }
+
+/* Reserve the scrollbar on any page showing the envelope so opening it (which makes the page taller)
+   never changes the horizontal layout. */
+html:has(.zarf) { scrollbar-gutter: stable; }

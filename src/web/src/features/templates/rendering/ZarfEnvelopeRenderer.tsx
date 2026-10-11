@@ -88,6 +88,7 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
   const [revealed, setRevealed] = useState(initialOpen)
   const cardRef = useRef<HTMLDivElement>(null)
   const ctaRef = useRef<HTMLButtonElement>(null)
+  const stageRef = useRef<HTMLElement>(null)
   const closeTimer = useRef<number | undefined>(undefined)
   const palette = zarfPalettes[resolveZarfAccent(model.accentColor)]
   const style = { '--z-base': palette.base, '--z-ink': palette.ink, '--z-seal': palette.seal } as CSSProperties
@@ -110,6 +111,12 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
 
   const closeEnvelope = () => {
     setOpen(false)
+    // If the guest scrolled down into the content, bring the cover back into view before the content
+    // is removed so the page never jumps.
+    const stage = stageRef.current
+    if (stage && stage.getBoundingClientRect().top < 0) {
+      stage.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' })
+    }
     const finish = () => {
       setRevealed(false)
       onOpenChange?.(false)
@@ -131,7 +138,7 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
   }, [controlledOpen])
 
   return <article className={`invitation-template zarf${open ? ' zarf--open' : ''}`} aria-label={model.headline} style={style}>
-    <section className="zarf__stage">
+    <section className="zarf__stage" ref={stageRef}>
       <header className="zarf__intro">
         <p className="zarf__kicker">Sevgiyle gönderildi</p>
         <h1>{model.headline}</h1>
@@ -189,18 +196,17 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
         </div>
       </div>
 
+      {/* One fixed-height slot: the open and close controls swap places without moving anything. */}
       <div className="zarf__cta-row">
         {open
-          ? <>
-            {model.message ? <p className="zarf__hint" role="status">{model.message}</p> : null}
-            {hideInlineClose ? null : <button type="button" className="zarf__close" onClick={closeEnvelope}>{t('templateUi.zarf.close')}</button>}
-          </>
+          ? (hideInlineClose ? null : <button type="button" className="zarf__close" onClick={closeEnvelope}>{t('templateUi.zarf.close')}</button>)
           : <button type="button" className="zarf__cta" ref={ctaRef} aria-expanded={false} onClick={openEnvelope}>{t('templateUi.zarf.open')}</button>}
       </div>
     </section>
 
     {revealed ? <>
     <div className="zarf__details">
+      {model.message ? <p className="zarf__hint">{model.message}</p> : null}
       <DateVenue model={model} compact />
       <Program model={model} title="Günün akışı" />
       {model.hostNames.length ? <p className="zarf__signature">{model.hostNames.join(' & ')}</p> : null}
