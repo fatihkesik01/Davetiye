@@ -5,28 +5,48 @@ import './zarf.css'
 import { InvitationOptionalSections } from './InvitationOptionalSections'
 import { type NormalizedInvitationRenderModel } from './model'
 import { DateVenue, Program, type TemplateRendererProps } from './renderers'
-import { CallaLilies, PressedFlower, Sprig } from './ZarfFlowers'
+import { CallaLilies, PressedFlower, Rose, RoseCluster } from './ZarfFlowers'
 import { resolveZarfAccent, zarfPalettes } from './zarfAccent'
 
 /**
- * Scalloped outline for the Save-the-Date card: a rectangle whose four edges are rows of outward
- * half-circles (all drawn clockwise, so one sweep flag fits every edge). Static, built once.
+ * Scalloped heart outline for the Save-the-Date card: the classic parametric heart sampled at equal
+ * arc length, each step closed with an outward half-circle (drawn clockwise). Static, built once.
  */
-function scallopedRect(width: number, height: number, bump: number): string {
-  const nx = Math.round((width - 2 * bump) / (bump * 2))
-  const ny = Math.round((height - 2 * bump) / (bump * 2))
-  const sx = (width - 2 * bump) / nx
-  const sy = (height - 2 * bump) / ny
-  const arc = (rx: number, x: number, y: number) => `A${rx} ${rx} 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)}`
-  const left = bump
-  const top = bump
-  const right = width - bump
-  const bottom = height - bump
-  let d = `M${left} ${top}`
-  for (let i = 1; i <= nx; i += 1) d += arc(sx / 2, left + sx * i, top)
-  for (let i = 1; i <= ny; i += 1) d += arc(sy / 2, right, top + sy * i)
-  for (let i = 1; i <= nx; i += 1) d += arc(sx / 2, right - sx * i, bottom)
-  for (let i = 1; i <= ny; i += 1) d += arc(sy / 2, left, bottom - sy * i)
+function scallopedHeart(width: number, height: number, bumps: number, margin: number): string {
+  const samples = 720
+  const raw: Array<[number, number]> = []
+  for (let i = 0; i < samples; i += 1) {
+    const t = (2 * Math.PI * i) / samples
+    raw.push([16 * Math.sin(t) ** 3, -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t))])
+  }
+  const ys = raw.map(point => point[1])
+  const minY = Math.min(...ys)
+  const maxY = Math.max(...ys)
+  const pts = raw.map(([x, y]): [number, number] => [
+    margin + ((x + 16) / 32) * (width - 2 * margin),
+    margin + ((y - minY) / (maxY - minY)) * (height - 2 * margin),
+  ])
+  const cumulative = [0]
+  for (let i = 1; i <= samples; i += 1) {
+    const [x0, y0] = pts[i - 1]!
+    const [x1, y1] = pts[i % samples]!
+    cumulative.push(cumulative[i - 1]! + Math.hypot(x1 - x0, y1 - y0))
+  }
+  const total = cumulative[samples]!
+  const picked: Array<[number, number]> = []
+  let cursor = 0
+  for (let k = 0; k < bumps; k += 1) {
+    const target = (total * k) / bumps
+    while (cursor < samples && cumulative[cursor + 1]! < target) cursor += 1
+    picked.push(pts[cursor]!)
+  }
+  let d = `M${picked[0]![0].toFixed(1)} ${picked[0]![1].toFixed(1)}`
+  for (let k = 1; k <= bumps; k += 1) {
+    const [x0, y0] = picked[k - 1]!
+    const [x1, y1] = picked[k % bumps]!
+    const radius = Math.hypot(x1 - x0, y1 - y0) / 2
+    d += `A${radius.toFixed(1)} ${radius.toFixed(1)} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`
+  }
   return `${d}Z`
 }
 
@@ -44,16 +64,9 @@ function scallopedFlap(): string {
   return `${d}V0Z`
 }
 
-const cardPath = scallopedRect(240, 327, 10)
+const cardPath = scallopedHeart(240, 228, 36, 9)
 const flapPath = scallopedFlap()
 const heartPath = 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'
-
-function Flower({ className }: { className?: string }) {
-  return <svg className={className} viewBox="-12 -12 24 24" aria-hidden="true" focusable="false">
-    {[0, 72, 144, 216, 288].map(angle => <ellipse key={angle} cx="0" cy="-6" rx="3.4" ry="6" transform={`rotate(${angle})`} />)}
-    <circle r="2.6" className="zarf__flower-heart" />
-  </svg>
-}
 
 function cardDate(model: NormalizedInvitationRenderModel) {
   if (!model.startsAt) return null
@@ -69,8 +82,6 @@ function cardDate(model: NormalizedInvitationRenderModel) {
     day: read({ day: 'numeric' }),
     month: read({ month: 'long' }),
     year: read({ year: 'numeric' }),
-    weekday: read({ weekday: 'long' }),
-    time: read({ hour: '2-digit', minute: '2-digit' }),
   }
 }
 
@@ -96,8 +107,11 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
   const closeTimer = useRef<number | undefined>(undefined)
   const revealTimer = useRef<number | undefined>(undefined)
   const palette = zarfPalettes[resolveZarfAccent(model.accentColor)]
-  const style = { '--z-base': palette.base, '--z-ink': palette.ink, '--z-seal': palette.seal, '--z-leaf': palette.leaf, '--z-stem': palette.stem } as CSSProperties
+  const style = { '--z-base': palette.base, '--z-ink': palette.ink, '--z-seal': palette.seal, '--z-leaf': palette.leaf, '--z-stem': palette.stem, '--z-rose': palette.rose } as CSSProperties
   const date = cardDate(model)
+  const names = model.hostNames.join(' & ') || model.headline
+  // Longer names get a smaller script size so they stay on at most two lines inside the heart.
+  const nameSize = names.length > 24 ? 'long' : names.length > 14 ? 'medium' : 'short'
   const monogram = model.hostNames.map(name => name.at(0)?.toLocaleUpperCase('tr-TR')).filter(Boolean).slice(0, 2).join('') || 'D'
 
   useEffect(() => () => {
@@ -154,10 +168,7 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
 
   return <article className={`invitation-template zarf${open ? ' zarf--open' : ''}`} aria-label={model.headline} style={style}>
     <section className="zarf__stage" ref={stageRef}>
-      <header className="zarf__intro">
-        <p className="zarf__kicker">Sevgiyle gönderildi</p>
-        <h1>{model.headline}</h1>
-      </header>
+      <h1 className="visually-hidden">{model.headline}</h1>
 
       <div className="zarf__scene">
         <div className={`zarf__envelope${open ? '' : ' zarf__envelope--closed'}`} onClick={open ? undefined : openEnvelope}>
@@ -166,27 +177,22 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
           </svg>
 
           <div className="zarf__card" ref={cardRef} tabIndex={-1} role="group" aria-label="Tarihi not edin kartı" aria-hidden={!open}>
-            <svg className="zarf__card-shape" viewBox="0 0 240 327" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <svg className="zarf__card-shape" viewBox="0 0 240 228" preserveAspectRatio="none" aria-hidden="true" focusable="false">
               <path d={cardPath} />
-              <path className="zarf__card-emboss" d={cardPath} transform="translate(120 163.5) scale(0.955) translate(-120 -163.5)" />
-              <rect className="zarf__card-gold" x="16" y="18" width="208" height="291" rx="12" />
-              <Sprig transform="translate(8 150) rotate(-18 15 28) scale(0.8)" />
-              <Sprig transform="translate(206 150) rotate(18 15 28) scale(0.8)" />
+              <path className="zarf__card-emboss" d={cardPath} transform="translate(120 114) scale(0.94) translate(-120 -114)" />
+              <path className="zarf__card-gold" d={cardPath} transform="translate(120 114) scale(0.88) translate(-120 -114)" />
+              <Rose transform="translate(58 30) scale(0.78)" />
+              <Rose transform="translate(190 34) scale(0.62) rotate(30)" />
             </svg>
             <div className="zarf__card-body">
-              <p className="zarf__card-script">Tarihi Not Edin</p>
-              <svg className="zarf__heart" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d={heartPath} /></svg>
+              <p className={`zarf__card-names zarf__card-names--${nameSize}`}>{names}</p>
               {date
                 ? <time dateTime={model.startsAt} className="zarf__date">
-                  <span className="zarf__date-weekday">{date.weekday}</span>
                   <span className="zarf__date-day">{date.day}</span>
                   <span className="zarf__date-month">{date.month} {date.year}</span>
-                  <span className="zarf__date-time">{date.time}</span>
                 </time>
                 : <p className="zarf__date zarf__date--tbd">Tarih daha sonra duyurulacak</p>}
-              {model.venue?.name ? <p className="zarf__card-venue">{model.venue.name}</p> : null}
             </div>
-            <Flower className="zarf__flower zarf__flower--card" />
           </div>
 
           <figure className="zarf__photo" aria-hidden={!open}>
@@ -213,6 +219,7 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
 
           <div className="zarf__seal" aria-hidden="true"><span>{monogram}</span></div>
           <CallaLilies className="zarf__calla" />
+          <RoseCluster className="zarf__roses" />
         </div>
       </div>
 

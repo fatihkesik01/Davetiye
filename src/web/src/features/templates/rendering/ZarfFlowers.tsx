@@ -31,6 +31,7 @@ export function CallaLilies({ className }: { className?: string }) {
     <Bloom transform="translate(31 46) rotate(-14)" />
     <Bloom transform="translate(67 36) rotate(12) scale(0.92)" />
     <Bloom transform="translate(50 68) rotate(2) scale(0.8)" />
+    <Rose transform="translate(78 132) scale(0.62)" />
   </svg>
 }
 
@@ -45,15 +46,26 @@ export function PressedFlower() {
   </g>
 }
 
-/** A small leaf-and-blossom sprig for the card edges (local 30x56 box, origin top-left). */
-export function Sprig({ transform }: { transform: string }) {
+/** A layered rose (about 30 units across), centred on the origin; colours come from CSS variables. */
+export function Rose({ transform }: { transform?: string }) {
   return <g transform={transform}>
-    <path className="zarf-art__sprig-stem" d="M15 56C14 40 16 22 15 8" fill="none" strokeLinecap="round" />
-    <path className="zarf-art__sprig-leaf" d="M15 44C4 42-1 34-2 26C9 28 14 34 15 44Z" />
-    <path className="zarf-art__sprig-leaf" d="M15 34C25 32 30 25 31 17C21 19 16 25 15 34Z" />
-    <path className="zarf-art__sprig-leaf" d="M15 22C7 20 4 14 4 8C11 10 14 15 15 22Z" />
-    <circle className="zarf-art__blossom" cx="15" cy="6" r="3.6" />
-    <circle className="zarf-art__blossom" cx="9" cy="11" r="2.4" />
-    <circle className="zarf-art__blossom" cx="21" cy="12" r="2.4" />
+    {[0, 72, 144, 216, 288].map(angle => <ellipse key={angle} className="zarf-art__rose-1" cx="0" cy="-8" rx="9" ry="10" transform={`rotate(${angle})`} />)}
+    {[36, 108, 180, 252, 324].map(angle => <ellipse key={angle} className="zarf-art__rose-2" cx="0" cy="-5" rx="6.2" ry="7" transform={`rotate(${angle})`} />)}
+    <circle className="zarf-art__rose-2" r="5" />
+    <path className="zarf-art__rose-swirl" d="M0 -3.2C3.8 -3.4 4.6 1.6 0.8 2.6C-2.6 3.4-4.2-0.6-1.4-2.2" fill="none" strokeLinecap="round" />
   </g>
+}
+
+/** Roses with leaves, tucked at the envelope's lower right (viewBox 100x100). */
+export function RoseCluster({ className }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+    <g className="zarf-art__leaf">
+      <path d="M52 100C34 86 26 68 30 48C46 60 54 80 52 100Z" />
+      <path d="M60 100C76 90 90 78 98 60C80 62 64 78 60 100Z" />
+      <path d="M44 96C30 94 14 86 6 72C22 70 38 80 44 96Z" />
+    </g>
+    <Rose transform="translate(42 76) scale(1.2)" />
+    <Rose transform="translate(70 66) scale(0.95)" />
+    <Rose transform="translate(58 46) scale(0.78)" />
+  </svg>
 }

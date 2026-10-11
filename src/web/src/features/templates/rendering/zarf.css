@@ -9,7 +9,9 @@
   --z-inner: color-mix(in srgb, var(--z-base) 62%, #000);
   --z-side: color-mix(in srgb, var(--z-base) 90%, #000);
   --z-bottom: color-mix(in srgb, var(--z-base) 94%, #fff);
-  --zw: min(86cqi, 27rem);
+  --zw: min(86cqi, 27rem, 48svh);
+  /* envelope scene (0.55 + 2/3 of --zw) + button slot + gap */
+  --z-group: calc(var(--zw) * 1.2167 + 3.25rem + 1.5rem);
   --zh: calc(var(--zw) * 2 / 3);
   --z-script: "Snell Roundhand", "Segoe Script", "Lucida Handwriting", "Apple Chancery", "Brush Script MT", cursive;
   --z-serif: Georgia, "Times New Roman", serif;
@@ -24,29 +26,12 @@
 
 .zarf__stage {
   display: grid;
-  min-height: min(52rem, 100svh);
-  padding: clamp(2rem, 8cqi, 4.5rem) 1.25rem clamp(2rem, 6cqi, 3.5rem);
-  align-content: center;
+  /* The cover group (envelope scene + button slot) is centred in the window by padding, so the stage
+     height never depends on what is open: the details simply start right under it. */
+  padding: max(1.5rem, calc((100svh - var(--z-chrome, 0px) - var(--z-group)) / 2)) 1.25rem 1rem;
+  align-content: start;
   justify-items: center;
-  gap: clamp(1rem, 4cqi, 2rem);
-}
-
-.zarf__intro { max-width: 34rem; }
-.zarf__kicker {
-  margin-block-end: 0.5rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-}
-.zarf h1 {
-  max-width: 22ch;
-  margin-block-end: 0;
-  font-family: var(--z-script);
-  font-size: clamp(2.2rem, min(11cqi, 8.5svh), 4.6rem);
-  font-weight: 400;
-  line-height: 1.12;
-  text-wrap: balance;
+  gap: 1.5rem;
 }
 
 /* The scene reserves the space above the envelope that the card and the opened flap move into, so
@@ -109,42 +94,39 @@
 .zarf__flower { position: absolute; z-index: 7; width: calc(var(--zw) * 0.12); fill: color-mix(in srgb, var(--z-base) 35%, #fff); stroke: var(--z-seal); stroke-width: 0.6; }
 .zarf__flower-heart { fill: var(--z-seal); stroke: none; }
 .zarf__flower--envelope { inset-block-end: 5%; inset-inline-start: 5%; transform: rotate(-12deg); }
-.zarf__flower--card { inset-block-start: -3%; inset-inline-end: -4%; z-index: 1; width: calc(var(--zw) * 0.1); }
 
-/* Card: slides up out of the pocket. */
+/* Card: a scalloped heart that slides up out of the pocket. */
 .zarf__card {
   position: absolute;
   inset-block-start: 12%;
-  inset-inline-start: 4%;
+  inset-inline-start: 3%;
   z-index: 2;
-  width: 66%;
-  height: 135%;
+  width: 70%;
+  aspect-ratio: 240 / 228;
   color: var(--z-ink);
   outline: none;
   transition: transform 0.7s cubic-bezier(0.3, 0.7, 0.2, 1);
 }
 .zarf__card:focus-visible { outline: 2px solid var(--z-ink); outline-offset: 4px; }
 .zarf--open .zarf__card { transform: translateY(-66%); transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.2, 1) 0.45s; }
-.zarf__card-shape { position: absolute; inset: 0; width: 100%; height: 100%; fill: var(--z-paper); stroke: color-mix(in srgb, var(--z-base) 55%, #fff); stroke-width: 1.5 }
+.zarf__card-shape { position: absolute; inset: 0; width: 100%; height: 100%; fill: var(--z-paper); stroke: color-mix(in srgb, var(--z-base) 55%, #fff); stroke-width: 1.5; }
 .zarf__card-body {
-  position: relative;
+  position: absolute;
+  inset: 17% 16% 30%;
   display: grid;
-  height: 76%;
-  padding: calc(var(--zw) * 0.06) calc(var(--zw) * 0.05) 0;
-  align-content: start;
+  align-content: center;
   justify-items: center;
-  gap: calc(var(--zw) * 0.012);
+  gap: calc(var(--zw) * 0.015);
   text-align: center;
 }
-.zarf__card-script { margin: 0; font-family: var(--z-script); font-size: calc(var(--zw) * 0.06); line-height: 1.1; }
-.zarf__heart { width: calc(var(--zw) * 0.05); fill: var(--z-seal); }
+.zarf__card-names { display: -webkit-box; max-width: 100%; margin: 0; padding-block-end: 0.12em; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-family: var(--z-script); line-height: 1.05; text-wrap: balance; overflow-wrap: anywhere; }
+.zarf__card-names--short { font-size: calc(var(--zw) * 0.066); }
+.zarf__card-names--medium { font-size: calc(var(--zw) * 0.054); }
+.zarf__card-names--long { font-size: calc(var(--zw) * 0.044); }
 .zarf__date { display: grid; justify-items: center; margin: 0; line-height: 1.15; }
-.zarf__date-weekday { font-size: calc(var(--zw) * 0.034); letter-spacing: 0.14em; text-transform: uppercase; }
-.zarf__date-day { font-family: var(--z-script); font-size: calc(var(--zw) * 0.15); line-height: 1; }
-.zarf__date-month { font-size: calc(var(--zw) * 0.05); font-weight: 700; text-transform: capitalize; }
-.zarf__date-time { font-size: calc(var(--zw) * 0.04); }
-.zarf__date--tbd { font-size: calc(var(--zw) * 0.045); }
-.zarf__card-venue { max-width: 100%; margin: calc(var(--zw) * 0.02) 0 0; font-size: calc(var(--zw) * 0.034); line-height: 1.3; overflow-wrap: anywhere; }
+.zarf__date-day { font-family: var(--z-script); font-size: calc(var(--zw) * 0.11); line-height: 1; }
+.zarf__date-month { font-size: calc(var(--zw) * 0.042); font-weight: 700; text-transform: capitalize; }
+.zarf__date--tbd { font-size: calc(var(--zw) * 0.042); }
 
 /* Photo-booth style print tucked beside the card. */
 .zarf__photo {
@@ -181,6 +163,7 @@
 .zarf__photo-placeholder svg { width: 38%; fill: color-mix(in srgb, var(--z-seal) 70%, #fff); }
 
 .zarf__envelope--closed { cursor: pointer; }
+.zarf--open .zarf__cta-row:empty { display: none; }
 .zarf__cta-row { height: 3.25rem; display: grid; align-items: center; justify-items: center; }
 .zarf__cta {
   min-height: 3rem;
@@ -203,7 +186,7 @@
   display: grid;
   width: min(100%, 44rem);
   margin-inline: auto;
-  padding: 2rem 1.25rem 3rem;
+  padding: 0.5rem 1.25rem 3rem;
   gap: 1.75rem;
   animation: zarf-fade 0.6s ease 0.8s both;
 }
@@ -216,7 +199,7 @@
 
 @media (min-width: 48rem) {
   /* The svh term keeps cover, envelope and button inside a short desktop window. */
-  .zarf { --zw: min(60cqi, 30rem, 36svh); }
+  .zarf { --zw: min(60cqi, 30rem, 44svh); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -255,8 +238,7 @@
 /* Full-page public demo: the invitation fills the viewport; controls float over it. */
 .template-fullpage-demo { min-height: 100svh; color: #1f2933; background: #fff; }
 .template-fullpage-demo__canvas { min-width: 0; }
-.template-fullpage-demo__canvas .zarf { padding-block-end: 5rem; }
-.template-fullpage-demo__canvas .zarf__stage { min-height: calc(100svh - 5rem); padding-block-start: 4.75rem; }
+.template-fullpage-demo__canvas .zarf { --z-chrome: 6rem; padding-block-end: 5rem; }
 .template-fullpage-demo__back, .template-fullpage-demo__bar { position: fixed; z-index: 50; background: rgb(255 255 255 / 0.94); box-shadow: 0 0.2rem 0.9rem rgb(0 0 0 / 0.2); backdrop-filter: blur(6px); }
 .template-fullpage-demo__back { inset-block-start: 0.75rem; inset-inline-start: 0.75rem; display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0 0.9rem; border-radius: 999px; color: #1f2933; font-size: 0.9rem; font-weight: 700; text-decoration: none; }
 .template-fullpage-demo__bar { inset-block-end: max(0.5rem, env(safe-area-inset-bottom)); inset-inline: 0.5rem; display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 0.4rem 0.75rem; max-width: 40rem; margin-inline: auto; padding: 0.4rem 0.75rem; border-radius: 1.2rem; color: #1f2933; }
@@ -309,15 +291,22 @@ html:has(.zarf) { scrollbar-gutter: stable; }
 .zarf-art__pressed-stem { stroke: color-mix(in srgb, var(--z-inner) 62%, #fff); stroke-width: 1.4; }
 .zarf-art__pressed-leaf { fill: color-mix(in srgb, var(--z-inner) 52%, #fff); }
 .zarf-art__pressed-petal { fill: color-mix(in srgb, var(--z-inner) 34%, #fff); }
-.zarf-art__sprig-stem { stroke: var(--z-stem); stroke-width: 1.3; }
-.zarf-art__sprig-leaf { fill: var(--z-leaf); opacity: 0.9; }
-.zarf-art__blossom { fill: color-mix(in srgb, var(--z-seal) 55%, #fff); }
 .zarf__card-emboss { fill: none; stroke: #fff; stroke-width: 1.4; opacity: 0.9; }
 .zarf__card-gold { fill: none; stroke: var(--z-gold); stroke-width: 0.8; opacity: 0.65; }
 .zarf__flap-gold { fill: none; stroke: var(--z-gold); stroke-width: 1.1; opacity: 0.6; }
 .zarf__pocket-gold { fill: none; stroke: var(--z-gold); stroke-width: 1; opacity: 0.55; }
-.zarf__card-shape .zarf-art__sprig-leaf, .zarf__card-shape .zarf-art__blossom { stroke: none; }
+.zarf__card-shape .zarf-art__rose-1, .zarf__card-shape .zarf-art__rose-2 { stroke: none; }
 
-/* Paper grain: a cheap static CSS dot texture behind the card text (no SVG pattern, no filter). */
-.zarf__card-body { isolation: isolate; }
-.zarf__card-body::before { position: absolute; inset: 4% 3% 0; z-index: -1; content: ""; background-image: radial-gradient(circle, color-mix(in srgb, var(--z-ink) 7%, transparent) 0.5px, transparent 0.9px); background-size: 6px 6px; pointer-events: none; }
+
+/* Roses: layered petals tinted by the palette's rose colour. */
+.zarf-art__rose-1 { fill: var(--z-rose); }
+.zarf-art__rose-2 { fill: color-mix(in srgb, var(--z-rose) 82%, var(--z-ink)); }
+.zarf-art__rose-swirl { stroke: color-mix(in srgb, var(--z-rose) 50%, var(--z-ink)); stroke-width: 1; }
+.zarf__roses { position: absolute; z-index: 6; inset-block-end: 2%; inset-inline-end: 3%; width: 30%; height: auto; pointer-events: none; }
+.zarf__card-gold { stroke-width: 0.9; }
+
+/* In the Creator's device preview the frame, not the window, sets the height. */
+.device-preview__stage .zarf__stage { padding-block-start: 2rem; }
+
+/* A closed cover fills the window on pages that are the invitation itself. */
+.public-invitation-page .zarf, .template-fullpage-demo__canvas .zarf, .full-draft-preview .zarf { min-height: 100svh; }

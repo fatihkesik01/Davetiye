@@ -103,4 +103,27 @@ describe('zarf-davetiye renderer', () => {
     expect(renders - beforeClose).toBeLessThanOrEqual(6)
     vi.unstubAllGlobals()
   })
+
+  it('puts only the names and the date on the heart card, with a visually hidden h1 for the page', () => {
+    const base = getTemplateDemoModel('zarf-davetiye')!
+    const { container } = renderZarf(base)
+    const card = container.querySelector('.zarf__card')!
+    expect(card.querySelector('.zarf__card-names')?.textContent).toBe('Hande & Fatih')
+    expect(card.querySelector('.zarf__date-day')?.textContent).toBe('11')
+    expect(card.querySelector('.zarf__date-month')?.textContent).toBe('Eylül 2027')
+    expect(card.textContent).not.toContain('Zeytinlik')
+    expect(card.textContent).not.toContain('17:00')
+    expect(card.textContent).not.toContain('Cumartesi')
+    expect(container.querySelector('.zarf__intro')).toBeNull()
+    expect(screen.getByRole('heading', { level: 1 }).className).toContain('visually-hidden')
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(base.headline)
+  })
+
+  it('scales long names down and falls back to the date placeholder when there is no date', () => {
+    const base = getTemplateDemoModel('zarf-davetiye')!
+    const { container } = renderZarf({ ...base, hostNames: ['Alexandra Maria', 'Konstantinos'], startsAt: undefined })
+    expect(container.querySelector('.zarf__card-names--long')).not.toBeNull()
+    expect(container.querySelector('.zarf__date--tbd')?.textContent).toBe('Tarih daha sonra duyurulacak')
+    expect(container.querySelector('time.zarf__date')).toBeNull()
+  })
 })
