@@ -144,4 +144,18 @@ describe('zarf-davetiye renderer', () => {
     expect(container.querySelector('.zarf__content--leaving')).not.toBeNull()
     await waitFor(() => expect(container.querySelector('.zarf__content')).toBeNull(), { timeout: 600 })
   })
+
+  it('shows the decorative botanical frame only while open: aria-hidden, no interaction, gone after closing', () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
+    const { container } = renderZarf()
+    expect(container.querySelector('.zarf-garden')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Davetiyeyi Aç' }))
+    const garden = container.querySelector('.zarf-garden')
+    expect(garden?.getAttribute('aria-hidden')).toBe('true')
+    expect(garden?.querySelectorAll('.zarf-garden__side')).toHaveLength(2)
+    expect(garden?.querySelector('a, button, input, [tabindex]')).toBeNull()
+    act(() => { fireEvent.click(screen.getByRole('button', { name: 'Zarfı kapat' })) })
+    expect(container.querySelector('.zarf-garden')).toBeNull()
+    vi.unstubAllGlobals()
+  })
 })

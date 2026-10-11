@@ -5,7 +5,7 @@ import './zarf.css'
 import { InvitationOptionalSections } from './InvitationOptionalSections'
 import { type NormalizedInvitationRenderModel } from './model'
 import { DateVenue, Program, type TemplateRendererProps } from './renderers'
-import { CallaLilies, PressedFlower, Rose, RoseCluster } from './ZarfFlowers'
+import { CallaLilies, Garden, PressedFlower, Rose, RoseCluster } from './ZarfFlowers'
 import { resolveZarfAccent, zarfPalettes } from './zarfAccent'
 
 /**
@@ -88,6 +88,9 @@ function cardDate(model: NormalizedInvitationRenderModel) {
 /** The invitation content mounts as the card starts sliding out (the flap has lifted by then). */
 const revealDelayMs = 500
 
+/** The botanical frame starts growing when the flap lifts, a little before the content, so the two mounts do not land in one frame. */
+const gardenDelayMs = 220
+
 /** On closing the content fades out this fast, then unmounts, while the envelope keeps closing. */
 const leaveMs = 140
 
@@ -102,6 +105,8 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
   const [open, setOpen] = useState(initialOpen)
   const [revealed, setRevealed] = useState(initialOpen)
   const [leaving, setLeaving] = useState(false)
+  const [garden, setGarden] = useState(initialOpen)
+  const gardenTimer = useRef<number | undefined>(undefined)
   const cardRef = useRef<HTMLDivElement>(null)
   const ctaRef = useRef<HTMLButtonElement>(null)
   const stageRef = useRef<HTMLElement>(null)
@@ -118,13 +123,17 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
   useEffect(() => () => {
     window.clearTimeout(closeTimer.current)
     window.clearTimeout(revealTimer.current)
+    window.clearTimeout(gardenTimer.current)
   }, [])
 
   const openEnvelope = () => {
     window.clearTimeout(closeTimer.current)
     window.clearTimeout(revealTimer.current)
+    window.clearTimeout(gardenTimer.current)
     setLeaving(false)
     setOpen(true)
+    if (prefersReducedMotion()) setGarden(true)
+    else gardenTimer.current = window.setTimeout(() => setGarden(true), gardenDelayMs)
     const reveal = () => {
       setRevealed(true)
       onOpenChange?.(true)
@@ -141,6 +150,7 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
 
   const closeEnvelope = () => {
     window.clearTimeout(revealTimer.current)
+    window.clearTimeout(gardenTimer.current)
     window.clearTimeout(closeTimer.current)
     setOpen(false)
     const finish = () => {
@@ -149,12 +159,13 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
       const stage = stageRef.current
       if (stage && stage.getBoundingClientRect().top < 0) stage.scrollIntoView({ behavior: 'auto', block: 'start' })
       setRevealed(false)
+      setGarden(false)
       setLeaving(false)
       onOpenChange?.(false)
       window.requestAnimationFrame(() => ctaRef.current?.focus({ preventScroll: true }))
     }
     // The texts leave at once (a very short fade) while the card and flap play their closing animation.
-    if (prefersReducedMotion() || !revealed) finish()
+    if (prefersReducedMotion() || (!revealed && !garden)) finish()
     else {
       setLeaving(true)
       closeTimer.current = window.setTimeout(finish, leaveMs)
@@ -174,6 +185,7 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
 
   return <article className={`invitation-template zarf${open ? ' zarf--open' : ''}`} aria-label={model.headline} style={style}>
     <section className="zarf__stage" ref={stageRef}>
+      {garden ? <Garden leaving={leaving} /> : null}
       <h1 className="visually-hidden">{model.headline}</h1>
 
       <div className="zarf__scene">
