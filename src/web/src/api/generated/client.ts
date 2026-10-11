@@ -269,6 +269,10 @@ export interface DraftContentInput {
   transportStops?: InvitationTransportStopInput[] | null
   /** Allow-listed colour KEY (adacayi, pudra-pembe, krem, bordo, lacivert, lavanta), never a hex value. */
   accentColor?: string | null
+  /** Allow-listed environment mood KEY (sabah, cayir, gunbatimi, gece, safak). */
+  ambiance?: string | null
+  /** Allow-listed flora KEY (gul, papatya, lale, lavanta, kiraz). */
+  flora?: string | null
   eventType?: string | null
   headline?: string | null
   hostNames?: string[] | null
@@ -287,6 +291,10 @@ export interface PublicInvitationContent {
   transportStops?: InvitationTransportStopInput[] | null
   /** Allow-listed colour KEY (adacayi, pudra-pembe, krem, bordo, lacivert, lavanta), never a hex value. */
   accentColor?: string | null
+  /** Allow-listed environment mood KEY (sabah, cayir, gunbatimi, gece, safak). */
+  ambiance?: string | null
+  /** Allow-listed flora KEY (gul, papatya, lale, lavanta, kiraz). */
+  flora?: string | null
   eventType?: string | null
   headline?: string | null
   hostNames?: string[] | null

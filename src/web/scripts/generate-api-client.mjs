@@ -170,14 +170,14 @@ const publicationSchemas = [
   ['InvitationTrashPage', ['items', 'page', 'pageSize', 'totalCount', 'serverNowUtc']],
   ['PublicInvitationCapabilities', ['canonicalBaseUrl', 'mapEmbedEnabled', 'mapEmbedOrigin', 'mapEmbedPath', 'mapEmbedKey']],
   ['InvitationStatistics', ['totalPageViews', 'rsvpResponseCount', 'participantCountTotal', 'memoryCount', 'readyMediaCount', 'activeGiftReservationCount']],
-  ['DraftContentInput', ['contacts', 'announcement', 'faqs', 'transportStops', 'accentColor']],
+  ['DraftContentInput', ['contacts', 'announcement', 'faqs', 'transportStops', 'accentColor', 'ambiance', 'flora']],
   ['DraftContactInput', ['name', 'role', 'phone']],
   ['DraftFaqInput', ['question', 'answer']],
   ['DraftTransportStopInput', ['name', 'address', 'departureTime']],
 ]
 const publicInvitationSchemas = [
   ['PublicInvitationActive', ['status', 'templateKey', 'rendererVersion', 'contentSchemaVersion', 'content', 'media']],
-  ['PublicInvitationContent', ['eventType', 'headline', 'hostNames', 'message', 'startsAt', 'timeZoneId', 'venue', 'programItems', 'contacts', 'announcement', 'faqs', 'transportStops', 'accentColor']],
+  ['PublicInvitationContent', ['eventType', 'headline', 'hostNames', 'message', 'startsAt', 'timeZoneId', 'venue', 'programItems', 'contacts', 'announcement', 'faqs', 'transportStops', 'accentColor', 'ambiance', 'flora']],
   ['PublicInvitationVenue', ['name', 'address']],
   ['PublicInvitationProgramItem', ['title', 'description', 'startsAt']],
   ['PublicInvitationContact', ['name', 'role', 'phone']],

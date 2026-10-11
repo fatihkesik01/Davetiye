@@ -262,16 +262,21 @@ public sealed class InvitationDraftEndpointsTests(PostgreSqlFixture postgreSql) 
             creatorACsrf);
         Assert.Equal(HttpStatusCode.BadRequest, nullContent.StatusCode);
 
-        foreach (var badColor in new[] { "#ff0000", "neon", "Bordo", "" })
+        foreach (var (field, bad) in new[]
+        {
+            ("accentColor", "#ff0000"), ("accentColor", "neon"), ("accentColor", "Bordo"), ("accentColor", ""),
+            ("ambiance", "disko"), ("ambiance", "Gece"), ("ambiance", ""),
+            ("flora", "orkide"), ("flora", "Gul"), ("flora", ""),
+        })
         {
             var rejected = await SendJsonAsync(
                 creatorA,
                 HttpMethod.Put,
                 $"/api/v1/invitations/{invitationId}/draft",
-                new { contentSchemaVersion = 1, content = new { accentColor = badColor }, expectedContentRevision = 0 },
+                new { contentSchemaVersion = 1, content = new Dictionary<string, string> { [field] = bad }, expectedContentRevision = 0 },
                 creatorACsrf);
             Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
-            Assert.Contains("accentColor", await rejected.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+            Assert.Contains(field, await rejected.Content.ReadAsStringAsync(), StringComparison.Ordinal);
         }
 
         var listA = await creatorA.GetAsync(new Uri("/api/v1/invitations", UriKind.Relative));
@@ -332,7 +337,7 @@ public sealed class InvitationDraftEndpointsTests(PostgreSqlFixture postgreSql) 
             new
             {
                 contentSchemaVersion = 1,
-                content = new { eventType = "dugun", headline = "Ada ve Grace", accentColor = "bordo" },
+                content = new { eventType = "dugun", headline = "Ada ve Grace", accentColor = "bordo", ambiance = "safak", flora = "lale" },
                 expectedContentRevision = 0,
             },
             creatorACsrf);
@@ -342,6 +347,8 @@ public sealed class InvitationDraftEndpointsTests(PostgreSqlFixture postgreSql) 
             Assert.Equal(1, autosaved.RootElement.GetProperty("contentRevision").GetInt64());
             Assert.Equal("Ada ve Grace", autosaved.RootElement.GetProperty("content").GetProperty("headline").GetString());
             Assert.Equal("bordo", autosaved.RootElement.GetProperty("content").GetProperty("accentColor").GetString());
+            Assert.Equal("safak", autosaved.RootElement.GetProperty("content").GetProperty("ambiance").GetString());
+            Assert.Equal("lale", autosaved.RootElement.GetProperty("content").GetProperty("flora").GetString());
         }
 
         var staleAutosave = await SendJsonAsync(

@@ -67,6 +67,10 @@ public sealed class PublicInvitationService(
         // A snapshot with an unknown colour key is treated as corrupt, like the other allowlisted fields.
         if (content.AccentColor is not null &&
             !InvitationDraftContract.AccentColorKeys.Contains(content.AccentColor)) return Unavailable();
+        if (content.Ambiance is not null &&
+            !InvitationDraftContract.AmbianceKeys.Contains(content.Ambiance)) return Unavailable();
+        if (content.Flora is not null &&
+            !InvitationDraftContract.FloraKeys.Contains(content.Flora)) return Unavailable();
         var timeZoneId = zones.IsValid(content.TimeZoneId) ? content.TimeZoneId.Trim() : window.TimeZoneId;
         if (!zones.IsValid(timeZoneId)) return Unavailable();
         var projection = content with

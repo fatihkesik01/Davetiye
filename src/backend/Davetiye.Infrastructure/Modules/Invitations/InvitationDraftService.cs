@@ -488,6 +488,18 @@ public sealed class InvitationDraftService(
             AddError(errors, "accentColor", "Accent colour is not supported.");
         }
 
+        if (content.Ambiance is not null &&
+            !InvitationDraftContract.AmbianceKeys.Contains(content.Ambiance))
+        {
+            AddError(errors, "ambiance", "Ambiance is not supported.");
+        }
+
+        if (content.Flora is not null &&
+            !InvitationDraftContract.FloraKeys.Contains(content.Flora))
+        {
+            AddError(errors, "flora", "Flora is not supported.");
+        }
+
         ValidateOptionalText(errors, "announcement", content.Announcement, 4_000);
         if (content.Contacts is not null)
             for (var index = 0; index < content.Contacts.Count; index++)

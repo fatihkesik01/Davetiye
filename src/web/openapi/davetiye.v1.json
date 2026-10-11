@@ -1322,6 +1322,18 @@
                                 "null",
                                 "string"
                               ]
+                            },
+                            "ambiance": {
+                              "type": [
+                                "null",
+                                "string"
+                              ]
+                            },
+                            "flora": {
+                              "type": [
+                                "null",
+                                "string"
+                              ]
                             }
                           }
                         },
@@ -7149,6 +7161,18 @@
               "null",
               "string"
             ]
+          },
+          "ambiance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "flora": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
         "additionalProperties": false
@@ -8680,6 +8704,18 @@
             }
           },
           "accentColor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ambiance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "flora": {
             "type": [
               "null",
               "string"

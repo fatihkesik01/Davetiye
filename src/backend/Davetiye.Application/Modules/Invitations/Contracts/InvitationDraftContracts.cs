@@ -13,6 +13,18 @@ public static class InvitationDraftContract
     {
         "adacayi", "pudra-pembe", "krem", "bordo", "lacivert", "lavanta",
     };
+
+    /// <summary>Allow-listed environment mood keys (zarf-davetiye); null means the frontend default (sabah).</summary>
+    public static readonly IReadOnlySet<string> AmbianceKeys = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "sabah", "cayir", "gunbatimi", "gece", "safak",
+    };
+
+    /// <summary>Allow-listed flora keys (zarf-davetiye); null means the frontend default (gul).</summary>
+    public static readonly IReadOnlySet<string> FloraKeys = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "gul", "papatya", "lale", "lavanta", "kiraz",
+    };
 }
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
@@ -40,6 +52,12 @@ public sealed record DraftContentInput
 
     /// <summary>Optional allow-listed colour key (see <see cref="InvitationDraftContract.AccentColorKeys"/>).</summary>
     public string? AccentColor { get; init; }
+
+    /// <summary>Optional allow-listed environment mood key (see <see cref="InvitationDraftContract.AmbianceKeys"/>).</summary>
+    public string? Ambiance { get; init; }
+
+    /// <summary>Optional allow-listed flora key (see <see cref="InvitationDraftContract.FloraKeys"/>).</summary>
+    public string? Flora { get; init; }
 }
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
