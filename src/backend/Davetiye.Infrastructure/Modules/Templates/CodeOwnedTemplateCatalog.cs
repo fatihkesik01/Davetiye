@@ -13,7 +13,7 @@ public static class CodeOwnedTemplateCatalog
     public static IReadOnlyList<CodeOwnedTemplateDefinition> Definitions { get; } =
     [
         new("zarf-davetiye", "Zarf Davetiye", "Düğün / Save the Date", false, 1, "/template-previews/zarf-davetiye.jpg",
-            "[\"hero\",\"dateVenue\",\"countdown\",\"calendar\",\"contact\",\"rsvp\",\"gallery\",\"qr\"]",
+            "[\"hero\",\"dateVenue\",\"countdown\",\"calendar\",\"contact\",\"rsvp\",\"gallery\",\"giftRegistry\",\"qr\"]",
             "[\"headline\",\"startsAt\",\"venue.name\"]", "[\"message\",\"hostNames\"]"),
         new("zamansiz-dugun", "Zamansız Düğün", "Düğün", false, 2, "/template-previews/zamansiz-dugun.jpg",
             "[\"hero\",\"dateVenue\",\"countdown\",\"calendar\",\"contact\",\"rsvp\",\"gallery\",\"timeline\",\"qr\"]",

@@ -79,11 +79,49 @@ public sealed class TemplateCatalogInitializerTests(PostgreSqlFixture postgreSql
         Assert.False(first.IsPremium);
         Assert.Equal(1, first.RendererVersion);
         Assert.Equal("/template-previews/zarf-davetiye.jpg", first.PreviewImageUrl);
-        Assert.Equal(["hero", "dateVenue", "countdown", "calendar", "contact", "rsvp", "gallery", "qr"], first.SupportedModules);
+        Assert.Equal(["hero", "dateVenue", "countdown", "calendar", "contact", "rsvp", "gallery", "giftRegistry", "qr"], first.SupportedModules);
+        Assert.Equal(
+            ["pastel-baby-shower", "romantik-nisan", "zarf-davetiye"],
+            listed.Where(item => item.SupportedModules.Contains("giftRegistry")).Select(item => item.Key).Order().ToArray());
         Assert.Equal(["headline", "startsAt", "venue.name"], first.RequiredFields);
         Assert.Equal(["message", "hostNames"], first.RecommendedFields);
         Assert.NotNull(registry.Resolve("zarf-davetiye", 1));
         Assert.Null(registry.Resolve("zarf-davetiye", 2));
+    }
+
+    [Fact]
+    public async Task Upgrade_migration_adds_giftRegistry_only_to_an_untouched_zarf_row()
+    {
+        const string previous = "20261008212129_P11GoldColorTheme";
+        const string oldModules = "[\"hero\",\"dateVenue\",\"countdown\",\"calendar\",\"contact\",\"rsvp\",\"gallery\",\"qr\"]";
+        foreach (var edited in new[] { false, true })
+        {
+            var connectionString = await postgreSql.CreateEmptyDatabaseAsync();
+            await RunMigratorAsync(connectionString, previous);
+            var modules = edited ? "[\"hero\",\"qr\"]" : oldModules;
+            await using (var before = CreateDbContext(connectionString))
+            {
+                before.TemplateDefinitions.Add(TemplateDefinition.Create(
+                    Guid.NewGuid(), "zarf-davetiye", "Zarf Davetiye", "Düğün / Save the Date", true, false, 1,
+                    "/template-previews/zarf-davetiye.jpg", modules, "[\"headline\"]", "[]"));
+                await before.SaveChangesAsync();
+            }
+
+            await RunMigratorAsync(connectionString);
+
+            await using var after = CreateDbContext(connectionString);
+            var zarf = await after.TemplateDefinitions.AsNoTracking().SingleAsync(template => template.Key == "zarf-davetiye");
+            if (edited)
+            {
+                Assert.DoesNotContain("giftRegistry", zarf.SupportedModules, StringComparison.Ordinal);
+                Assert.Equal(0, zarf.Revision);
+            }
+            else
+            {
+                Assert.Contains("giftRegistry", zarf.SupportedModules, StringComparison.Ordinal);
+                Assert.Equal(1, zarf.Revision);
+            }
+        }
     }
 
     [Fact]
@@ -110,7 +148,7 @@ public sealed class TemplateCatalogInitializerTests(PostgreSqlFixture postgreSql
             .UseNpgsql(connectionString, npgsql => npgsql.MigrationsAssembly(PersistenceConstants.MigrationsAssemblyName))
             .Options);
 
-    private static async Task RunMigratorAsync(string connectionString)
+    private static async Task RunMigratorAsync(string connectionString, string? target = null)
     {
         var migratorAssembly = Path.Combine(FindRepositoryRoot(), "tools", "Davetiye.DatabaseMigrator", "bin", TestBuildConfiguration.Name, "net10.0", "Davetiye.DatabaseMigrator.dll");
         Assert.True(File.Exists(migratorAssembly), $"Migrator assembly was not built: {migratorAssembly}");
@@ -122,6 +160,11 @@ public sealed class TemplateCatalogInitializerTests(PostgreSqlFixture postgreSql
             UseShellExecute = false,
         };
         startInfo.ArgumentList.Add(migratorAssembly);
+        if (target is not null)
+        {
+            startInfo.ArgumentList.Add("--target");
+            startInfo.ArgumentList.Add(target);
+        }
         startInfo.Environment["Database__ConnectionString"] = connectionString;
         startInfo.Environment["DOTNET_ENVIRONMENT"] = "IntegrationTest";
 
