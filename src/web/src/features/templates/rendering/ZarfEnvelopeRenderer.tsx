@@ -85,11 +85,11 @@ function cardDate(model: NormalizedInvitationRenderModel) {
   }
 }
 
-/** The invitation content is mounted once the flap has lifted, not at the moment of the tap. */
-const revealDelayMs = 650
+/** The invitation content mounts as the card starts sliding out (the flap has lifted by then). */
+const revealDelayMs = 500
 
-/** Longest closing transition (card back down, then flap shut); the content is removed once it ends. */
-const closeAnimationMs = 1500
+/** On closing the content fades out this fast, then unmounts, while the envelope keeps closing. */
+const leaveMs = 140
 
 function prefersReducedMotion(): boolean {
   return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -101,6 +101,7 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
   const { t } = useTranslation()
   const [open, setOpen] = useState(initialOpen)
   const [revealed, setRevealed] = useState(initialOpen)
+  const [leaving, setLeaving] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
   const ctaRef = useRef<HTMLButtonElement>(null)
   const stageRef = useRef<HTMLElement>(null)
@@ -122,6 +123,7 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
   const openEnvelope = () => {
     window.clearTimeout(closeTimer.current)
     window.clearTimeout(revealTimer.current)
+    setLeaving(false)
     setOpen(true)
     const reveal = () => {
       setRevealed(true)
@@ -139,20 +141,24 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
 
   const closeEnvelope = () => {
     window.clearTimeout(revealTimer.current)
+    window.clearTimeout(closeTimer.current)
     setOpen(false)
-    // If the guest scrolled down into the content, bring the cover back into view before the content
-    // is removed so the page never jumps.
-    const stage = stageRef.current
-    if (stage && stage.getBoundingClientRect().top < 0) {
-      stage.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' })
-    }
     const finish = () => {
+      // If the guest scrolled down into the content, bring the cover back into view in the same
+      // frame the content is removed, so the page never jumps away from what they were looking at.
+      const stage = stageRef.current
+      if (stage && stage.getBoundingClientRect().top < 0) stage.scrollIntoView({ behavior: 'auto', block: 'start' })
       setRevealed(false)
+      setLeaving(false)
       onOpenChange?.(false)
       window.requestAnimationFrame(() => ctaRef.current?.focus({ preventScroll: true }))
     }
-    if (prefersReducedMotion()) finish()
-    else closeTimer.current = window.setTimeout(finish, closeAnimationMs)
+    // The texts leave at once (a very short fade) while the card and flap play their closing animation.
+    if (prefersReducedMotion() || !revealed) finish()
+    else {
+      setLeaving(true)
+      closeTimer.current = window.setTimeout(finish, leaveMs)
+    }
   }
 
   // Controlled mode: follow the host's request (its own control opens/closes the envelope). This
@@ -231,14 +237,14 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
       </div>
     </section>
 
-    {revealed ? <>
+    {revealed ? <div className={`zarf__content${leaving ? ' zarf__content--leaving' : ''}`}>
     <div className="zarf__details">
-      {model.message ? <p className="zarf__hint">{model.message}</p> : null}
+      <p className="zarf__hint">{model.message ?? t('templateUi.zarf.defaultMessage')}</p>
       <DateVenue model={model} compact />
       <Program model={model} title="Günün akışı" />
       {model.hostNames.length ? <p className="zarf__signature">{model.hostNames.join(' & ')}</p> : null}
     </div>
     <InvitationOptionalSections model={model} />
-    </> : null}
+    </div> : null}
   </article>
 }

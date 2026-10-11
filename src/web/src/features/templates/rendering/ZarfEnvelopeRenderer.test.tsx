@@ -126,4 +126,22 @@ describe('zarf-davetiye renderer', () => {
     expect(container.querySelector('.zarf__date--tbd')?.textContent).toBe('Tarih daha sonra duyurulacak')
     expect(container.querySelector('time.zarf__date')).toBeNull()
   })
+
+  it('shows a warm default line when no message is set, and the Creator message when there is one', async () => {
+    const base = getTemplateDemoModel('zarf-davetiye')!
+    const first = render(<InvitationRenderer templateKey="zarf-davetiye" rendererVersion={1} model={{ ...base, message: undefined }} previewContext="public" initialOpen />)
+    expect(first.container.querySelector('.zarf__hint')?.textContent).toContain('Sizi aramızda görmek bizi çok mutlu edecek.')
+    first.unmount()
+    const second = render(<InvitationRenderer templateKey="zarf-davetiye" rendererVersion={1} model={{ ...base, message: 'Kendi mesajım' }} previewContext="public" initialOpen />)
+    expect(second.container.querySelector('.zarf__hint')?.textContent).toBe('Kendi mesajım')
+  })
+
+  it('fades the content out right away on closing and unmounts it within a fraction of a second', async () => {
+    const base = getTemplateDemoModel('zarf-davetiye')!
+    const { container } = render(<InvitationRenderer templateKey="zarf-davetiye" rendererVersion={1} model={base} previewContext="public" initialOpen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Zarfı kapat' }))
+    expect(container.querySelector('.zarf--open')).toBeNull()
+    expect(container.querySelector('.zarf__content--leaving')).not.toBeNull()
+    await waitFor(() => expect(container.querySelector('.zarf__content')).toBeNull(), { timeout: 600 })
+  })
 })

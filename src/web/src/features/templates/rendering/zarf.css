@@ -188,8 +188,16 @@
   margin-inline: auto;
   padding: 0.5rem 1.25rem 3rem;
   gap: 1.75rem;
-  animation: zarf-fade 0.6s ease 0.8s both;
 }
+/* Reveal: the content fades and rises in with a short stagger while the card slides out. */
+.zarf__content { transition: opacity 0.12s ease; }
+.zarf__content--leaving { opacity: 0; }
+.zarf__details > *, .zarf .invitation-optional-sections { animation: zarf-reveal 0.5s ease backwards; }
+.zarf__details > :nth-child(2) { animation-delay: 0.08s; }
+.zarf__details > :nth-child(3) { animation-delay: 0.16s; }
+.zarf__details > :nth-child(4) { animation-delay: 0.24s; }
+.zarf .invitation-optional-sections { animation-delay: 0.3s; }
+@keyframes zarf-reveal { from { opacity: 0; transform: translateY(0.6rem); } to { opacity: 1; transform: none; } }
 .zarf__details .invite-facts, .zarf__details .invite-program li { border-color: color-mix(in srgb, var(--z-ink) 45%, transparent); }
 .zarf__details .invite-program { margin: 0; }
 .zarf__signature { margin: 0; font-family: var(--z-script); font-size: clamp(1.8rem, 7cqi, 2.6rem); }
