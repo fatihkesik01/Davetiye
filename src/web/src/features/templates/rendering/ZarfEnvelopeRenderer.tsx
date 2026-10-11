@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import './zarf.css'
@@ -74,6 +74,9 @@ function cardDate(model: NormalizedInvitationRenderModel) {
   }
 }
 
+/** The invitation content is mounted once the flap has lifted, not at the moment of the tap. */
+const revealDelayMs = 650
+
 /** Longest closing transition (card back down, then flap shut); the content is removed once it ends. */
 const closeAnimationMs = 1500
 
@@ -87,23 +90,32 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
   const { t } = useTranslation()
   const [open, setOpen] = useState(initialOpen)
   const [revealed, setRevealed] = useState(initialOpen)
-  const grainId = `zarf-grain-${useId().replace(/:/g, '')}`
   const cardRef = useRef<HTMLDivElement>(null)
   const ctaRef = useRef<HTMLButtonElement>(null)
   const stageRef = useRef<HTMLElement>(null)
   const closeTimer = useRef<number | undefined>(undefined)
+  const revealTimer = useRef<number | undefined>(undefined)
   const palette = zarfPalettes[resolveZarfAccent(model.accentColor)]
   const style = { '--z-base': palette.base, '--z-ink': palette.ink, '--z-seal': palette.seal, '--z-leaf': palette.leaf, '--z-stem': palette.stem } as CSSProperties
   const date = cardDate(model)
   const monogram = model.hostNames.map(name => name.at(0)?.toLocaleUpperCase('tr-TR')).filter(Boolean).slice(0, 2).join('') || 'D'
 
-  useEffect(() => () => window.clearTimeout(closeTimer.current), [])
+  useEffect(() => () => {
+    window.clearTimeout(closeTimer.current)
+    window.clearTimeout(revealTimer.current)
+  }, [])
 
   const openEnvelope = () => {
     window.clearTimeout(closeTimer.current)
+    window.clearTimeout(revealTimer.current)
     setOpen(true)
-    setRevealed(true)
-    onOpenChange?.(true)
+    const reveal = () => {
+      setRevealed(true)
+      onOpenChange?.(true)
+    }
+    // Mounting the content under the cover is the heaviest part of opening: do it after the flap lifts.
+    if (prefersReducedMotion()) reveal()
+    else revealTimer.current = window.setTimeout(reveal, revealDelayMs)
     // The button leaves the page once opened: hand keyboard/screen-reader focus to the card.
     window.requestAnimationFrame(() => cardRef.current?.focus({ preventScroll: true }))
   }
@@ -112,6 +124,7 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
   useEffect(() => { openRef.current = open }, [open])
 
   const closeEnvelope = () => {
+    window.clearTimeout(revealTimer.current)
     setOpen(false)
     // If the guest scrolled down into the content, bring the cover back into view before the content
     // is removed so the page never jumps.
@@ -154,13 +167,7 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
 
           <div className="zarf__card" ref={cardRef} tabIndex={-1} role="group" aria-label="Tarihi not edin kartı" aria-hidden={!open}>
             <svg className="zarf__card-shape" viewBox="0 0 240 327" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-              <defs>
-                <pattern id={grainId} width="7" height="7" patternUnits="userSpaceOnUse">
-                  <circle cx="1.2" cy="1.5" r="0.45" /><circle cx="4.6" cy="3.2" r="0.35" /><circle cx="2.8" cy="5.9" r="0.4" />
-                </pattern>
-              </defs>
               <path d={cardPath} />
-              <path className="zarf__card-grain" d={cardPath} fill={`url(#${grainId})`} />
               <path className="zarf__card-emboss" d={cardPath} transform="translate(120 163.5) scale(0.955) translate(-120 -163.5)" />
               <rect className="zarf__card-gold" x="16" y="18" width="208" height="291" rx="12" />
               <Sprig transform="translate(8 150) rotate(-18 15 28) scale(0.8)" />

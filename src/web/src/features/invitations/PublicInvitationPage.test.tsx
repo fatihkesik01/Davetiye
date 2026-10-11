@@ -54,7 +54,9 @@ describe('public invitation access', () => {
     expect(container.textContent).not.toContain('Gizli duyuru')
     expect(container.querySelector('.zarf__details')).toBeNull()
     fireEvent.click(open)
-    expect(container.querySelector('.public-invitation-zone')).not.toBeNull()
+    // The content is mounted once the flap has lifted, not at the tap itself.
+    expect(container.querySelector('.public-invitation-zone')).toBeNull()
+    await waitFor(() => expect(container.querySelector('.public-invitation-zone')).not.toBeNull())
     expect(container.textContent).toContain('Gizli duyuru')
     expect(container.querySelector('.zarf__close')).not.toBeNull() // inline close stays on the public page
     expect(localStorage.length + sessionStorage.length).toBe(0)

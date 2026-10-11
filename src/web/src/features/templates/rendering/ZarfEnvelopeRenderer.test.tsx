@@ -1,4 +1,5 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { Profiler } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { getTemplateDemoModel } from './demoData'
@@ -20,7 +21,7 @@ describe('zarf-davetiye renderer', () => {
     expect(screen.queryByRole('button', { name: 'Davetiyeyi Aç' })).toBeNull()
   })
 
-  it('renders nothing but the cover before opening, and the envelope itself is tappable', () => {
+  it('renders nothing but the cover before opening, and the envelope itself is tappable', async () => {
     const model = { ...getTemplateDemoModel('zarf-davetiye')!, announcement: 'Gizli duyuru' }
     const { container } = renderZarf(model)
     expect(container.querySelector('.zarf__details')).toBeNull()
@@ -29,7 +30,8 @@ describe('zarf-davetiye renderer', () => {
     expect(container.textContent).not.toContain('Günün akışı')
     fireEvent.click(container.querySelector('.zarf__envelope')!)
     expect(container.querySelector('.zarf--open')).not.toBeNull()
-    expect(container.textContent).toContain('Gizli duyuru')
+    expect(container.querySelector('.zarf__details')).toBeNull() // still mounting after the flap lifts
+    await waitFor(() => expect(container.textContent).toContain('Gizli duyuru'))
   })
 
   it('reports open state and closes again (instantly with reduced motion), hiding the content', () => {
@@ -80,5 +82,25 @@ describe('zarf-davetiye renderer', () => {
     without.unmount()
     const withPhoto = renderZarf({ ...base, coverImageUrl: 'https://media.example/photo.jpg' })
     expect(withPhoto.container.querySelector('.zarf__photo img')?.getAttribute('src')).toBe('https://media.example/photo.jpg')
+  })
+
+  it('opens and closes with a small, bounded number of renders (no render/effect loop)', () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
+    let renders = 0
+    const model = getTemplateDemoModel('zarf-davetiye')!
+    const view = (open?: boolean) => <Profiler id="zarf" onRender={() => { renders += 1 }}>
+      <InvitationRenderer templateKey="zarf-davetiye" rendererVersion={1} model={model} previewContext="public" open={open} />
+    </Profiler>
+    const { rerender } = render(view(false))
+    const mounted = renders
+    fireEvent.click(screen.getByRole('button', { name: 'Davetiyeyi Aç' }))
+    expect(renders - mounted).toBeLessThanOrEqual(3)
+    // Controlled close from the host: one request, one reaction.
+    rerender(view(false))
+    const beforeClose = renders
+    act(() => { rerender(view(true)) })
+    act(() => { rerender(view(false)) })
+    expect(renders - beforeClose).toBeLessThanOrEqual(6)
+    vi.unstubAllGlobals()
   })
 })
