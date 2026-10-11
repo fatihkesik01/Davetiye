@@ -6,6 +6,8 @@ import {
   RegisterPage,
   ResetPasswordPage,
 } from '../features/auth/AuthPages'
+import { FullPageTemplateDemo } from '../features/templates/catalog/FullPageTemplateDemo'
+import { templateDemoIsFullPage } from '../features/templates/rendering/model'
 import { TemplateCatalogPage } from '../features/templates/catalog/TemplateCatalogPage'
 import { TemplateDemoRenderer } from '../features/templates/rendering/InvitationRenderer'
 import { LandingPage } from '../features/landing/LandingPage'
@@ -58,6 +60,10 @@ export default function PublicRoutes() {
   }
 
   if (isInvitation) return <PublicInvitationPage key={pathname} pathname={pathname} />
+
+  if (catalogDemoKey && templateDemoIsFullPage(decodeURIComponent(catalogDemoKey))) {
+    return <FullPageTemplateDemo templateKey={decodeURIComponent(catalogDemoKey)} />
+  }
 
   if (pathname === '/sablonlar' || catalogDemoKey) {
     return <RouteShell title={t(catalogDemoKey ? 'templateUi.demoTitle' : 'templateUi.title')} zone="public">

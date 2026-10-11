@@ -8,6 +8,10 @@ import {
 
 export interface TemplateRendererProps {
   model: NormalizedInvitationRenderModel
+  /** Templates that open/close (zarf-davetiye) report it so the page can keep its own sections hidden until opened. */
+  onOpenChange?: (open: boolean) => void
+  /** Start already opened (the public page keeps the choice across its periodic access re-checks). */
+  initialOpen?: boolean
 }
 
 export function DateVenue({ model, compact = false }: TemplateRendererProps & { compact?: boolean }) {

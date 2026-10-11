@@ -3,7 +3,7 @@ import type { DraftContentInput } from '../../../api/generated/client'
 
 const demos: Record<string, DraftContentInput> = {
   'zarf-davetiye': {
-    eventType: 'dugun', headline: 'Defne & Arda', hostNames: ['Defne', 'Arda'],
+    eventType: 'dugun', headline: 'Hande & Fatih', hostNames: ['Hande', 'Fatih'],
     message: 'Bu mektubu bir davetle kapatıyoruz: en güzel günümüzde yanımızda olun.',
     startsAt: '2027-09-11T17:00:00+03:00', timeZoneId: 'Europe/Istanbul', accentColor: 'adacayi',
     venue: { name: 'Zeytinlik Bahçe', address: 'Urla, İzmir' },

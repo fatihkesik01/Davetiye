@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import { ApiRequestError, DavetiyeApiClient, type PublicInvitationMedia as PublicMediaSnapshotItem, type PublicInvitationResponse } from '../../api/generated/client'
 import { InvitationRenderer } from '../templates/rendering/InvitationRenderer'
-import { normalizeDraftContent, templateRendersCoverInline } from '../templates/rendering/model'
+import { normalizeDraftContent, templateGatesContentUntilOpened, templateRendersCoverInline } from '../templates/rendering/model'
 import { isRenderablePublicInvitation, publicCodeFromPath } from './publicInvitationModel'
 import { PublicEventTools } from './PublicEventTools'
 import { PublicInvitationMedia } from './PublicInvitationMedia'
@@ -30,6 +30,8 @@ export function PublicInvitationPage({ pathname }: { pathname: string }) {
   const [attempt, setAttempt] = useState(0)
   const mainRef = useRef<HTMLElement>(null)
   const countedPublicCode = useRef<string | null>(null)
+  // Envelope templates keep every section hidden until the guest opens them; the choice survives the periodic re-checks.
+  const [envelopeOpen, setEnvelopeOpen] = useState(false)
   const [inlineCoverUrl, setInlineCoverUrl] = useState<string | undefined>()
 
   useEffect(() => {
@@ -121,7 +123,10 @@ export function PublicInvitationPage({ pathname }: { pathname: string }) {
           rendererVersion={view.invitation.rendererVersion}
           model={{ ...normalizeDraftContent(view.invitation.content), ...(templateRendersCoverInline(view.invitation.templateKey) && inlineCoverUrl ? { coverImageUrl: inlineCoverUrl } : {}) }}
           previewContext="public"
+          onOpenChange={setEnvelopeOpen}
+          initialOpen={envelopeOpen}
         />
+        {templateGatesContentUntilOpened(view.invitation.templateKey) && !envelopeOpen ? null : <>
         <PublicInvitationMedia key={`${publicCode ?? ''}-gallery`} api={api} publicCode={publicCode ?? ''} templateKey={view.invitation.templateKey}
           media={view.invitation.media ?? noPublicMedia} role="Gallery" />
         <p className="public-invitation-zone">{t('guest.timeZone')}: {view.invitation.content.timeZoneId}</p>
@@ -129,6 +134,7 @@ export function PublicInvitationPage({ pathname }: { pathname: string }) {
         {publicCode ? <PublicMemoriesSection key={`${publicCode}-memories`} api={api} publicCode={publicCode} /> : null}
         {publicCode ? <PublicGiftRegistrySection key={`${publicCode}-gifts`} api={api} publicCode={publicCode} templateKey={view.invitation.templateKey} /> : null}
         {view.invitation.rendererVersion >= 2 && publicCode ? <PublicEventTools model={normalizeDraftContent(view.invitation.content)} publicCode={publicCode} /> : null}
+        </>}
       </> : <section className="public-invitation-feedback" aria-labelledby="public-invitation-heading">
         <h1 id="public-invitation-heading">{view.state === 'not-found' ? t('guest.missing') : view.state === 'error' ? t('guest.failed') : view.state === 'unavailable' ? t('guest.unavailable') : t('guest.loading')}</h1>
         <p role={view.state === 'error' ? 'alert' : 'status'}>

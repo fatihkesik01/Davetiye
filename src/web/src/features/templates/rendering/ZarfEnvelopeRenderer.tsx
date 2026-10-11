@@ -1,4 +1,5 @@
-import { useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import './zarf.css'
 import { InvitationOptionalSections } from './InvitationOptionalSections'
@@ -72,18 +73,47 @@ function cardDate(model: NormalizedInvitationRenderModel) {
   }
 }
 
-export function ZarfEnvelopeRenderer({ model }: TemplateRendererProps) {
-  const [open, setOpen] = useState(false)
+/** Longest closing transition (card back down, then flap shut); the content is removed once it ends. */
+const closeAnimationMs = 1500
+
+function prefersReducedMotion(): boolean {
+  return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false }: TemplateRendererProps) {
+  // `open` drives the animation classes; `revealed` mounts the rest of the invitation. Nothing but the
+  // cover exists in the DOM until the envelope has been opened, and it is removed again after closing.
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(initialOpen)
+  const [revealed, setRevealed] = useState(initialOpen)
   const cardRef = useRef<HTMLDivElement>(null)
+  const ctaRef = useRef<HTMLButtonElement>(null)
+  const closeTimer = useRef<number | undefined>(undefined)
   const palette = zarfPalettes[resolveZarfAccent(model.accentColor)]
   const style = { '--z-base': palette.base, '--z-ink': palette.ink, '--z-seal': palette.seal } as CSSProperties
   const date = cardDate(model)
   const monogram = model.hostNames.map(name => name.at(0)?.toLocaleUpperCase('tr-TR')).filter(Boolean).slice(0, 2).join('') || 'D'
 
+  useEffect(() => () => window.clearTimeout(closeTimer.current), [])
+
   const openEnvelope = () => {
+    window.clearTimeout(closeTimer.current)
     setOpen(true)
+    setRevealed(true)
+    onOpenChange?.(true)
     // The button leaves the page once opened: hand keyboard/screen-reader focus to the card.
     window.requestAnimationFrame(() => cardRef.current?.focus({ preventScroll: true }))
+  }
+
+  const closeEnvelope = () => {
+    setOpen(false)
+    const finish = () => {
+      setRevealed(false)
+      onOpenChange?.(false)
+      window.requestAnimationFrame(() => ctaRef.current?.focus({ preventScroll: true }))
+    }
+    if (prefersReducedMotion()) finish()
+    else closeTimer.current = window.setTimeout(finish, closeAnimationMs)
   }
 
   return <article className={`invitation-template zarf${open ? ' zarf--open' : ''}`} aria-label={model.headline} style={style}>
@@ -94,7 +124,7 @@ export function ZarfEnvelopeRenderer({ model }: TemplateRendererProps) {
       </header>
 
       <div className="zarf__scene">
-        <div className="zarf__envelope">
+        <div className={`zarf__envelope${open ? '' : ' zarf__envelope--closed'}`} onClick={open ? undefined : openEnvelope}>
           <svg className="zarf__back" viewBox="0 0 300 200" preserveAspectRatio="none" aria-hidden="true" focusable="false">
             <rect width="300" height="200" rx="6" />
           </svg>
@@ -130,9 +160,9 @@ export function ZarfEnvelopeRenderer({ model }: TemplateRendererProps) {
           </figure>
 
           <svg className="zarf__pocket" viewBox="0 0 300 200" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-            <path className="zarf__pocket-side" d="M0 0L150 112L0 200Z" />
-            <path className="zarf__pocket-side" d="M300 0L150 112L300 200Z" />
-            <path className="zarf__pocket-bottom" d="M0 200L150 96L300 200Z" />
+            <path className="zarf__pocket-side" d="M-2 -2L150 112L-2 204Z" />
+            <path className="zarf__pocket-side" d="M302 -2L150 112L302 204Z" />
+            <path className="zarf__pocket-bottom" d="M-2 204L150 96L302 204Z" />
           </svg>
 
           <div className="zarf__flap" aria-hidden="true">
@@ -147,16 +177,21 @@ export function ZarfEnvelopeRenderer({ model }: TemplateRendererProps) {
 
       <div className="zarf__cta-row">
         {open
-          ? <p className="zarf__hint" role="status">{model.message ?? 'Davetiyeniz açıldı.'}</p>
-          : <button type="button" className="zarf__cta" aria-expanded={open} onClick={openEnvelope}>Davetiyeyi Aç</button>}
+          ? <>
+            {model.message ? <p className="zarf__hint" role="status">{model.message}</p> : null}
+            <button type="button" className="zarf__close" onClick={closeEnvelope}>{t('templateUi.zarf.close')}</button>
+          </>
+          : <button type="button" className="zarf__cta" ref={ctaRef} aria-expanded={false} onClick={openEnvelope}>{t('templateUi.zarf.open')}</button>}
       </div>
     </section>
 
+    {revealed ? <>
     <div className="zarf__details">
       <DateVenue model={model} compact />
       <Program model={model} title="Günün akışı" />
       {model.hostNames.length ? <p className="zarf__signature">{model.hostNames.join(' & ')}</p> : null}
     </div>
     <InvitationOptionalSections model={model} />
+    </> : null}
   </article>
 }

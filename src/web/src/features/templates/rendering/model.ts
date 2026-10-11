@@ -35,6 +35,16 @@ export interface NormalizedInvitationRenderModel {
   coverImageUrl?: string
 }
 
+/** Templates whose cover must be opened before any other part of the page is shown or reachable. */
+export function templateGatesContentUntilOpened(templateKey: string): boolean {
+  return templateKey === 'zarf-davetiye'
+}
+
+/** Templates whose public demo is a full page (like a real invitation) instead of a framed preview. */
+export function templateDemoIsFullPage(templateKey: string): boolean {
+  return templateKey === 'zarf-davetiye'
+}
+
 /** Templates that draw the Cover photo inside the design instead of the generic cover block above it. */
 export function templateRendersCoverInline(templateKey: string): boolean {
   return templateKey === 'zarf-davetiye'

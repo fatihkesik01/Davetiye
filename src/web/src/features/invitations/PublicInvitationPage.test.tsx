@@ -42,6 +42,22 @@ describe('public invitation access', () => {
     expect(screen.queryByText('Platform yönetimi')).toBeNull()
   })
 
+  it('keeps every section of an envelope template hidden until it is opened', async () => {
+    const zarf = { ...active, templateKey: 'zarf-davetiye', content: { ...active.content, announcement: 'Gizli duyuru' } }
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => String(url).endsWith('/views')
+      ? Promise.resolve(new Response(null, { status: 204 }))
+      : Promise.resolve(new Response(JSON.stringify(url === '/api/v1/templates' ? [] : zarf)))))
+    const { container } = render(<PublicInvitationPage pathname={`/davetiye/${code}`} />)
+
+    const open = await screen.findByRole('button', { name: 'Davetiyeyi Aç' })
+    expect(container.querySelector('.public-invitation-zone')).toBeNull()
+    expect(container.textContent).not.toContain('Gizli duyuru')
+    expect(container.querySelector('.zarf__details')).toBeNull()
+    fireEvent.click(open)
+    expect(container.querySelector('.public-invitation-zone')).not.toBeNull()
+    expect(container.textContent).toContain('Gizli duyuru')
+  })
+
   it('requests short-lived delivery only for media in the active snapshot and renders accessible media', async () => {
     const assetId = '11111111-1111-4111-8111-111111111111'
     const withCover = { ...active, media: [{ assetId, kind: 'Image', role: 'Cover', sortOrder: 0 }] }

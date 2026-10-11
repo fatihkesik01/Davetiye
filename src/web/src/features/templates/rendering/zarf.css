@@ -68,7 +68,7 @@
 
 .zarf__envelope > svg, .zarf__flap, .zarf__flap-face { position: absolute; display: block; }
 .zarf__back { inset: 0; width: 100%; height: 100%; fill: var(--z-inner); }
-.zarf__pocket { inset: 0; z-index: 3; width: 100%; height: 100%; }
+.zarf__pocket { inset: 0; z-index: 3; width: 100%; height: 100%; overflow: visible; }
 .zarf__pocket-side { fill: var(--z-side); }
 .zarf__pocket-bottom { fill: var(--z-base); }
 
@@ -78,12 +78,13 @@
   height: 55%;
   transform-origin: top center;
   transform-style: preserve-3d;
-  transition: transform 0.75s cubic-bezier(0.5, 0, 0.2, 1), z-index 0s 0.35s;
+  /* Closing: the card goes back in first, then the flap shuts. */
+  transition: transform 0.75s cubic-bezier(0.5, 0, 0.2, 1) 0.65s, z-index 0s 0.65s;
 }
 .zarf__flap-face { inset: 0; width: 100%; height: 100%; backface-visibility: hidden; }
 .zarf__flap-face--outer { fill: var(--z-flap-shade); }
 .zarf__flap-face--inner { fill: var(--z-inner); transform: rotateX(180deg); }
-.zarf--open .zarf__flap { z-index: 1; transform: rotateX(180deg); }
+.zarf--open .zarf__flap { z-index: 1; transform: rotateX(180deg); transition: transform 0.75s cubic-bezier(0.5, 0, 0.2, 1), z-index 0s 0.35s; }
 
 .zarf__seal {
   position: absolute;
@@ -102,9 +103,9 @@
   font-size: calc(var(--zw) * 0.058);
   line-height: 1;
   transform: translate(-50%, -62%);
-  transition: opacity 0.25s ease, transform 0.4s ease;
+  transition: opacity 0.3s ease 1.3s, transform 0.4s ease 1.3s;
 }
-.zarf--open .zarf__seal { opacity: 0; transform: translate(-50%, -62%) scale(0.6); pointer-events: none; }
+.zarf--open .zarf__seal { transition: opacity 0.25s ease, transform 0.4s ease; opacity: 0; transform: translate(-50%, -62%) scale(0.6); pointer-events: none; }
 
 .zarf__flower { position: absolute; z-index: 7; width: calc(var(--zw) * 0.12); fill: color-mix(in srgb, var(--z-base) 35%, #fff); stroke: var(--z-seal); stroke-width: 0.6; }
 .zarf__flower-heart { fill: var(--z-seal); stroke: none; }
@@ -121,10 +122,10 @@
   height: 135%;
   color: var(--z-ink);
   outline: none;
-  transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.2, 1) 0.45s;
+  transition: transform 0.7s cubic-bezier(0.3, 0.7, 0.2, 1);
 }
 .zarf__card:focus-visible { outline: 2px solid var(--z-ink); outline-offset: 4px; }
-.zarf--open .zarf__card { transform: translateY(-66%); }
+.zarf--open .zarf__card { transform: translateY(-66%); transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.2, 1) 0.45s; }
 .zarf__card-shape { position: absolute; inset: 0; width: 100%; height: 100%; fill: var(--z-paper); stroke: color-mix(in srgb, var(--z-base) 55%, #fff); stroke-width: 1.5; filter: drop-shadow(0 0.2rem 0.35rem rgb(0 0 0 / 0.18)); }
 .zarf__card-body {
   position: relative;
@@ -155,9 +156,10 @@
   width: 29%;
   margin: 0;
   transform: rotate(0deg);
-  transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.2, 1) 0.6s;
+  opacity: 0;
+  transition: transform 0.7s cubic-bezier(0.3, 0.7, 0.2, 1), opacity 0.2s ease 0.7s;
 }
-.zarf--open .zarf__photo { transform: translateY(-125%) rotate(5deg); }
+.zarf--open .zarf__photo { opacity: 1; transform: translateY(-125%) rotate(5deg); transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.2, 1) 0.6s, opacity 0.2s ease 0.6s; }
 .zarf__photo-frame {
   position: relative;
   padding: 6% 6% 16%;
@@ -179,6 +181,7 @@
 .zarf__photo-placeholder { display: grid; place-items: center; background: linear-gradient(160deg, color-mix(in srgb, var(--z-base) 45%, #fff), color-mix(in srgb, var(--z-base) 85%, #fff)); }
 .zarf__photo-placeholder svg { width: 38%; fill: color-mix(in srgb, var(--z-seal) 70%, #fff); }
 
+.zarf__envelope--closed { cursor: pointer; }
 .zarf__cta-row { min-height: 3.2rem; display: grid; align-items: center; justify-items: center; }
 .zarf__cta {
   min-height: 3rem;
@@ -203,10 +206,8 @@
   margin-inline: auto;
   padding: 2rem 1.25rem 3rem;
   gap: 1.75rem;
-  opacity: 0.55;
-  transition: opacity 0.6s ease 0.6s;
+  animation: zarf-fade 0.6s ease 0.8s both;
 }
-.zarf--open .zarf__details { opacity: 1; }
 .zarf__details .invite-facts, .zarf__details .invite-program li { border-color: color-mix(in srgb, var(--z-ink) 45%, transparent); }
 .zarf__details .invite-program { margin: 0; }
 .zarf__signature { margin: 0; font-family: var(--z-script); font-size: clamp(1.8rem, 7cqi, 2.6rem); }
@@ -231,3 +232,35 @@
 .zarf-accent-picker__dot { display: block; width: 2.75rem; height: 2.75rem; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35); }
 .zarf-accent-picker__swatch input:checked + .zarf-accent-picker__dot { box-shadow: 0 0 0 3px currentcolor; }
 .zarf-accent-picker__swatch input:focus-visible + .zarf-accent-picker__dot { outline: 3px solid currentcolor; outline-offset: 3px; }
+
+.zarf__close {
+  min-height: 2.75rem;
+  margin-block-start: 0.75rem;
+  padding: 0.5rem 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--z-ink) 55%, transparent);
+  border-radius: 999px;
+  color: var(--z-ink);
+  background: transparent;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.zarf__close:hover { background: color-mix(in srgb, var(--z-base) 25%, transparent); }
+.zarf__close:focus-visible { outline: 3px solid var(--z-ink); outline-offset: 3px; }
+
+.zarf-accent-picker--compact { display: flex; align-items: center; gap: 0.6rem; }
+.zarf-accent-picker--compact legend { float: left; margin-inline-end: 0.6rem; font-size: 0.85rem; }
+.zarf-accent-picker--compact .zarf-accent-picker__swatches { flex-wrap: nowrap; gap: 0.35rem; }
+.zarf-accent-picker--compact .zarf-accent-picker__swatch { padding: 0.15rem; }
+.zarf-accent-picker--compact .zarf-accent-picker__dot { width: 2rem; height: 2rem; }
+
+/* Full-page public demo: the invitation fills the viewport; controls float over it. */
+.template-fullpage-demo { min-height: 100svh; color: #1f2933; background: #fff; }
+.template-fullpage-demo__canvas { min-width: 0; }
+.template-fullpage-demo__canvas .zarf { padding-block-end: 5rem; }
+.template-fullpage-demo__canvas .zarf__stage { min-height: calc(100svh - 5rem); padding-block-start: 4.75rem; }
+.template-fullpage-demo__back, .template-fullpage-demo__bar { position: fixed; z-index: 50; background: rgb(255 255 255 / 0.94); box-shadow: 0 0.2rem 0.9rem rgb(0 0 0 / 0.2); backdrop-filter: blur(6px); }
+.template-fullpage-demo__back { inset-block-start: 0.75rem; inset-inline-start: 0.75rem; display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0 0.9rem; border-radius: 999px; color: #1f2933; font-size: 0.9rem; font-weight: 700; text-decoration: none; }
+.template-fullpage-demo__bar { inset-block-end: max(0.75rem, env(safe-area-inset-bottom)); inset-inline: 0.75rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; max-width: 40rem; margin-inline: auto; padding: 0.4rem 0.75rem; border-radius: 1.2rem; color: #1f2933; }
+.template-fullpage-demo__bar legend { color: #1f2933; }
+.template-fullpage-demo__start { display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0 1.1rem; border-radius: 999px; color: #fff; background: #1f2933; font-size: 0.9rem; font-weight: 700; text-decoration: none; }
+.template-fullpage-demo__back:focus-visible, .template-fullpage-demo__start:focus-visible { outline: 3px solid #1f2933; outline-offset: 2px; }

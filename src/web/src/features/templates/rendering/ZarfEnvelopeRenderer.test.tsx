@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { act, fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 
 import { getTemplateDemoModel } from './demoData'
 import { InvitationRenderer } from './InvitationRenderer'
@@ -18,6 +18,33 @@ describe('zarf-davetiye renderer', () => {
     fireEvent.click(button)
     expect(container.querySelector('.zarf--open')).not.toBeNull()
     expect(screen.queryByRole('button', { name: 'Davetiyeyi Aç' })).toBeNull()
+  })
+
+  it('renders nothing but the cover before opening, and the envelope itself is tappable', () => {
+    const model = { ...getTemplateDemoModel('zarf-davetiye')!, announcement: 'Gizli duyuru' }
+    const { container } = renderZarf(model)
+    expect(container.querySelector('.zarf__details')).toBeNull()
+    expect(container.querySelector('.invitation-optional-sections')).toBeNull()
+    expect(container.textContent).not.toContain('Gizli duyuru')
+    expect(container.textContent).not.toContain('Günün akışı')
+    fireEvent.click(container.querySelector('.zarf__envelope')!)
+    expect(container.querySelector('.zarf--open')).not.toBeNull()
+    expect(container.textContent).toContain('Gizli duyuru')
+  })
+
+  it('reports open state and closes again (instantly with reduced motion), hiding the content', () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
+    const changes: boolean[] = []
+    const model = getTemplateDemoModel('zarf-davetiye')!
+    const { container } = render(<InvitationRenderer templateKey="zarf-davetiye" rendererVersion={1} model={model} previewContext="public" onOpenChange={value => changes.push(value)} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Davetiyeyi Aç' }))
+    expect(container.querySelector('.zarf__details')).not.toBeNull()
+    act(() => { fireEvent.click(screen.getByRole('button', { name: 'Zarfı kapat' })) })
+    expect(container.querySelector('.zarf--open')).toBeNull()
+    expect(container.querySelector('.zarf__details')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Davetiyeyi Aç' })).toBeTruthy()
+    expect(changes).toEqual([true, false])
+    vi.unstubAllGlobals()
   })
 
   it('maps unknown or raw colour values to the default palette key', () => {

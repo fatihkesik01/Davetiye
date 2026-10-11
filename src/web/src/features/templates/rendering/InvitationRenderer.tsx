@@ -10,6 +10,8 @@ interface InvitationRendererProps {
   rendererVersion: number
   model: NormalizedInvitationRenderModel
   previewContext: PreviewContext
+  onOpenChange?: (open: boolean) => void
+  initialOpen?: boolean
 }
 
 export function InvitationRenderer({
@@ -17,6 +19,8 @@ export function InvitationRenderer({
   rendererVersion,
   model,
   previewContext,
+  onOpenChange,
+  initialOpen,
 }: InvitationRendererProps) {
   const registration = resolveTemplateRenderer(templateKey, rendererVersion)
   if (!registration) {
@@ -35,7 +39,7 @@ export function InvitationRenderer({
     className="invitation-renderer"
     data-preview-context={previewContext}
     data-renderer={`${templateKey}@${rendererVersion}`}
-  ><Renderer model={shown} /></div>
+  ><Renderer model={shown} onOpenChange={onOpenChange} initialOpen={initialOpen} /></div>
 }
 
 export function TemplateDemoRenderer({
