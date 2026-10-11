@@ -7,6 +7,12 @@ public static class InvitationDraftContract
     public const int CurrentContentSchemaVersion = 1;
     public const int DefaultPageSize = 20;
     public const int MaxPageSize = 100;
+
+    /// <summary>Allow-listed accent colour keys (never hex values); the frontend maps keys to palettes.</summary>
+    public static readonly IReadOnlySet<string> AccentColorKeys = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "adacayi", "pudra-pembe", "krem", "bordo", "lacivert", "lavanta",
+    };
 }
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
@@ -31,6 +37,9 @@ public sealed record DraftContentInput
     public string? Announcement { get; init; }
     public IReadOnlyList<DraftFaqInput>? Faqs { get; init; }
     public IReadOnlyList<DraftTransportStopInput>? TransportStops { get; init; }
+
+    /// <summary>Optional allow-listed colour key (see <see cref="InvitationDraftContract.AccentColorKeys"/>).</summary>
+    public string? AccentColor { get; init; }
 }
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]

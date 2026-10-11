@@ -12,7 +12,8 @@ public sealed record PublicInvitationContent(
     DateTimeOffset? StartsAt, string TimeZoneId, PublicInvitationVenue? Venue,
     IReadOnlyList<PublicInvitationProgramItem>? ProgramItems,
     IReadOnlyList<PublicInvitationContact>? Contacts = null, string? Announcement = null,
-    IReadOnlyList<PublicInvitationFaq>? Faqs = null, IReadOnlyList<PublicInvitationTransportStop>? TransportStops = null);
+    IReadOnlyList<PublicInvitationFaq>? Faqs = null, IReadOnlyList<PublicInvitationTransportStop>? TransportStops = null,
+    string? AccentColor = null);
 
 public sealed record PublicInvitationActive(
     string Status, string TemplateKey, int RendererVersion, int ContentSchemaVersion,

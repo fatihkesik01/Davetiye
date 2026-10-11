@@ -36,7 +36,7 @@ public sealed class PublicInvitationExperienceTests(PostgreSqlFixture postgreSql
     private static readonly DateTimeOffset Now = new(2026, 10, 2, 12, 0, 0, TimeSpan.Zero);
     private const string Password = "TestPassw0rd1";
     private const string Content = """{"headline":"Published headline","startsAt":"2026-10-10T12:00:00Z","timeZoneId":"Europe/Istanbul","venue":{"name":"Hall","address":"PRIVATE FULL ADDRESS","mapUrl":"https://evil.test/embed"},"message":"Welcome","hostNames":["Ada"]}""";
-    private const string Modules = """, "contacts":[{"name":"Contact","role":"Organizer","phone":"+905551234567"}],"announcement":"Current announcement","faqs":[{"question":"When?","answer":"Today"}],"transportStops":[{"name":"Station","address":"Stop address","departureTime":"13:00"}]}""";
+    private const string Modules = """, "contacts":[{"name":"Contact","role":"Organizer","phone":"+905551234567"}],"announcement":"Current announcement","faqs":[{"question":"When?","answer":"Today"}],"transportStops":[{"name":"Station","address":"Stop address","departureTime":"13:00"}],"accentColor":"lavanta"}""";
 
     [Theory]
     [InlineData(false)]
@@ -73,6 +73,11 @@ public sealed class PublicInvitationExperienceTests(PostgreSqlFixture postgreSql
             Assert.Equal("Current announcement", content.GetProperty("announcement").GetString());
             Assert.Equal("When?", content.GetProperty("faqs")[0].GetProperty("question").GetString());
             Assert.Equal("13:00", content.GetProperty("transportStops")[0].GetProperty("departureTime").GetString());
+            Assert.Equal("lavanta", content.GetProperty("accentColor").GetString());
+        }
+        else
+        {
+            Assert.False(content.TryGetProperty("accentColor", out var colour) && colour.ValueKind != JsonValueKind.Null);
         }
     }
 

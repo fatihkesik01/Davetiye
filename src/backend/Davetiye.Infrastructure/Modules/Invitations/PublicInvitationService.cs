@@ -64,6 +64,9 @@ public sealed class PublicInvitationService(
             content.Faqs?.Any(item => item is null || string.IsNullOrWhiteSpace(item.Question) || string.IsNullOrWhiteSpace(item.Answer)) == true ||
             content.TransportStops?.Any(item => item is null || string.IsNullOrWhiteSpace(item.Name) ||
                 item.DepartureTime is not null && !TimeOnly.TryParseExact(item.DepartureTime, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out _)) == true) return Unavailable();
+        // A snapshot with an unknown colour key is treated as corrupt, like the other allowlisted fields.
+        if (content.AccentColor is not null &&
+            !InvitationDraftContract.AccentColorKeys.Contains(content.AccentColor)) return Unavailable();
         var timeZoneId = zones.IsValid(content.TimeZoneId) ? content.TimeZoneId.Trim() : window.TimeZoneId;
         if (!zones.IsValid(timeZoneId)) return Unavailable();
         var projection = content with

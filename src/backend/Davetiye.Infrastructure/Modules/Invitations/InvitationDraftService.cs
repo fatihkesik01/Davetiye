@@ -482,6 +482,12 @@ public sealed class InvitationDraftService(
             }
         }
 
+        if (content.AccentColor is not null &&
+            !InvitationDraftContract.AccentColorKeys.Contains(content.AccentColor))
+        {
+            AddError(errors, "accentColor", "Accent colour is not supported.");
+        }
+
         ValidateOptionalText(errors, "announcement", content.Announcement, 4_000);
         if (content.Contacts is not null)
             for (var index = 0; index < content.Contacts.Count; index++)

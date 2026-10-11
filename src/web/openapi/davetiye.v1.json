@@ -1316,6 +1316,12 @@
                                   }
                                 }
                               }
+                            },
+                            "accentColor": {
+                              "type": [
+                                "null",
+                                "string"
+                              ]
                             }
                           }
                         },
@@ -7137,6 +7143,12 @@
             "items": {
               "$ref": "#/components/schemas/DraftTransportStopInput"
             }
+          },
+          "accentColor": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
         "additionalProperties": false
@@ -8666,6 +8678,12 @@
             "items": {
               "$ref": "#/components/schemas/PublicInvitationTransportStop"
             }
+          },
+          "accentColor": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

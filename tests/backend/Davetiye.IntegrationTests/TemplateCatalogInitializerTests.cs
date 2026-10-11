@@ -60,6 +60,33 @@ public sealed class TemplateCatalogInitializerTests(PostgreSqlFixture postgreSql
     }
 
     [Fact]
+    public async Task Zarf_davetiye_is_a_free_v1_template_listed_first()
+    {
+        var connectionString = await postgreSql.CreateEmptyDatabaseAsync();
+        await RunMigratorAsync(connectionString);
+        var registry = new TemplateRendererRegistry();
+
+        await using var context = CreateDbContext(connectionString);
+        await new TemplateCatalogInitializer(context, registry).InitializeAsync(CancellationToken.None);
+
+        Assert.Equal("zarf-davetiye", CodeOwnedTemplateCatalog.Definitions[0].Key);
+        var listed = await new TemplateCatalogService(context).ListActiveAsync(CancellationToken.None);
+        Assert.Equal(CodeOwnedTemplateCatalog.Definitions.Count, listed.Count);
+        var first = listed[0];
+        Assert.Equal("zarf-davetiye", first.Key);
+        Assert.Equal("Zarf Davetiye", first.Name);
+        Assert.Equal("Düğün / Save the Date", first.Category);
+        Assert.False(first.IsPremium);
+        Assert.Equal(1, first.RendererVersion);
+        Assert.Equal("/template-previews/zarf-davetiye.jpg", first.PreviewImageUrl);
+        Assert.Equal(["hero", "dateVenue", "countdown", "calendar", "contact", "rsvp", "gallery", "qr"], first.SupportedModules);
+        Assert.Equal(["headline", "startsAt", "venue.name"], first.RequiredFields);
+        Assert.Equal(["message", "hostNames"], first.RecommendedFields);
+        Assert.NotNull(registry.Resolve("zarf-davetiye", 1));
+        Assert.Null(registry.Resolve("zarf-davetiye", 2));
+    }
+
+    [Fact]
     public async Task Seed_fails_fast_when_an_active_database_row_has_no_compiled_renderer()
     {
         var connectionString = await postgreSql.CreateEmptyDatabaseAsync();

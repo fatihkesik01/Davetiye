@@ -16,6 +16,11 @@ public sealed class TemplateCatalogService(DavetiyeDbContext dbContext) : ITempl
             .ThenBy(template => template.Name)
             .ToListAsync(cancellationToken);
 
+        // Stable: the featured template first, everything else keeps the category/name order.
+        templates = templates
+            .OrderBy(template => template.Key == CodeOwnedTemplateCatalog.FeaturedFirstKey ? 0 : 1)
+            .ToList();
+
         return templates.Select(template => new TemplateCatalogItem(
             template.Key, template.Name, template.Description, template.Category, template.IsPremium,
             template.CurrentRendererVersion, template.PreviewImageUrl,

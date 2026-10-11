@@ -267,6 +267,8 @@ export interface DraftContentInput {
   announcement?: string | null
   faqs?: InvitationFaqInput[] | null
   transportStops?: InvitationTransportStopInput[] | null
+  /** Allow-listed colour KEY (adacayi, pudra-pembe, krem, bordo, lacivert, lavanta), never a hex value. */
+  accentColor?: string | null
   eventType?: string | null
   headline?: string | null
   hostNames?: string[] | null
@@ -283,6 +285,8 @@ export interface PublicInvitationContent {
   announcement?: string | null
   faqs?: InvitationFaqInput[] | null
   transportStops?: InvitationTransportStopInput[] | null
+  /** Allow-listed colour KEY (adacayi, pudra-pembe, krem, bordo, lacivert, lavanta), never a hex value. */
+  accentColor?: string | null
   eventType?: string | null
   headline?: string | null
   hostNames?: string[] | null

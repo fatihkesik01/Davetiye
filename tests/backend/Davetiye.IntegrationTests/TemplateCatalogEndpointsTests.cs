@@ -43,7 +43,8 @@ public sealed class TemplateCatalogEndpointsTests(PostgreSqlFixture postgreSql) 
         Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
         using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var templates = document.RootElement;
-        Assert.Equal(7, templates.GetArrayLength());
+        Assert.Equal(8, templates.GetArrayLength());
+        Assert.Equal("zarf-davetiye", templates[0].GetProperty("key").GetString());
         Assert.DoesNotContain(templates.EnumerateArray(), template =>
             template.GetProperty("key").GetString() == "romantik-nisan");
 

@@ -7,8 +7,14 @@ namespace Davetiye.Infrastructure.Modules.Templates;
 /// </summary>
 public static class CodeOwnedTemplateCatalog
 {
+    /// <summary>The template listed first in the Creator catalog, ahead of the category/name order.</summary>
+    public const string FeaturedFirstKey = "zarf-davetiye";
+
     public static IReadOnlyList<CodeOwnedTemplateDefinition> Definitions { get; } =
     [
+        new("zarf-davetiye", "Zarf Davetiye", "Düğün / Save the Date", false, 1, "/template-previews/zarf-davetiye.jpg",
+            "[\"hero\",\"dateVenue\",\"countdown\",\"calendar\",\"contact\",\"rsvp\",\"gallery\",\"qr\"]",
+            "[\"headline\",\"startsAt\",\"venue.name\"]", "[\"message\",\"hostNames\"]"),
         new("zamansiz-dugun", "Zamansız Düğün", "Düğün", false, 2, "/template-previews/zamansiz-dugun.jpg",
             "[\"hero\",\"dateVenue\",\"countdown\",\"calendar\",\"contact\",\"rsvp\",\"gallery\",\"timeline\",\"qr\"]",
             "[\"headline\",\"startsAt\",\"venue.name\"]", "[\"message\",\"hostNames\"]"),
