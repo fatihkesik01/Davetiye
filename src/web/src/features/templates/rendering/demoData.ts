@@ -1,7 +1,7 @@
 import { normalizeDraftContent, type NormalizedInvitationRenderModel } from './model'
-import type { DraftContentWithAccent } from './zarfAccent'
+import type { DraftContentInput } from '../../../api/generated/client'
 
-const demos: Record<string, DraftContentWithAccent> = {
+const demos: Record<string, DraftContentInput> = {
   'zarf-davetiye': {
     eventType: 'dugun', headline: 'Defne & Arda', hostNames: ['Defne', 'Arda'],
     message: 'Bu mektubu bir davetle kapatıyoruz: en güzel günümüzde yanımızda olun.',

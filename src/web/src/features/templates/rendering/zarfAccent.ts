@@ -1,5 +1,3 @@
-import type { DraftContentInput } from '../../../api/generated/client'
-
 export const zarfTemplateKey = 'zarf-davetiye'
 
 /**
@@ -36,9 +34,3 @@ export function resolveZarfAccent(value: string | null | undefined): ZarfAccentK
   const key = value?.trim()
   return (zarfAccentKeys as readonly string[]).includes(key ?? '') ? key as ZarfAccentKey : defaultZarfAccent
 }
-
-/**
- * Draft content with the zarf `accentColor` field. Local extension until the generated client
- * (owned by the backend contract) exposes the field itself.
- */
-export type DraftContentWithAccent = DraftContentInput & { accentColor?: string | null }

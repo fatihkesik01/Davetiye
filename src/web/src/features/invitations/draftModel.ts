@@ -1,11 +1,11 @@
 import type {
+  DraftContentInput,
   DraftProgramItemInput,
   InvitationDraftDetails,
   InvitationContactInput,
   InvitationFaqInput,
   InvitationTransportStopInput,
 } from '../../api/generated/client'
-import type { DraftContentWithAccent } from '../templates/rendering/zarfAccent'
 
 export const eventTypes = [
   { value: 'dugun', label: 'Düğün' },
@@ -58,7 +58,7 @@ export const emptyEditableDraft: EditableDraftContent = {
   accentColor: '',
 }
 
-export function toEditableDraft(content: DraftContentWithAccent): EditableDraftContent {
+export function toEditableDraft(content: DraftContentInput): EditableDraftContent {
   const programItems = (content.programItems ?? []).filter(
     (item): item is DraftProgramItemInput => item !== null,
   )
@@ -82,7 +82,7 @@ export function toEditableDraft(content: DraftContentWithAccent): EditableDraftC
   }
 }
 
-export function toDraftContent(content: EditableDraftContent): DraftContentWithAccent {
+export function toDraftContent(content: EditableDraftContent): DraftContentInput {
   const hasVenue = Boolean(content.venueName.trim() || content.venueAddress.trim() || content.mapUrl.trim())
   const hasProgram = Boolean(
     content.programTitle.trim() || content.programDescription.trim() || content.programStartsAtLocal,

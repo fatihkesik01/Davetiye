@@ -1,4 +1,5 @@
-import { resolveZarfAccent, type DraftContentWithAccent, type ZarfAccentKey } from './zarfAccent'
+import type { DraftContentInput } from '../../../api/generated/client'
+import { resolveZarfAccent, type ZarfAccentKey } from './zarfAccent'
 
 export interface InvitationRenderVenue {
   name: string
@@ -39,7 +40,7 @@ export function templateRendersCoverInline(templateKey: string): boolean {
   return templateKey === 'zarf-davetiye'
 }
 
-export function normalizeDraftContent(content: DraftContentWithAccent): NormalizedInvitationRenderModel {
+export function normalizeDraftContent(content: DraftContentInput): NormalizedInvitationRenderModel {
   const hostNames = (content.hostNames ?? []).map(value => value.trim()).filter(Boolean)
   const venueName = content.venue?.name?.trim()
 

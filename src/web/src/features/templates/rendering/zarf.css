@@ -150,14 +150,14 @@
 .zarf__photo {
   position: absolute;
   inset-block-start: 34%;
-  inset-inline-end: 2%;
+  inset-inline-end: -2%;
   z-index: 2;
-  width: 34%;
+  width: 29%;
   margin: 0;
   transform: rotate(0deg);
   transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.2, 1) 0.6s;
 }
-.zarf--open .zarf__photo { transform: translateY(-92%) rotate(6deg); }
+.zarf--open .zarf__photo { transform: translateY(-125%) rotate(5deg); }
 .zarf__photo-frame {
   position: relative;
   padding: 6% 6% 16%;
@@ -175,7 +175,7 @@
   content: "";
   transform: translateX(-50%) rotate(-3deg);
 }
-.zarf__photo-frame img, .zarf__photo-placeholder { display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover; }
+.zarf__photo-frame img, .zarf__photo-placeholder { display: block; width: 100%; height: auto; aspect-ratio: 3 / 4; object-fit: cover; }
 .zarf__photo-placeholder { display: grid; place-items: center; background: linear-gradient(160deg, color-mix(in srgb, var(--z-base) 45%, #fff), color-mix(in srgb, var(--z-base) 85%, #fff)); }
 .zarf__photo-placeholder svg { width: 38%; fill: color-mix(in srgb, var(--z-seal) 70%, #fff); }
 
