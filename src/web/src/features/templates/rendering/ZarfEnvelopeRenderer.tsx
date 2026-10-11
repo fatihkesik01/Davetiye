@@ -122,7 +122,7 @@ export function ZarfEnvelopeRenderer({ model }: TemplateRendererProps) {
           <figure className="zarf__photo" aria-hidden={!open}>
             <div className="zarf__photo-frame">
               {model.coverImageUrl
-                ? <img src={model.coverImageUrl} alt="Davetiye fotoğrafı" loading="lazy" />
+                ? <img src={model.coverImageUrl} alt="Davetiye fotoğrafı" width="300" height="400" loading="lazy" decoding="async" />
                 : <div className="zarf__photo-placeholder" aria-hidden="true">
                   <svg viewBox="0 0 24 24" focusable="false"><path d={heartPath} /></svg>
                 </div>}

@@ -1,7 +1,7 @@
 import { getTemplateDemoModel } from './demoData'
-import type { NormalizedInvitationRenderModel } from './model'
+import { templateRendersCoverInline, type NormalizedInvitationRenderModel } from './model'
 import { resolveTemplateRenderer } from './registry'
-import type { ZarfAccentKey } from './zarfAccent'
+import { zarfDemoPhotoUrl, type ZarfAccentKey } from './zarfAccent'
 
 export type PreviewContext = 'demo' | 'creator' | 'public'
 
@@ -26,11 +26,16 @@ export function InvitationRenderer({
   }
 
   const { Renderer } = registration
+  // Demo and Creator surfaces fall back to the bundled stand-in photo; a published public page never
+  // shows it (a guest without a real Cover simply sees the placeholder).
+  const shown: NormalizedInvitationRenderModel = previewContext !== 'public' && templateRendersCoverInline(templateKey) && !model.coverImageUrl
+    ? { ...model, coverImageUrl: zarfDemoPhotoUrl }
+    : model
   return <div
     className="invitation-renderer"
     data-preview-context={previewContext}
     data-renderer={`${templateKey}@${rendererVersion}`}
-  ><Renderer model={model} /></div>
+  ><Renderer model={shown} /></div>
 }
 
 export function TemplateDemoRenderer({

@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { TemplateCatalogItem } from '../../../api/generated/client'
+import { zarfDemoPhotoUrl, zarfPalettes } from '../rendering/zarfAccent'
 import { TemplateCatalogPage } from './TemplateCatalogPage'
 
 const premiumTemplate: TemplateCatalogItem = {
@@ -60,6 +61,31 @@ describe('TemplateCatalogPage', () => {
     expect(container.querySelector('[data-renderer="zamansiz-dugun@1"]')).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Bu şablonla başla' }).getAttribute('href'))
       .toBe('/panel/davetiyeler/yeni?template=zamansiz-dugun')
+  })
+})
+
+const zarfTemplate: TemplateCatalogItem = { ...premiumTemplate, key: 'zarf-davetiye', name: 'Zarf Davetiye', isPremium: false }
+
+describe('zarf-davetiye public demo', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('shows the demo photo and a colour picker that live-updates the preview', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([zarfTemplate])))
+    const { container } = render(<TemplateCatalogPage demoTemplateKey="zarf-davetiye" />)
+
+    expect(await screen.findByRole('group', { name: 'Zarf rengi' })).toBeTruthy()
+    expect(container.querySelector('.zarf__photo img')?.getAttribute('src')).toBe(zarfDemoPhotoUrl)
+    const article = () => container.querySelector('article') as HTMLElement
+    expect(article().style.getPropertyValue('--z-base')).toBe(zarfPalettes.adacayi.base)
+    fireEvent.click(screen.getByRole('radio', { name: 'Bordo' }))
+    expect(article().style.getPropertyValue('--z-base')).toBe(zarfPalettes.bordo.base)
+  })
+
+  it('does not offer the picker for other templates', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([premiumTemplate])))
+    render(<TemplateCatalogPage demoTemplateKey="zamansiz-dugun" />)
+    await screen.findByRole('heading', { name: 'Zamansız Düğün' })
+    expect(screen.queryByRole('group', { name: 'Zarf rengi' })).toBeNull()
   })
 })
 

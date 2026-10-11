@@ -65,7 +65,5 @@ const demos: Record<string, DraftContentWithAccent> = {
 export function getTemplateDemoModel(templateKey: string): NormalizedInvitationRenderModel | null {
   const content = demos[templateKey]
   if (!content) return null
-  const model = normalizeDraftContent(content)
-  // Bundled illustrative photo (no real people) so the demo shows the photo print.
-  return templateKey === 'zarf-davetiye' ? { ...model, coverImageUrl: '/template-demo/zarf-davetiye-photo.svg' } : model
+  return normalizeDraftContent(content)
 }
