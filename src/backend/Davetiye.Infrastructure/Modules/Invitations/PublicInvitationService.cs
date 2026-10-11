@@ -67,6 +67,10 @@ public sealed class PublicInvitationService(
         // A snapshot with an unknown colour key is treated as corrupt, like the other allowlisted fields.
         if (content.AccentColor is not null &&
             !InvitationDraftContract.AccentColorKeys.Contains(content.AccentColor)) return Unavailable();
+        if (content.AccentColor2 is not null &&
+            !InvitationDraftContract.AccentColor2Keys.Contains(content.AccentColor2)) return Unavailable();
+        if (content.Garden is not null &&
+            !InvitationDraftContract.GardenKeys.Contains(content.Garden)) return Unavailable();
         if (content.Ambiance is not null &&
             !InvitationDraftContract.AmbianceKeys.Contains(content.Ambiance)) return Unavailable();
         if (content.Flora is not null &&

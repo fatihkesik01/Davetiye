@@ -36,7 +36,7 @@ public sealed class PublicInvitationExperienceTests(PostgreSqlFixture postgreSql
     private static readonly DateTimeOffset Now = new(2026, 10, 2, 12, 0, 0, TimeSpan.Zero);
     private const string Password = "TestPassw0rd1";
     private const string Content = """{"headline":"Published headline","startsAt":"2026-10-10T12:00:00Z","timeZoneId":"Europe/Istanbul","venue":{"name":"Hall","address":"PRIVATE FULL ADDRESS","mapUrl":"https://evil.test/embed"},"message":"Welcome","hostNames":["Ada"]}""";
-    private const string Modules = """, "contacts":[{"name":"Contact","role":"Organizer","phone":"+905551234567"}],"announcement":"Current announcement","faqs":[{"question":"When?","answer":"Today"}],"transportStops":[{"name":"Station","address":"Stop address","departureTime":"13:00"}],"accentColor":"lavanta","ambiance":"gece","flora":"kiraz"}""";
+    private const string Modules = """, "contacts":[{"name":"Contact","role":"Organizer","phone":"+905551234567"}],"announcement":"Current announcement","faqs":[{"question":"When?","answer":"Today"}],"transportStops":[{"name":"Station","address":"Stop address","departureTime":"13:00"}],"accentColor":"lavanta","ambiance":"lila","flora":"kiraz","accentColor2":"fildisi","garden":"karisik"}""";
 
     [Theory]
     [InlineData(false)]
@@ -74,14 +74,18 @@ public sealed class PublicInvitationExperienceTests(PostgreSqlFixture postgreSql
             Assert.Equal("When?", content.GetProperty("faqs")[0].GetProperty("question").GetString());
             Assert.Equal("13:00", content.GetProperty("transportStops")[0].GetProperty("departureTime").GetString());
             Assert.Equal("lavanta", content.GetProperty("accentColor").GetString());
-            Assert.Equal("gece", content.GetProperty("ambiance").GetString());
+            Assert.Equal("lila", content.GetProperty("ambiance").GetString());
             Assert.Equal("kiraz", content.GetProperty("flora").GetString());
+            Assert.Equal("fildisi", content.GetProperty("accentColor2").GetString());
+            Assert.Equal("karisik", content.GetProperty("garden").GetString());
         }
         else
         {
             Assert.False(content.TryGetProperty("accentColor", out var colour) && colour.ValueKind != JsonValueKind.Null);
             Assert.False(content.TryGetProperty("ambiance", out var ambiance) && ambiance.ValueKind != JsonValueKind.Null);
             Assert.False(content.TryGetProperty("flora", out var flora) && flora.ValueKind != JsonValueKind.Null);
+            Assert.False(content.TryGetProperty("accentColor2", out var colour2) && colour2.ValueKind != JsonValueKind.Null);
+            Assert.False(content.TryGetProperty("garden", out var garden) && garden.ValueKind != JsonValueKind.Null);
         }
     }
 
@@ -154,6 +158,8 @@ public sealed class PublicInvitationExperienceTests(PostgreSqlFixture postgreSql
     [InlineData("{\"accentColor\":\"#ff0000\"}")]
     [InlineData("{\"ambiance\":\"Sabah\"}")]
     [InlineData("{\"flora\":\"orkide\"}")]
+    [InlineData("{\"accentColor2\":\"pudra-pembe\"}")]
+    [InlineData("{\"garden\":\"Gul\"}")]
     public async Task Malformed_optional_Published_modules_fail_closed_in_JSON_HTML_and_image(string malformed)
     {
         await using var h = await CreateAsync();

@@ -273,6 +273,10 @@ export interface DraftContentInput {
   ambiance?: string | null
   /** Allow-listed flora KEY (gul, papatya, lale, lavanta, kiraz). */
   flora?: string | null
+  /** Allow-listed second colour KEY (altin, gumus, bakir, bordo, zumrut, lacivert, gulkurusu, fildisi). */
+  accentColor2?: string | null
+  /** Allow-listed decor KEY (gul, papatya-kelebek, lale-ugurbocegi, lavanta-ari, kiraz, kelebekler, ugur-isik, karisik). */
+  garden?: string | null
   eventType?: string | null
   headline?: string | null
   hostNames?: string[] | null
@@ -295,6 +299,10 @@ export interface PublicInvitationContent {
   ambiance?: string | null
   /** Allow-listed flora KEY (gul, papatya, lale, lavanta, kiraz). */
   flora?: string | null
+  /** Allow-listed second colour KEY (altin, gumus, bakir, bordo, zumrut, lacivert, gulkurusu, fildisi). */
+  accentColor2?: string | null
+  /** Allow-listed decor KEY (gul, papatya-kelebek, lale-ugurbocegi, lavanta-ari, kiraz, kelebekler, ugur-isik, karisik). */
+  garden?: string | null
   eventType?: string | null
   headline?: string | null
   hostNames?: string[] | null

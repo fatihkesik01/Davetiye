@@ -11,16 +11,28 @@ public static class InvitationDraftContract
     /// <summary>Allow-listed accent colour keys (never hex values); the frontend maps keys to palettes.</summary>
     public static readonly IReadOnlySet<string> AccentColorKeys = new HashSet<string>(StringComparer.Ordinal)
     {
-        "adacayi", "pudra-pembe", "krem", "bordo", "lacivert", "lavanta",
+        "adacayi", "pudra-pembe", "krem", "bordo", "lacivert", "lavanta", "seftali", "zumrut",
+    };
+
+    /// <summary>Allow-listed second colour keys (seal, card text/lines); null means the frontend default.</summary>
+    public static readonly IReadOnlySet<string> AccentColor2Keys = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "altin", "gumus", "bakir", "bordo", "zumrut", "lacivert", "gulkurusu", "fildisi",
     };
 
     /// <summary>Allow-listed environment mood keys (zarf-davetiye); null means the frontend default (sabah).</summary>
     public static readonly IReadOnlySet<string> AmbianceKeys = new HashSet<string>(StringComparer.Ordinal)
     {
-        "sabah", "cayir", "gunbatimi", "gece", "safak",
+        "sabah", "cayir", "gunbatimi", "gece", "safak", "orman", "okyanus", "lila",
     };
 
-    /// <summary>Allow-listed flora keys (zarf-davetiye); null means the frontend default (gul).</summary>
+    /// <summary>Allow-listed decor keys (zarf-davetiye flowers/butterflies/bugs); null means the frontend default.</summary>
+    public static readonly IReadOnlySet<string> GardenKeys = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "gul", "papatya-kelebek", "lale-ugurbocegi", "lavanta-ari", "kiraz", "kelebekler", "ugur-isik", "karisik",
+    };
+
+    /// <summary>Legacy flora keys, still accepted for backward compatibility; superseded by <see cref="GardenKeys"/>.</summary>
     public static readonly IReadOnlySet<string> FloraKeys = new HashSet<string>(StringComparer.Ordinal)
     {
         "gul", "papatya", "lale", "lavanta", "kiraz",
@@ -52,6 +64,12 @@ public sealed record DraftContentInput
 
     /// <summary>Optional allow-listed colour key (see <see cref="InvitationDraftContract.AccentColorKeys"/>).</summary>
     public string? AccentColor { get; init; }
+
+    /// <summary>Optional allow-listed second colour key (see <see cref="InvitationDraftContract.AccentColor2Keys"/>).</summary>
+    public string? AccentColor2 { get; init; }
+
+    /// <summary>Optional allow-listed decor key (see <see cref="InvitationDraftContract.GardenKeys"/>).</summary>
+    public string? Garden { get; init; }
 
     /// <summary>Optional allow-listed environment mood key (see <see cref="InvitationDraftContract.AmbianceKeys"/>).</summary>
     public string? Ambiance { get; init; }

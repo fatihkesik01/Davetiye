@@ -267,6 +267,8 @@ public sealed class InvitationDraftEndpointsTests(PostgreSqlFixture postgreSql) 
             ("accentColor", "#ff0000"), ("accentColor", "neon"), ("accentColor", "Bordo"), ("accentColor", ""),
             ("ambiance", "disko"), ("ambiance", "Gece"), ("ambiance", ""),
             ("flora", "orkide"), ("flora", "Gul"), ("flora", ""),
+            ("accentColor2", "#d4af37"), ("accentColor2", "Altin"), ("accentColor2", "pudra-pembe"), ("accentColor2", ""),
+            ("garden", "orkide"), ("garden", "Gul"), ("garden", "papatya"), ("garden", ""),
         })
         {
             var rejected = await SendJsonAsync(
@@ -337,7 +339,7 @@ public sealed class InvitationDraftEndpointsTests(PostgreSqlFixture postgreSql) 
             new
             {
                 contentSchemaVersion = 1,
-                content = new { eventType = "dugun", headline = "Ada ve Grace", accentColor = "bordo", ambiance = "safak", flora = "lale" },
+                content = new { eventType = "dugun", headline = "Ada ve Grace", accentColor = "zumrut", ambiance = "okyanus", flora = "lale", accentColor2 = "gulkurusu", garden = "ugur-isik" },
                 expectedContentRevision = 0,
             },
             creatorACsrf);
@@ -346,9 +348,11 @@ public sealed class InvitationDraftEndpointsTests(PostgreSqlFixture postgreSql) 
         {
             Assert.Equal(1, autosaved.RootElement.GetProperty("contentRevision").GetInt64());
             Assert.Equal("Ada ve Grace", autosaved.RootElement.GetProperty("content").GetProperty("headline").GetString());
-            Assert.Equal("bordo", autosaved.RootElement.GetProperty("content").GetProperty("accentColor").GetString());
-            Assert.Equal("safak", autosaved.RootElement.GetProperty("content").GetProperty("ambiance").GetString());
+            Assert.Equal("zumrut", autosaved.RootElement.GetProperty("content").GetProperty("accentColor").GetString());
+            Assert.Equal("okyanus", autosaved.RootElement.GetProperty("content").GetProperty("ambiance").GetString());
             Assert.Equal("lale", autosaved.RootElement.GetProperty("content").GetProperty("flora").GetString());
+            Assert.Equal("gulkurusu", autosaved.RootElement.GetProperty("content").GetProperty("accentColor2").GetString());
+            Assert.Equal("ugur-isik", autosaved.RootElement.GetProperty("content").GetProperty("garden").GetString());
         }
 
         var staleAutosave = await SendJsonAsync(

@@ -13,7 +13,8 @@ public sealed record PublicInvitationContent(
     IReadOnlyList<PublicInvitationProgramItem>? ProgramItems,
     IReadOnlyList<PublicInvitationContact>? Contacts = null, string? Announcement = null,
     IReadOnlyList<PublicInvitationFaq>? Faqs = null, IReadOnlyList<PublicInvitationTransportStop>? TransportStops = null,
-    string? AccentColor = null, string? Ambiance = null, string? Flora = null);
+    string? AccentColor = null, string? Ambiance = null, string? Flora = null,
+    string? AccentColor2 = null, string? Garden = null);
 
 public sealed record PublicInvitationActive(
     string Status, string TemplateKey, int RendererVersion, int ContentSchemaVersion,

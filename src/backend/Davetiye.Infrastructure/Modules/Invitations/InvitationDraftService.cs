@@ -488,6 +488,18 @@ public sealed class InvitationDraftService(
             AddError(errors, "accentColor", "Accent colour is not supported.");
         }
 
+        if (content.AccentColor2 is not null &&
+            !InvitationDraftContract.AccentColor2Keys.Contains(content.AccentColor2))
+        {
+            AddError(errors, "accentColor2", "Second accent colour is not supported.");
+        }
+
+        if (content.Garden is not null &&
+            !InvitationDraftContract.GardenKeys.Contains(content.Garden))
+        {
+            AddError(errors, "garden", "Garden is not supported.");
+        }
+
         if (content.Ambiance is not null &&
             !InvitationDraftContract.AmbianceKeys.Contains(content.Ambiance))
         {

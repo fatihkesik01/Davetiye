@@ -1334,6 +1334,18 @@
                                 "null",
                                 "string"
                               ]
+                            },
+                            "accentColor2": {
+                              "type": [
+                                "null",
+                                "string"
+                              ]
+                            },
+                            "garden": {
+                              "type": [
+                                "null",
+                                "string"
+                              ]
                             }
                           }
                         },
@@ -7173,6 +7185,18 @@
               "null",
               "string"
             ]
+          },
+          "accentColor2": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "garden": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
         "additionalProperties": false
@@ -8716,6 +8740,18 @@
             ]
           },
           "flora": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "accentColor2": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "garden": {
             "type": [
               "null",
               "string"
