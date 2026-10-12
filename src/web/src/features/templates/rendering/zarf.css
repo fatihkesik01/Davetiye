@@ -640,8 +640,8 @@ html:has(.zarf), html:has(.dantel) { scrollbar-gutter: stable; }
 .zarf-scene__ground { fill: #e8d9cf; }
 .zarf-scene__vine, .zarf-scene__letter-fold { fill: none; stroke: #a76b72; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .zarf-scene__leaf { fill: #688c73; stroke: #547762; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.zarf-scene__letter { fill: #fff8ec; stroke: #bb8e67; stroke-width: 2; }
-.zarf-scene__heart { fill: #d87882; stroke: #a64d62; stroke-width: 2; filter: drop-shadow(1px 2px 1px rgb(77 36 42 / 0.26)); }
+.zarf-scene__letter { fill: url(#zarf-scene-paper); stroke: #bb8e67; stroke-width: 2; filter: drop-shadow(2px 3px 2px rgb(63 44 29 / 0.24)); }
+.zarf-scene__heart { fill: url(#zarf-scene-rose); stroke: #a64d62; stroke-width: 2; filter: drop-shadow(1px 2px 1px rgb(77 36 42 / 0.26)); }
 .zarf-scene__spark { fill: #e4b75c; stroke: #b18b45; stroke-width: 1.5; }
 .zarf-scene__moon, .zarf-scene__sun { fill: #f6d58b; filter: drop-shadow(0 0 7px rgb(255 235 170 / 0.72)); }
 .zarf-scene__moon-cut { fill: #101b3e; }
@@ -651,7 +651,7 @@ html:has(.zarf), html:has(.dantel) { scrollbar-gutter: stable; }
 .zarf-scene__window { fill: #83d4e6; stroke: #eaf5f6; stroke-width: 3; }
 .zarf-scene__flame { fill: #f5a14f; stroke: #f7d275; stroke-width: 2; stroke-linejoin: round; }
 .zarf-scene__star { fill: #fff0a5; }
-.zarf-scene__sea { fill: #4b9fb0; stroke: #27798c; stroke-width: 1; }
+.zarf-scene__sea { fill: url(#zarf-scene-sea); stroke: #27798c; stroke-width: 1; }
 .zarf-scene__horizon { fill: none; stroke: #f7d394; stroke-width: 2; }
 .zarf-scene__wave { fill: none; stroke: #c4edf0; stroke-width: 3; stroke-linecap: round; opacity: .9; filter: drop-shadow(0 1px 1px rgb(15 69 84 / 0.5)); }
 .zarf-scene__island { fill: #477b68; }
@@ -671,12 +671,12 @@ html:has(.zarf), html:has(.dantel) { scrollbar-gutter: stable; }
 .zarf-scene__stars { fill: #fff0a5; }
 .zarf-scene__window { fill: #ffd884; }
 .zarf-scene__stage { fill: #e9d7bf; }
-.zarf-scene__record { fill: #302a3c; stroke: #171722; stroke-width: 3; filter: drop-shadow(3px 5px 3px rgb(20 20 30 / 0.38)); }
+.zarf-scene__record { fill: url(#zarf-scene-record); stroke: #171722; stroke-width: 3; filter: drop-shadow(3px 5px 3px rgb(20 20 30 / 0.38)); }
 .zarf-scene__record-groove { fill: none; stroke: #b4a1bd; stroke-width: 1; opacity: .68; }
 .zarf-scene__record-label { fill: #d18b7b; stroke: #f1d1a2; stroke-width: 2; }
 .zarf-scene__record-hole { fill: #30293b; }
 .zarf-scene__tonearm, .zarf-scene__tonearm-joint { fill: none; stroke: #e9cf9d; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
-.zarf-scene__tonearm-joint { fill: #bd8a58; }
+.zarf-scene__tonearm-joint { fill: url(#zarf-scene-metal); }
 .zarf-scene__note, .zarf-scene__music-line { fill: none; stroke: #624c70; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .zarf-scene__music-line { stroke: #b18791; stroke-width: 2; }
 .zarf__theme-ornament { position: absolute; z-index: 4; inset-inline-start: 2%; inset-block-end: 2%; width: 26%; height: 28%; overflow: visible; pointer-events: none; transition: transform 0.6s ease; }
@@ -686,13 +686,14 @@ html:has(.zarf), html:has(.dantel) { scrollbar-gutter: stable; }
 .zarf--nofl .zarf__calla, .zarf--nofl .zarf__roses { display: none; }
 .zarf-scene__ring { fill: none; stroke: #e5b85e; stroke-width: 5; }
 .zarf-scene__ribbon { fill: none; stroke: #bd6d78; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
-.zarf-scene__planet { fill: #7565bd; stroke: #c8b8f1; stroke-width: 3; }
+.zarf-scene__planet { fill: url(#zarf-scene-planet); stroke: #c8b8f1; stroke-width: 3; filter: drop-shadow(3px 5px 4px rgb(17 19 51 / 0.4)); }
 .zarf-scene__planet-mark { fill: none; stroke: #b8a9ec; stroke-width: 4; stroke-linecap: round; }
+.zarf-scene__planet-crater { fill: none; stroke: rgb(218 211 255 / 0.44); stroke-width: 1.5; }
 .zarf-scene__satellite { fill: none; stroke: #dbe7f4; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .zarf-scene__constellation { fill: #fff5bd; }
 .zarf-scene__cliff { fill: #537b70; stroke: #355a55; stroke-width: 2; }
 .zarf-scene__lighthouse { fill: #fff3d8; stroke: #b56859; stroke-width: 2; }
-.zarf-scene__lighthouse-roof { fill: #bf685e; stroke: #813f4e; stroke-width: 2; }
+.zarf-scene__lighthouse-roof { fill: url(#zarf-scene-rose); stroke: #813f4e; stroke-width: 2; }
 .zarf-scene__lighthouse-light { fill: none; stroke: #f6d58b; stroke-width: 4; }
 .zarf-scene__fish { fill: #f4bd68; stroke: #bd8154; stroke-width: 2; }
 .zarf-scene__fish-eye { fill: #263d49; }
