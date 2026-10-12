@@ -10,6 +10,7 @@
   /* Space taken by the page chrome around the invitation (the demo's header and floating bar). */
   --dantel-chrome-top: 0rem;
   --dantel-chrome-bottom: 5.5rem; /* room for the inline open/close control (the demo reserves its floating bar instead) */
+  --dantel-top: 1.25rem;
   --dantel-pad-bottom: 1.5rem; /* in-flow controls (public page) need little padding; the demo's floating bar needs more */
   --dantel-w: min(96cqw, 52rem);
   --dantel-h: clamp(28rem, 68svh, 48rem);
@@ -25,7 +26,7 @@
 /* The global .invitation-template padding would inset the ambiance from the page edges: none here. */
 .invitation-template.dantel { min-height: 0; padding: 0; }
 
-/* The cover group is centred in the space left by the chrome by padding, so the doors never move when
+/* The cover is anchored just under the header with a small fixed margin, so the doors never move when
    the invitation opens and the page then grows with its content only. */
 .dantel__stage {
   display: grid;
@@ -34,7 +35,7 @@
   position: relative;
   isolation: isolate;
   min-height: calc(100svh - var(--dantel-chrome-top));
-  padding: max(1rem, calc((100svh - var(--dantel-chrome-top) - var(--dantel-chrome-bottom) - var(--dantel-h)) / 2)) 0.75rem var(--dantel-pad-bottom);
+  padding: var(--dantel-top) 0.75rem var(--dantel-pad-bottom);
   overflow-x: clip;
   background: var(--dantel-atmosphere-bg, var(--z-page));
 }
@@ -46,11 +47,13 @@
   height: var(--dantel-h);
   /* A shallow perspective keeps the opened door tips aligned with the book edges. */
   perspective: 5200px;
-  filter: drop-shadow(0 1.2rem 1.8rem rgb(61 42 38 / 0.18));
-  interpolate-size: allow-keywords;
-  transition: height 480ms cubic-bezier(0.22, 0.72, 0.2, 1);
 }
+/* A static soft shadow (a filter on this animated subtree would be re-rendered every frame). */
+.dantel__book::after { position: absolute; z-index: -1; inset: 3% 3% 0; border-radius: 0.6rem; box-shadow: 0 1.4rem 2rem rgb(61 42 38 / 0.2); content: ""; pointer-events: none; }
 .dantel--expanded .dantel__book { height: auto; min-height: var(--dantel-h); }
+/* The page grows to its content in one step; the paper is then revealed downwards with a paint-only clip. */
+.dantel--expanded .dantel__inside { animation: dantel-grow 440ms cubic-bezier(0.22, 0.72, 0.2, 1) backwards; }
+@keyframes dantel-grow { from { clip-path: inset(0 0 calc(100% - var(--dantel-h)) 0 round 0.25rem); } to { clip-path: inset(0 0 0 0 round 0.25rem); } }
 
 .dantel__inside,
 .dantel__door {
@@ -172,7 +175,9 @@
 .dantel--amb-cayir, .dantel--amb-gunbatimi, .dantel--amb-safak,
 .dantel--amb-gece, .dantel--amb-orman, .dantel--amb-okyanus, .dantel--amb-lila { min-height: 100svh; }
 
+@media (min-width: 48rem) { .dantel { --dantel-top: 2rem; } }
 @media (max-width: 40rem) {
+  .dantel-gate__knocker { transform: scale(1.15); }
   .dantel { --dantel-w: min(96cqw, 32rem); --dantel-h: clamp(28rem, 66svh, 40rem); }
   .dantel__inside { gap: 0.75rem; padding: 1.1rem 1rem; }
   .dantel__inside-rule { inset: 0.45rem; }
@@ -200,7 +205,7 @@
    studded panels and lion-head ring knockers, steps, lanterns, finials and a crowned crest. The scene is
    fixed 4:5; the leaves fold into the outer gutters; the invitation shows through the arch, then widens. */
 .dantel--theme-saray-kapisi {
-  --dantel-w: min(96cqw, 38rem, calc((100svh - var(--dantel-chrome-top) - var(--dantel-chrome-bottom) - 1.5rem) * 0.8));
+  --dantel-w: min(96cqw, 38rem, calc((100svh - var(--dantel-chrome-top) - var(--dantel-chrome-bottom) - var(--dantel-top) - 0.75rem) * 0.8));
   --dantel-h: calc(var(--dantel-w) * 1.25);
   --dantel-royal-metal: color-mix(in srgb, var(--z-seal) 68%, #d9bb78);
   --dantel-motif: var(--dantel-royal-metal);
@@ -209,9 +214,11 @@
   --gate-stone-mid: color-mix(in srgb, var(--gate-stone) 84%, #5a4a38);
   --gate-stone-dark: color-mix(in srgb, var(--gate-stone) 60%, #3a2e22);
   --gate-wood: color-mix(in srgb, var(--z-base) 22%, #3a2318);
+  --gate-wood-light: color-mix(in srgb, var(--gate-wood) 72%, #a8744f);
+  --gate-wood-dark: color-mix(in srgb, var(--gate-wood) 70%, #120a07);
   --gate-iron: #231913;
 }
-.dantel--theme-saray-kapisi .dantel__book { filter: drop-shadow(0 1rem 1.2rem rgb(25 18 12 / 0.25)); }
+.dantel--theme-saray-kapisi .dantel__book::after { display: none; }
 .dantel-gate__scene { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .dantel-gate__stone { fill: var(--gate-stone); }
 .dantel-gate__stone-light { fill: var(--gate-stone-light); }
@@ -220,6 +227,13 @@
 .dantel-gate__flute, .dantel-gate__joint { fill: none; stroke: rgb(60 45 30 / 0.28); stroke-width: 1.2; }
 .dantel-gate__moulding { fill: none; stroke: var(--gate-stone-dark); stroke-width: 5; opacity: 0.78; }
 .dantel-gate__moulding--bold { stroke: var(--gate-stone-mid); stroke-width: 9; opacity: 1; }
+.dantel-gate__lit { fill: rgb(255 250 235 / 0.5); }
+.dantel-gate__shade { fill: rgb(40 28 18 / 0.2); }
+.dantel-gate__contact { fill: rgb(30 20 12 / 0.28); }
+.dantel-gate__moulding-lit { fill: none; stroke: rgb(255 250 235 / 0.5); stroke-width: 1.4; }
+.dantel-gate__moulding-shade { fill: none; stroke: rgb(40 28 18 / 0.32); stroke-width: 5; }
+.dantel-gate__reveal { fill: none; stroke: rgb(30 20 12 / 0.45); stroke-width: 7; }
+.dantel-gate__metal-lit { fill: rgb(255 244 205 / 0.38); }
 .dantel-gate__edge { fill: none; stroke: rgb(40 28 18 / 0.5); stroke-width: 1.6; }
 .dantel-gate__dentil { fill: none; stroke: var(--gate-stone-dark); stroke-width: 6; stroke-dasharray: 4 4; }
 .dantel-gate__metal { fill: var(--dantel-royal-metal); stroke: rgb(70 50 25 / 0.7); stroke-width: 1.2; }
@@ -242,7 +256,9 @@
 .dantel--theme-saray-kapisi .dantel__door--right { inset-inline-start: 50%; }
 .dantel--theme-saray-kapisi .dantel__door-wash, .dantel--theme-saray-kapisi .dantel__panel-edge { display: none; }
 .dantel--theme-saray-kapisi .dantel__center-seam { inset-block: 17% 6%; }
-.dantel--theme-saray-kapisi .dantel__medallion { inset-block-start: 49%; z-index: 6; }
+.dantel--theme-saray-kapisi .dantel__medallion { inset-block-start: 46.6%; width: calc(var(--dantel-w) * 0.092); min-width: 2.3rem; padding: 0.12rem; z-index: 6; }
+.dantel--theme-saray-kapisi .dantel__medallion-inner span { font-size: clamp(0.8rem, calc(var(--dantel-w) * 0.042), 1.35rem); line-height: 1; }
+.dantel--theme-saray-kapisi .dantel__medallion-inner i { display: none; }
 .dantel--theme-saray-kapisi .dantel__doors--open .dantel__door--left { transform: translateX(calc(var(--dantel-w) * -0.2175)) rotateY(-80deg); box-shadow: none; }
 .dantel--theme-saray-kapisi .dantel__doors--open .dantel__door--right { transform: translateX(calc(var(--dantel-w) * 0.2175)) rotateY(80deg); box-shadow: none; }
 .dantel-gate__leaf { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
@@ -251,13 +267,18 @@
 .dantel-gate__iron-line { fill: none; stroke: var(--dantel-royal-metal); stroke-width: 2; stroke-linecap: round; }
 .dantel-gate__rosette { fill: var(--dantel-royal-metal); stroke: rgb(40 28 18 / 0.7); stroke-width: 1.2; }
 .dantel-gate__rosette-core { fill: var(--gate-wood); }
-.dantel-gate__panel { fill: rgb(0 0 0 / 0.16); stroke: color-mix(in srgb, var(--dantel-royal-metal) 80%, #000); stroke-width: 1.6; }
+.dantel-gate__bevel-lit { fill: none; stroke: rgb(255 226 170 / 0.4); stroke-width: 1.4; }
+.dantel-gate__bevel-shade { fill: none; stroke: rgb(0 0 0 / 0.5); stroke-width: 1.6; }
+.dantel-gate__panel { fill: rgb(0 0 0 / 0.22); stroke: color-mix(in srgb, var(--dantel-royal-metal) 80%, #000); stroke-width: 1.6; }
 .dantel-gate__stud { fill: var(--dantel-royal-metal); stroke: rgb(40 28 18 / 0.7); stroke-width: 0.8; }
 .dantel-gate__stud-core { fill: #f6e5b4; }
 .dantel-gate__hinge { fill: none; stroke: color-mix(in srgb, var(--gate-iron) 55%, var(--dantel-royal-metal)); stroke-width: 8; stroke-linecap: round; }
-.dantel-gate__ring { fill: none; stroke: var(--dantel-royal-metal); stroke-width: 3; }
-.dantel-gate__mane { fill: color-mix(in srgb, var(--dantel-royal-metal) 80%, #000); }
-.dantel-gate__lion { fill: color-mix(in srgb, var(--dantel-royal-metal) 88%, #fff); stroke: rgb(40 28 18 / 0.6); stroke-width: 0.8; }
+.dantel-gate__ring { fill: none; stroke: color-mix(in srgb, var(--dantel-royal-metal) 70%, #000); stroke-width: 4.2; }
+.dantel-gate__ring-lit { fill: none; stroke: color-mix(in srgb, var(--dantel-royal-metal) 80%, #fff); stroke-width: 1.6; stroke-dasharray: 22 100; stroke-dashoffset: -52; }
+.dantel-gate__knocker { transform-box: fill-box; transform-origin: center; }
+.dantel-gate__lion-feature { fill: var(--gate-iron); }
+.dantel-gate__mane { fill: color-mix(in srgb, var(--dantel-royal-metal) 72%, #000); stroke: rgb(30 20 12 / 0.55); stroke-width: 0.6; }
+.dantel-gate__lion { fill: color-mix(in srgb, var(--dantel-royal-metal) 84%, #fff); stroke: rgb(40 28 18 / 0.6); stroke-width: 0.8; }
 .dantel-gate__lion-face { fill: none; stroke: var(--gate-iron); stroke-width: 1; stroke-linecap: round; }
 
 /* The invitation shows through the arch while the leaves swing, then widens to the full readable page. */

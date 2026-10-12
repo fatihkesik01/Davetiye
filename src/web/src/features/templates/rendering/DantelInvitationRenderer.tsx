@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { memo, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import './dantel.css'
@@ -27,7 +27,7 @@ const dantelAmbiance: Record<ZarfAmbianceKey, { tint: string; background: string
   lila: { tint: '#a48acb', background: 'radial-gradient(ellipse at 50% 14%, #fff 0, transparent 36%), linear-gradient(150deg, #eee8f8, #d2bce9 56%, #a992cf)' },
 }
 
-function LaceFiligree({ side, flower }: { side: 'left' | 'right'; flower: 'gul' | 'papatya' | 'lale' | 'lavanta' | 'kiraz' }) {
+const LaceFiligree = memo(function LaceFiligree({ side, flower }: { side: 'left' | 'right'; flower: 'gul' | 'papatya' | 'lale' | 'lavanta' | 'kiraz' }) {
   return <svg className={`dantel__filigree dantel__filigree--${side}`} viewBox="0 0 100 720" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
     <path className="dantel__vine-shadow" d="M17 0C65 68 20 115 68 182S24 293 68 360 21 476 68 540 26 662 18 720" />
     <path className="dantel__vine-highlight" d="M14 0C62 68 17 115 65 182S21 293 65 360 18 476 65 540 23 662 15 720" />
@@ -44,16 +44,16 @@ function LaceFiligree({ side, flower }: { side: 'left' | 'right'; flower: 'gul' 
     </g>)}
     <path className="dantel__lace-loop" d="M6 46c24-23 48 23 72 0m-72 628c24-23 48 23 72 0" />
   </svg>
-}
+})
 
-function RoyalInteriorArtwork() {
+const RoyalInteriorArtwork = memo(function RoyalInteriorArtwork() {
   return <svg className="dantel__royal-interior" viewBox="0 0 800 1200" preserveAspectRatio="none" aria-hidden="true" focusable="false">
     <path className="dantel__royal-interior-arch" d="M38 1180V435C38 180 208 45 400 30c192 15 362 150 362 405v745M62 1180V438C62 198 222 72 400 58c178 14 338 140 338 380v742" />
     <path className="dantel__royal-interior-crown" d="M352 154l12-42 27 28 9-54 26 54 28-28 12 42zM376 160h80" />
     <path className="dantel__royal-interior-lily" d="M400 1080c-32-25-44-4-26 16l18 15 8-14 8 14 18-15c18-20 6-41-26-16zm0 15v48m-16 0h32" />
     <path className="dantel__royal-interior-rule" d="M125 230h170m210 0h170M125 990h170m210 0h170" />
   </svg>
-}
+})
 
 function prefersReducedMotion() {
   return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
