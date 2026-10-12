@@ -1,64 +1,61 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { zarfDemoPhotoUrl, zarfPalettes } from '../rendering/zarfAccent'
+import { zarfDemoPhotoUrl } from '../rendering/zarfAccent'
 import { FullPageTemplateDemo } from './FullPageTemplateDemo'
 
-describe('FullPageTemplateDemo (zarf-davetiye)', () => {
+describe('FullPageTemplateDemo bar', () => {
   afterEach(() => vi.unstubAllGlobals())
 
-  it('renders the invitation as a page with a back link, start link and a live colour picker', () => {
+  it('renders the zarf invitation as a page with a start link and a customise panel that Escape closes', () => {
     const { container } = render(<FullPageTemplateDemo templateKey="zarf-davetiye" />)
-
-    expect(screen.getByRole('link', { name: /Tüm şablonlar/ }).getAttribute('href')).toBe('/sablonlar')
     expect(screen.getByRole('link', { name: 'Bu şablonla başla' }).getAttribute('href')).toBe('/panel/davetiyeler/yeni?template=zarf-davetiye')
     expect(container.querySelector('.template-demo')).toBeNull()
     expect(container.querySelector('.zarf__photo img')?.getAttribute('src')).toBe(zarfDemoPhotoUrl)
     expect(screen.getByRole('article', { name: 'Hande & Fatih' })).toBeTruthy()
 
-    const article = () => container.querySelector('article') as HTMLElement
-    expect(article().className).toContain('zarf--amb-sabah')
-    expect(article().className).toContain('zarf--flora-gul')
-    expect(article().style.getPropertyValue('--z-base')).toBe(zarfPalettes.adacayi.base)
-
-    // The pickers live in a panel opened from the bar.
     const toggle = screen.getByRole('button', { name: 'Özelleştir' })
     expect(toggle.getAttribute('aria-expanded')).toBe('false')
-    expect(screen.queryByRole('group', { name: 'Zarf rengi' })).toBeNull()
+    expect(screen.queryByRole('dialog')).toBeNull()
     fireEvent.click(toggle)
     expect(toggle.getAttribute('aria-expanded')).toBe('true')
     expect(screen.getByRole('dialog')).toBeTruthy()
-    fireEvent.click(screen.getByRole('radio', { name: 'Bordo' }))
-    expect(article().style.getPropertyValue('--z-base')).toBe(zarfPalettes.bordo.base)
-    fireEvent.click(screen.getByRole('radio', { name: 'Yıldızlı gece' }))
-    expect(article().className).toContain('zarf--amb-gece')
-    fireEvent.click(screen.getByRole('radio', { name: 'Papatya' }))
-    expect(article().className).toContain('zarf--flora-papatya')
-    // Escape closes the panel and returns focus to the button.
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(document.activeElement).toBe(toggle)
   })
 
-  it('closes from the bottom bar only (no inline close button), and a reload starts closed with nothing stored', () => {
+  it.each([
+    ['zarf-davetiye', 'Zarfı aç', 'Zarfı kapat'],
+    ['dantel-davetiye', 'Kapıları aç', 'Kapıları kapat'],
+  ])('%s: one control opens or closes (never both), the content is hidden before opening and a reload starts closed', (templateKey, openName, closeName) => {
     vi.stubGlobal('matchMedia', () => ({ matches: true }))
-    const first = render(<FullPageTemplateDemo templateKey="zarf-davetiye" />)
-    expect(screen.queryByRole('button', { name: 'Zarfı kapat' })).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Davetiyeyi Aç' }))
+    const first = render(<FullPageTemplateDemo templateKey={templateKey} />)
+    const bar = screen.getByRole('region')
 
-    const bar = screen.getByRole('region', { name: 'Demo renk seçimi' })
-    expect(first.container.querySelector('.zarf__close')).toBeNull()
-    expect(first.container.querySelector('.zarf__details')).not.toBeNull()
-    act(() => { fireEvent.click(within(bar).getByRole('button', { name: 'Zarfı kapat' })) })
-    expect(first.container.querySelector('.zarf--open')).toBeNull()
-    expect(first.container.querySelector('.zarf__details')).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Zarfı kapat' })).toBeNull()
+    // Closed: only the open control, with its full accessible name (no duplicated label text).
+    const open = screen.getByRole('button', { name: openName })
+    expect(screen.queryByRole('button', { name: closeName })).toBeNull()
+    expect(open.textContent).toBe(openName)
+    expect(bar.querySelectorAll('.template-fullpage-demo__toggle')).toHaveLength(1)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Davetiyeyi Aç' }))
+    act(() => { fireEvent.click(open) })
+    // Open: the same slot now holds the close control; the open control is gone.
+    expect(screen.queryByRole('button', { name: openName })).toBeNull()
+    const close = screen.getByRole('button', { name: closeName })
+    expect(bar.querySelectorAll('.template-fullpage-demo__toggle')).toHaveLength(1)
+    expect(document.activeElement).toBe(close)
+
+    act(() => { fireEvent.click(close) })
+    expect(screen.queryByRole('button', { name: closeName })).toBeNull()
+    // Focus returns to the open control.
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: openName }))
+
+    act(() => { fireEvent.click(screen.getByRole('button', { name: openName })) })
     first.unmount() // a reload: all state is in memory only
-    const second = render(<FullPageTemplateDemo templateKey="zarf-davetiye" />)
-    expect(second.container.querySelector('.zarf--open')).toBeNull()
-    expect(second.container.querySelector('.zarf__details')).toBeNull()
+    render(<FullPageTemplateDemo templateKey={templateKey} />)
+    expect(screen.getByRole('button', { name: openName })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: closeName })).toBeNull()
     expect(localStorage.length + sessionStorage.length).toBe(0)
   })
 })

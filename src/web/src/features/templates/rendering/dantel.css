@@ -1,0 +1,311 @@
+.dantel {
+  --z-page: color-mix(in srgb, var(--z-base) 12%, #fff);
+  --z-wash: color-mix(in srgb, var(--z-base) 9%, transparent);
+  --dantel-cover: color-mix(in srgb, var(--z-base) 72%, #fff);
+  --dantel-paper: color-mix(in srgb, var(--z-seal) 12%, #fffdfa);
+  --dantel-thread: color-mix(in srgb, var(--z-seal) 82%, #d4b98d);
+  --dantel-thread-light: color-mix(in srgb, var(--dantel-thread) 42%, #fff);
+  --dantel-thread-shadow: color-mix(in srgb, var(--z-ink) 24%, var(--dantel-cover));
+  --dantel-ink: color-mix(in srgb, var(--z-ink2) 78%, var(--z-ink));
+  /* Space taken by the page chrome around the invitation (the demo's header and floating bar). */
+  --dantel-chrome-top: 0rem;
+  --dantel-chrome-bottom: 5.5rem; /* room for the inline open/close control (the demo reserves its floating bar instead) */
+  --dantel-pad-bottom: 1.5rem; /* in-flow controls (public page) need little padding; the demo's floating bar needs more */
+  --dantel-w: min(96cqw, 52rem);
+  --dantel-h: clamp(28rem, 68svh, 48rem);
+  --dantel-leaf-gutter: max(2.2rem, calc(var(--dantel-w) * 0.1));
+  container-type: inline-size;
+  position: relative;
+  isolation: isolate;
+  color: var(--z-ink);
+  background: var(--z-page);
+  font-family: Georgia, 'Times New Roman', serif;
+}
+.template-fullpage-demo__canvas .dantel { --dantel-chrome-top: 4.4rem; --dantel-chrome-bottom: 5rem; --dantel-pad-bottom: 5rem; }
+/* The global .invitation-template padding would inset the ambiance from the page edges: none here. */
+.invitation-template.dantel { min-height: 0; padding: 0; }
+
+/* The cover group is centred in the space left by the chrome by padding, so the doors never move when
+   the invitation opens and the page then grows with its content only. */
+.dantel__stage {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  position: relative;
+  isolation: isolate;
+  min-height: calc(100svh - var(--dantel-chrome-top));
+  padding: max(1rem, calc((100svh - var(--dantel-chrome-top) - var(--dantel-chrome-bottom) - var(--dantel-h)) / 2)) 0.75rem var(--dantel-pad-bottom);
+  overflow-x: clip;
+  background: var(--dantel-atmosphere-bg, var(--z-page));
+}
+
+.dantel__book {
+  position: relative;
+  isolation: isolate;
+  width: var(--dantel-w);
+  height: var(--dantel-h);
+  /* A shallow perspective keeps the opened door tips aligned with the book edges. */
+  perspective: 5200px;
+  filter: drop-shadow(0 1.2rem 1.8rem rgb(61 42 38 / 0.18));
+  interpolate-size: allow-keywords;
+  transition: height 480ms cubic-bezier(0.22, 0.72, 0.2, 1);
+}
+.dantel--expanded .dantel__book { height: auto; min-height: var(--dantel-h); }
+
+.dantel__inside,
+.dantel__door {
+  position: absolute;
+  inset: 0;
+  border: 1px solid color-mix(in srgb, var(--dantel-thread) 48%, #fff);
+  border-radius: 0.25rem;
+}
+
+.dantel__inside {
+  border-color: color-mix(in srgb, var(--dantel-thread) 68%, #fff);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: clamp(1.25rem, 5vw, 2rem) clamp(1.25rem, 6vw, 2.5rem);
+  overflow: hidden;
+  opacity: 0;
+  color: var(--dantel-ink);
+  background:
+    radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--z-seal) 18%, #fff), transparent 56%),
+    radial-gradient(ellipse at 5% 45%, color-mix(in srgb, var(--z-seal) 8%, transparent), transparent 38%),
+    radial-gradient(ellipse at 95% 72%, color-mix(in srgb, var(--z-seal) 7%, transparent), transparent 36%),
+    repeating-linear-gradient(0deg, rgb(118 78 57 / 0.035) 0 1px, transparent 1px 5px),
+    var(--dantel-paper);
+  box-shadow: 0 0.75rem 2rem rgb(53 39 34 / 0.16);
+  transition: opacity 120ms ease, padding 360ms ease;
+}
+
+/* The paper is visible behind the opening doors at once; it fades out again only once they have closed. */
+.dantel--open .dantel__inside { opacity: 1; }
+.dantel:not(.dantel--open) .dantel__inside { transition: opacity 120ms ease 480ms; }
+.dantel__content { display: flex; flex-direction: column; align-items: center; gap: inherit; width: 100%; flex: 1 1 auto; animation: dantel-reveal 360ms ease backwards; transition: opacity 120ms ease; }
+.dantel__content--leaving { opacity: 0; }
+@keyframes dantel-reveal { from { opacity: 0; transform: translateY(0.5rem); } to { opacity: 1; transform: none; } }
+.dantel--expanded .dantel__inside { position: relative; inset: auto; min-height: var(--dantel-h); overflow: visible; padding-inline: var(--dantel-leaf-gutter); }
+.dantel__inside-rule { position: absolute; inset: 0.65rem; border: 1px solid color-mix(in srgb, var(--dantel-thread) 35%, var(--dantel-motif) 28%); pointer-events: none; }
+.dantel__inside-heading { position: relative; z-index: 1; width: 100%; padding: 1rem 0 0.6rem; text-align: center; }
+.dantel__inside-heading::after { display: block; width: min(7rem, 35%); margin: 0.75rem auto 0; padding-block: 0.22rem; border-block: 1px solid color-mix(in srgb, var(--dantel-motif) 46%, transparent); color: var(--dantel-motif); content: var(--dantel-theme-mark, '✿'); font-size: 1rem; letter-spacing: 0.3em; }
+.dantel__eyebrow { margin: 0 0 0.65rem; color: color-mix(in srgb, var(--dantel-ink) 72%, #fff); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
+.dantel__inside-heading h2 { margin: 0; color: var(--dantel-ink); font-family: var(--z-script); font-size: clamp(2rem, 8vw, 3.15rem); font-weight: 500; line-height: 1.05; }
+.dantel__inside-flourish { display: inline-block; margin-top: 0.6rem; color: var(--dantel-motif); font-size: 1rem; }
+.dantel__photo { position: relative; width: min(62%, 13rem); margin: 0.25rem 0; padding: 0.45rem 0.45rem 0.6rem; border-bottom: 0.2rem solid color-mix(in srgb, var(--dantel-motif) 72%, #fff); background: #fff; box-shadow: 0 0.35rem 1rem color-mix(in srgb, var(--dantel-motif) 24%, transparent); transform: rotate(-2deg); }
+.dantel__photo img { display: block; width: 100%; max-height: 12rem; object-fit: cover; }
+.dantel__message { max-width: 28rem; margin: 0; font-size: 0.88rem; font-style: italic; line-height: 1.6; text-align: center; }
+.dantel__inside .invite-facts { width: 100%; margin-top: 0.25rem; border-block: 1px solid color-mix(in srgb, var(--dantel-thread) 42%, var(--dantel-motif) 45%); }
+.dantel__inside .invite-facts p { color: var(--dantel-ink); }
+.dantel__inside .invite-program,
+.dantel__inside .invitation-optional-sections { width: 100%; color: var(--dantel-ink); }
+.dantel__inside .invite-program h2,
+.dantel__inside .invitation-optional-sections h2 { color: var(--dantel-ink); font-size: 1rem; text-align: center; }
+.dantel__inside .invite-program h2,
+.dantel__inside .invitation-optional-sections h2 { color: var(--dantel-motif); }
+.dantel__inside .invite-program li { border-color: color-mix(in srgb, var(--dantel-thread) 38%, var(--dantel-motif) 42%); }
+.dantel__inside .invite-program li::marker { color: var(--dantel-motif); }
+.dantel__inside-footer { margin-top: auto; padding-top: 0.8rem; color: color-mix(in srgb, var(--dantel-ink) 68%, #fff); font-size: 0.8rem; font-style: italic; }
+
+.dantel__doors { position: absolute; inset: 0 0 auto; z-index: 3; height: var(--dantel-h); transform-style: preserve-3d; pointer-events: none; }
+.dantel__door {
+  width: 50%;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  background:
+    linear-gradient(0deg, color-mix(in srgb, var(--dantel-atmosphere-tint, transparent) 23%, transparent), color-mix(in srgb, var(--dantel-atmosphere-tint, transparent) 23%, transparent)),
+    radial-gradient(ellipse at 50% 48%, rgb(255 255 255 / 0.34), transparent 70%),
+    linear-gradient(115deg, color-mix(in srgb, var(--dantel-cover) 90%, #fff), var(--dantel-cover) 52%, color-mix(in srgb, var(--dantel-cover) 92%, var(--z-ink)));
+  box-shadow: inset 0 0 1.25rem rgb(80 55 43 / 0.07);
+  transition: transform 600ms cubic-bezier(0.22, 0.72, 0.2, 1), box-shadow 600ms ease;
+}
+
+.dantel__door--left { inset-inline-start: 0; transform-origin: left center; border-inline-end: 0; }
+.dantel__door--right { inset-inline-start: 50%; transform-origin: right center; border-inline-start: 0; }
+.dantel__door-wash { position: absolute; inset: 0; background: repeating-linear-gradient(135deg, rgb(255 255 255 / 0.11) 0 1px, transparent 1px 8px); }
+.dantel__filigree { position: absolute; inset-block: 0; width: 38%; height: 100%; overflow: visible; }
+.dantel__filigree--left { inset-inline-start: 0; }
+.dantel__filigree--right { inset-inline-end: 0; transform: scaleX(-1); }
+.dantel__vine-shadow { fill: none; stroke: var(--dantel-thread-shadow); stroke-width: 3.2; opacity: 0.65; }
+.dantel__vine-highlight { fill: none; stroke: var(--dantel-thread-light); stroke-width: 2; }
+.dantel__lace-bloom { color: var(--dantel-thread); }
+.dantel__emboss-shadow { fill: color-mix(in srgb, var(--dantel-thread) 35%, var(--dantel-cover)); stroke: var(--dantel-thread-shadow); stroke-width: 2; }
+.dantel__emboss-highlight { fill: color-mix(in srgb, var(--dantel-cover) 78%, #fff); stroke: var(--dantel-thread-light); stroke-width: 1.8; transform: translate(-1px, -1.5px); }
+.dantel__lace-bloom .zarf-art__rose-1,
+.dantel__lace-bloom .zarf-art__fl-1 { fill: color-mix(in srgb, var(--dantel-cover) 62%, #fff); stroke: var(--dantel-thread-light); stroke-width: 1.5; }
+.dantel--flora-gul .dantel__lace-bloom .zarf-art__rose-1 { fill: color-mix(in srgb, var(--z-rose) 76%, #fff); }
+.dantel--flora-papatya .dantel__lace-bloom .zarf-art__fl-1 { fill: #fffdf4; }
+.dantel--flora-lale .dantel__lace-bloom .zarf-art__fl-1 { fill: color-mix(in srgb, #d94e6d 70%, var(--z-seal)); }
+.dantel--flora-lavanta .dantel__lace-bloom .zarf-art__fl-1 { fill: color-mix(in srgb, #a48fd4 76%, var(--z-seal)); }
+.dantel--flora-kiraz .dantel__lace-bloom .zarf-art__fl-1 { fill: color-mix(in srgb, #f5a9bf 72%, var(--z-rose)); }
+.dantel__lace-bloom .zarf-art__rose-2,
+.dantel__lace-bloom .zarf-art__fl-2 { fill: color-mix(in srgb, var(--dantel-thread) 40%, var(--dantel-cover)); stroke: var(--dantel-thread); stroke-width: 1.2; }
+.dantel__lace-bloom .zarf-art__fl-3 { fill: color-mix(in srgb, var(--z-rose) 72%, #fff); stroke: var(--dantel-thread); stroke-width: 1; }
+.dantel__lace-bloom .zarf-art__rose-swirl,
+.dantel__lace-bloom .zarf-art__fl-line { fill: none; stroke: var(--dantel-thread); stroke-width: 1.4; }
+.dantel__pearl { fill: #fffdf4; stroke: color-mix(in srgb, var(--dantel-thread) 50%, #fff); stroke-width: 1; filter: drop-shadow(0 1px 1px rgb(77 56 47 / 0.24)); }
+.dantel__lace-leaf .dantel__emboss-shadow { fill: color-mix(in srgb, var(--z-rose) 24%, var(--dantel-cover)); }
+.dantel__lace-leaf .dantel__emboss-highlight { fill: color-mix(in srgb, var(--dantel-cover) 60%, #fff); }
+.dantel__leaf-vein { fill: none; stroke: var(--dantel-thread); stroke-width: 1.5; }
+.dantel__lace-loop { fill: none; stroke: var(--dantel-thread-light); stroke-width: 1.3; opacity: 0.85; }
+.dantel__panel-edge { position: absolute; inset-block: 0; width: 1px; background: linear-gradient(transparent, var(--dantel-thread-light) 10% 90%, transparent); opacity: 0.8; }
+.dantel__door--left .dantel__panel-edge { inset-inline-end: 0; }
+.dantel__door--right .dantel__panel-edge { inset-inline-start: 0; }
+.dantel__center-seam { position: absolute; z-index: 4; inset-block: 0; inset-inline-start: 50%; width: 2px; background: linear-gradient(90deg, rgb(94 61 51 / 0.16), var(--dantel-thread-light), rgb(255 255 255 / 0.68)); box-shadow: 0 0 0.45rem rgb(72 48 39 / 0.14); transform: translateX(-50%); transition: opacity 220ms ease; }
+.dantel__medallion { position: absolute; z-index: 5; inset-block-start: 50%; inset-inline-start: 50%; display: grid; width: clamp(4.25rem, 21vw, 5.6rem); aspect-ratio: 0.82; place-items: center; padding: 0.32rem; border: 1px solid color-mix(in srgb, var(--dantel-thread) 78%, #fff); border-radius: 52% 48% 50% 50% / 45% 46% 54% 55%; color: var(--z-ink2); background: radial-gradient(circle at 32% 25%, #fff, color-mix(in srgb, var(--dantel-cover) 76%, #d7c7a8) 60%, color-mix(in srgb, var(--dantel-thread) 26%, var(--dantel-cover))); box-shadow: 0 0.35rem 0.8rem rgb(72 47 38 / 0.22), inset 0 0 0 0.12rem rgb(255 255 255 / 0.6), inset 0 0 0 0.22rem color-mix(in srgb, var(--dantel-thread) 35%, transparent); transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; transition: opacity 260ms ease 340ms, transform 360ms ease 340ms; }
+.dantel__medallion-inner { display: grid; width: 100%; height: 100%; place-content: center; border: 1px solid color-mix(in srgb, var(--dantel-thread) 45%, #fff); border-radius: inherit; text-align: center; }
+.dantel__medallion-inner span { font-family: var(--z-script); font-size: 1.35rem; font-weight: 650; }
+.dantel__medallion-inner i { color: var(--dantel-thread); font-size: 0.56rem; font-style: normal; }
+.dantel__inside:focus { outline: none; }
+.dantel__medallion:focus-visible, .dantel__action:focus-visible { outline: 3px solid var(--account-focus, #295a4b); outline-offset: 4px; }
+.dantel__doors--open .dantel__door--left { transform: rotateY(-80deg); box-shadow: inset -0.45rem 0 0.8rem rgb(77 48 42 / 0.18); }
+.dantel__doors--open .dantel__door--right { transform: rotateY(80deg); box-shadow: inset 0.45rem 0 0.8rem rgb(77 48 42 / 0.18); }
+.dantel--open .dantel__medallion { opacity: 0; transform: translate(-50%, -50%) scale(0.68); pointer-events: none; transition: opacity 200ms ease, transform 300ms ease; }
+.dantel--open .dantel__center-seam { opacity: 0; }
+
+.dantel__controls { display: flex; justify-content: center; min-height: 2.9rem; }
+.dantel__action { min-width: 11rem; min-height: 2.9rem; padding: 0.55rem 1.35rem; border: 1px solid var(--dantel-thread); border-radius: 999px; color: #fff; background: var(--z-ink); box-shadow: 0 0.3rem 0.8rem rgb(38 38 38 / 0.14); font: 700 0.92rem Georgia, 'Times New Roman', serif; cursor: pointer; }
+.dantel__action--secondary { color: var(--z-ink); background: color-mix(in srgb, var(--dantel-paper) 94%, #fff); }
+
+.dantel--amb-cayir, .dantel--amb-gunbatimi, .dantel--amb-safak,
+.dantel--amb-gece, .dantel--amb-orman, .dantel--amb-okyanus, .dantel--amb-lila { min-height: 100svh; }
+
+@media (max-width: 40rem) {
+  .dantel { --dantel-w: min(96cqw, 32rem); --dantel-h: clamp(28rem, 66svh, 40rem); }
+  .dantel__inside { gap: 0.75rem; padding: 1.1rem 1rem; }
+  .dantel__inside-rule { inset: 0.45rem; }
+  .dantel__photo { width: min(58%, 11rem); }
+  .dantel__photo img { max-height: 9rem; }
+  .dantel__filigree { width: 39%; }
+}
+.dantel__inside-heading,
+.dantel__message,
+.dantel__inside .invite-facts,
+.dantel__inside .invite-program,
+.dantel__inside .invitation-optional-sections { width: min(100%, 42rem); }
+.dantel--expanded .dantel__inside { justify-content: flex-start; gap: clamp(0.8rem, 2.5vh, 1.5rem); padding-block: clamp(1.5rem, 6vh, 4rem) 2rem; }
+.dantel--expanded .dantel__photo { width: clamp(9rem, 23vh, 14rem); }
+.dantel--expanded .dantel__photo img { max-height: min(30vh, 15rem); }
+
+/* Ambiance themes recolour the full page; decor themes carry through the paper, photo, rules and headings. */
+.dantel--theme-gul { --dantel-motif: #ac5367; --dantel-theme-mark: '❀'; }
+.dantel--theme-papatya-kelebek { --dantel-motif: #d3a322; --dantel-theme-mark: '✳'; }
+.dantel--theme-lale-ugurbocegi { --dantel-motif: #c43e59; --dantel-theme-mark: '❁'; }
+.dantel--theme-lavanta-ari { --dantel-motif: #8063b3; --dantel-theme-mark: '✿'; }
+.dantel--theme-kiraz { --dantel-motif: #d87997; --dantel-theme-mark: '❋'; }
+
+/* Palace gate: a stone portal with an arched opening, two arch-topped oak leaves with iron fan tracery,
+   studded panels and lion-head ring knockers, steps, lanterns, finials and a crowned crest. The scene is
+   fixed 4:5; the leaves fold into the outer gutters; the invitation shows through the arch, then widens. */
+.dantel--theme-saray-kapisi {
+  --dantel-w: min(96cqw, 38rem, calc((100svh - var(--dantel-chrome-top) - var(--dantel-chrome-bottom) - 1.5rem) * 0.8));
+  --dantel-h: calc(var(--dantel-w) * 1.25);
+  --dantel-royal-metal: color-mix(in srgb, var(--z-seal) 68%, #d9bb78);
+  --dantel-motif: var(--dantel-royal-metal);
+  --gate-stone: color-mix(in srgb, var(--z-base) 18%, #d3c9b7);
+  --gate-stone-light: color-mix(in srgb, var(--gate-stone) 68%, #fff);
+  --gate-stone-mid: color-mix(in srgb, var(--gate-stone) 84%, #5a4a38);
+  --gate-stone-dark: color-mix(in srgb, var(--gate-stone) 60%, #3a2e22);
+  --gate-wood: color-mix(in srgb, var(--z-base) 22%, #3a2318);
+  --gate-iron: #231913;
+}
+.dantel--theme-saray-kapisi .dantel__book { filter: drop-shadow(0 1rem 1.2rem rgb(25 18 12 / 0.25)); }
+.dantel-gate__scene { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.dantel-gate__stone { fill: var(--gate-stone); }
+.dantel-gate__stone-light { fill: var(--gate-stone-light); }
+.dantel-gate__stone-mid { fill: var(--gate-stone-mid); }
+.dantel-gate__stone-dark { fill: var(--gate-stone-dark); }
+.dantel-gate__flute, .dantel-gate__joint { fill: none; stroke: rgb(60 45 30 / 0.28); stroke-width: 1.2; }
+.dantel-gate__moulding { fill: none; stroke: var(--gate-stone-dark); stroke-width: 5; opacity: 0.78; }
+.dantel-gate__moulding--bold { stroke: var(--gate-stone-mid); stroke-width: 9; opacity: 1; }
+.dantel-gate__edge { fill: none; stroke: rgb(40 28 18 / 0.5); stroke-width: 1.6; }
+.dantel-gate__dentil { fill: none; stroke: var(--gate-stone-dark); stroke-width: 6; stroke-dasharray: 4 4; }
+.dantel-gate__metal { fill: var(--dantel-royal-metal); stroke: rgb(70 50 25 / 0.7); stroke-width: 1.2; }
+.dantel-gate__iron { fill: none; stroke: var(--gate-iron); stroke-width: 2; stroke-linecap: round; }
+.dantel-gate__lantern path.dantel-gate__iron:nth-of-type(2) { fill: var(--gate-iron); }
+.dantel-gate__glass { fill: rgb(255 230 150 / 0.6); }
+.dantel-gate__glow { fill: #ffd36b; opacity: 0.22; }
+.dantel-gate__flame { fill: #ffb52e; }
+
+.dantel--theme-saray-kapisi .dantel__door {
+  inset-block: 17% 6%;
+  inset-inline-start: 23.75%;
+  width: 26.25%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+.dantel--theme-saray-kapisi .dantel__door--right { inset-inline-start: 50%; }
+.dantel--theme-saray-kapisi .dantel__door-wash, .dantel--theme-saray-kapisi .dantel__panel-edge { display: none; }
+.dantel--theme-saray-kapisi .dantel__center-seam { inset-block: 17% 6%; }
+.dantel--theme-saray-kapisi .dantel__medallion { inset-block-start: 49%; z-index: 6; }
+.dantel--theme-saray-kapisi .dantel__doors--open .dantel__door--left { transform: translateX(calc(var(--dantel-w) * -0.2175)) rotateY(-80deg); box-shadow: none; }
+.dantel--theme-saray-kapisi .dantel__doors--open .dantel__door--right { transform: translateX(calc(var(--dantel-w) * 0.2175)) rotateY(80deg); box-shadow: none; }
+.dantel-gate__leaf { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.dantel-gate__wood { fill: var(--gate-wood); stroke: var(--dantel-royal-metal); stroke-width: 3; }
+.dantel-gate__grain { fill: none; stroke: rgb(255 230 200 / 0.07); stroke-width: 2; }
+.dantel-gate__iron-line { fill: none; stroke: var(--dantel-royal-metal); stroke-width: 2; stroke-linecap: round; }
+.dantel-gate__rosette { fill: var(--dantel-royal-metal); stroke: rgb(40 28 18 / 0.7); stroke-width: 1.2; }
+.dantel-gate__rosette-core { fill: var(--gate-wood); }
+.dantel-gate__panel { fill: rgb(0 0 0 / 0.16); stroke: color-mix(in srgb, var(--dantel-royal-metal) 80%, #000); stroke-width: 1.6; }
+.dantel-gate__stud { fill: var(--dantel-royal-metal); stroke: rgb(40 28 18 / 0.7); stroke-width: 0.8; }
+.dantel-gate__stud-core { fill: #f6e5b4; }
+.dantel-gate__hinge { fill: none; stroke: color-mix(in srgb, var(--gate-iron) 55%, var(--dantel-royal-metal)); stroke-width: 8; stroke-linecap: round; }
+.dantel-gate__ring { fill: none; stroke: var(--dantel-royal-metal); stroke-width: 3; }
+.dantel-gate__mane { fill: color-mix(in srgb, var(--dantel-royal-metal) 80%, #000); }
+.dantel-gate__lion { fill: color-mix(in srgb, var(--dantel-royal-metal) 88%, #fff); stroke: rgb(40 28 18 / 0.6); stroke-width: 0.8; }
+.dantel-gate__lion-face { fill: none; stroke: var(--gate-iron); stroke-width: 1; stroke-linecap: round; }
+
+/* The invitation shows through the arch while the leaves swing, then widens to the full readable page. */
+.dantel--theme-saray-kapisi .dantel__inside {
+  z-index: 1;
+  border: 0;
+  clip-path: inset(17% 23.75% 6% 23.75% round 50% 50% 0 0 / 27.3% 27.3% 0 0);
+  transition: opacity 120ms ease, padding 360ms ease, clip-path 280ms ease;
+}
+.dantel--theme-saray-kapisi.dantel--open .dantel__inside {
+  z-index: 3;
+  clip-path: inset(0 0 0 0 round 0.25rem);
+  transition: opacity 120ms ease, padding 360ms ease, clip-path 520ms cubic-bezier(0.22, 0.72, 0.2, 1) 120ms;
+}
+.dantel--theme-saray-kapisi.dantel--expanded .dantel__inside { z-index: 3; clip-path: none; }
+.dantel--theme-saray-kapisi .dantel__inside { border-color: var(--dantel-royal-metal); }
+.dantel--theme-saray-kapisi .dantel__inside-rule { z-index: 0; inset: 0.85rem; border: 2px solid color-mix(in srgb, var(--dantel-royal-metal) 72%, transparent); box-shadow: inset 0 0 0 0.22rem color-mix(in srgb, var(--dantel-royal-metal) 12%, transparent); }
+.dantel__royal-interior { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; opacity: 0.11; pointer-events: none; }
+.dantel__royal-interior-arch, .dantel__royal-interior-rule { fill: none; stroke: var(--dantel-royal-metal); stroke-width: 4; }
+.dantel__royal-interior-crown, .dantel__royal-interior-lily { fill: color-mix(in srgb, var(--dantel-royal-metal) 22%, transparent); stroke: var(--dantel-royal-metal); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.dantel--theme-saray-kapisi .dantel__inside > :not(.dantel__inside-rule):not(.dantel__royal-interior) { position: relative; z-index: 1; }
+.dantel--theme-saray-kapisi .dantel__inside-heading::before { display: block; margin-bottom: 0.2rem; color: var(--dantel-royal-metal); content: '♛'; font-size: 1.2rem; }
+.dantel--theme-saray-kapisi .dantel__inside-heading::after { color: var(--dantel-royal-metal); content: '⚜'; font-size: 1rem; letter-spacing: 0; }
+.dantel--theme-saray-kapisi .dantel__inside-flourish { color: transparent; font-size: 0; }
+.dantel--theme-saray-kapisi .dantel__inside-flourish::before { color: var(--dantel-royal-metal); content: '⚜'; font-size: 1.05rem; }
+.dantel--theme-saray-kapisi .dantel__photo { border-bottom-color: var(--dantel-royal-metal); box-shadow: 0 0.4rem 1.2rem color-mix(in srgb, var(--dantel-royal-metal) 24%, transparent); }
+.dantel--theme-saray-kapisi .dantel__inside .invite-facts { border-color: color-mix(in srgb, var(--dantel-royal-metal) 72%, var(--dantel-motif)); }
+.dantel--theme-saray-kapisi .dantel__inside .invite-program li { border-color: color-mix(in srgb, var(--dantel-royal-metal) 68%, var(--dantel-motif)); }
+.dantel--theme-saray-kapisi .dantel__inside-footer::before { display: block; margin-bottom: 0.3rem; color: var(--dantel-royal-metal); content: '⚜'; font-size: 1rem; font-style: normal; }
+
+.dantel.dantel--amb-gece, .dantel.dantel--amb-orman { --dantel-ink: #f5f0e7; }
+.dantel.dantel--amb-gece .dantel__inside,
+.dantel.dantel--amb-orman .dantel__inside { color: #4b3d37; }
+.dantel.dantel--amb-gece .dantel__inside-heading h2,
+.dantel.dantel--amb-gece .dantel__inside .invite-facts p,
+.dantel.dantel--amb-orman .dantel__inside-heading h2,
+.dantel.dantel--amb-orman .dantel__inside .invite-facts p { color: #4b3d37; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dantel__door, .dantel__medallion, .dantel__center-seam, .dantel__inside, .dantel__book, .dantel__content { transition-duration: 0.01ms !important; transition-delay: 0s !important; animation: none !important; }
+}
+
+/* The mood also feeds the page canvas around the invitation (public page, preview and demo alike). */
+:root:has(.dantel.zarf--amb-sabah) { background: radial-gradient(ellipse at 50% 8%, #fff7d7 0, transparent 36%), linear-gradient(145deg, #e7f0df, #f7f0df 58%, #dcebe3); }
+:root:has(.dantel.zarf--amb-cayir) { background: radial-gradient(ellipse at 82% 14%, #ffe695 0, transparent 30%), linear-gradient(160deg, #d3e9c5, #f6efc8 54%, #b6d9c6); }
+:root:has(.dantel.zarf--amb-gunbatimi) { background: radial-gradient(ellipse at 50% 12%, #ffe7a8 0, transparent 32%), linear-gradient(165deg, #f3b79f, #f1c0b9 48%, #cb879b); }
+:root:has(.dantel.zarf--amb-gece) { background: linear-gradient(155deg, #172345, #313363 58%, #503e70); }
+:root:has(.dantel.zarf--amb-safak) { background: radial-gradient(ellipse at 50% 10%, #fff 0, transparent 38%), linear-gradient(155deg, #f9e5ed, #f1b8cf 55%, #d98fab); }
+:root:has(.dantel.zarf--amb-orman) { background: radial-gradient(ellipse at 50% 15%, rgb(198 220 159 / 0.3), transparent 44%), linear-gradient(155deg, #142e27, #285343 58%, #3c604f); }
+:root:has(.dantel.zarf--amb-okyanus) { background: radial-gradient(ellipse at 50% 12%, #fff 0, transparent 38%), linear-gradient(160deg, #c6e9ed, #8ecbd5 58%, #61a9ba); }
+:root:has(.dantel.zarf--amb-lila) { background: radial-gradient(ellipse at 50% 14%, #fff 0, transparent 36%), linear-gradient(150deg, #eee8f8, #d2bce9 56%, #a992cf); }

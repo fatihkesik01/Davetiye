@@ -1,5 +1,4 @@
-/* Zarf Davetiye: a code-owned envelope template. One curated accent (--z-base, --z-ink, --z-seal set
-   inline from the palette map) drives every colour; tints and shades are derived with color-mix so text
+/* Zarf Davetiye: a code-owned envelope template. Curated accents are set inline from palette maps; tints and shades are derived with color-mix so text
    stays on the dark --z-ink over very light tints. Motion is CSS only and is switched off for
    prefers-reduced-motion (the envelope then opens instantly). */
 .zarf {
@@ -7,6 +6,10 @@
   --z-paper: color-mix(in srgb, var(--z-base) 6%, #fff);
   --z-flap-shade: color-mix(in srgb, var(--z-base) 82%, #000);
   --z-inner: color-mix(in srgb, var(--z-base) 62%, #000);
+  /* Warm envelope lining, gently tinted by the selected seal and lettering colour. */
+  --z-lining: color-mix(in srgb, var(--z-seal) 18%, #ead8a8);
+  --z-card-ink: color-mix(in srgb, var(--z-ink2, var(--z-ink)) 72%, var(--z-ink));
+  --z-sign: var(--z-ink2, var(--z-ink));
   --z-side: color-mix(in srgb, var(--z-base) 90%, #000);
   --z-bottom: color-mix(in srgb, var(--z-base) 94%, #fff);
   --zw: min(86cqi, 27rem, 48svh);
@@ -35,13 +38,17 @@
   align-content: start;
   justify-items: center;
   gap: 1.5rem;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 /* The scene reserves the space above the envelope that the card and the opened flap move into, so
    opening never shifts the layout. */
 .zarf__scene {
+  --z-scene-reserved-top: calc(var(--zw) * 0.55);
+  position: relative;
   width: var(--zw);
-  padding-block-start: calc(var(--zw) * 0.55);
+  padding-block-start: var(--z-scene-reserved-top);
   perspective: 1100px;
 }
 
@@ -54,7 +61,22 @@
 }
 
 .zarf__envelope > svg, .zarf__flap, .zarf__flap-face { position: absolute; display: block; }
-.zarf__back { inset: 0; width: 100%; height: 100%; fill: var(--z-inner); border-radius: 6px; /* static shadow: a filter on the animated envelope would be re-rendered every frame */ box-shadow: 0 0.7rem 0.9rem color-mix(in srgb, var(--z-ink) 22%, transparent); }
+.zarf__back {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
+  /* static shadow: a filter on the animated envelope would be re-rendered every frame */
+  box-shadow: 0 0.7rem 0.9rem color-mix(in srgb, var(--z-ink) 22%, transparent);
+  /* Aged tissue lining: darker aged edge, a faint stain and fine crossing tissue lines (all static gradients). */
+  background:
+    radial-gradient(75% 95% at 50% 42%, transparent 52%, rgb(90 60 24 / 0.32) 100%),
+    radial-gradient(20% 30% at 88% 18%, rgb(110 70 20 / 0.16), transparent 70%),
+    radial-gradient(18% 26% at 10% 78%, rgb(110 70 20 / 0.12), transparent 70%),
+    repeating-linear-gradient(135deg, rgb(255 255 255 / 0.14) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(45deg, rgb(112 79 35 / 0.045) 0 1px, transparent 1px 11px),
+    var(--z-lining);
+}
 .zarf__pocket { inset: 0; z-index: 3; width: 100%; height: 100%; overflow: visible; }
 .zarf__pocket-side { fill: var(--z-side); }
 .zarf__pocket-bottom { fill: var(--z-base); }
@@ -70,29 +92,63 @@
 }
 .zarf__flap-face { inset: 0; width: 100%; height: 100%; backface-visibility: hidden; }
 .zarf__flap-face--outer { fill: var(--z-flap-shade); }
-.zarf__flap-face--inner { fill: var(--z-inner); transform: rotateX(180deg); }
-.zarf--open .zarf__flap { z-index: 1; transform: rotateX(180deg); transition: transform 0.75s cubic-bezier(0.5, 0, 0.2, 1), z-index 0s 0.35s; }
+.zarf__flap-face--inner { fill: var(--z-lining); transform: rotateX(180deg); }
+.zarf__lining-fill { fill: var(--z-lining); }
+.zarf__tissue { fill: none; stroke: color-mix(in srgb, var(--z-seal) 18%, #fff); stroke-width: 0.7; opacity: 0.4; }
+.zarf__stain { fill: color-mix(in srgb, var(--z-seal) 18%, #80613a); opacity: 0.16; }
+.zarf__postmark { stroke: color-mix(in srgb, var(--z-ink2, #5a3c1a) 70%, #000); stroke-width: 0.9; opacity: 0.4; fill: none; }
+.zarf__stamp rect:first-child { fill: #efe3c6; stroke: color-mix(in srgb, var(--z-ink2, #5a3c1a) 60%, #000); stroke-width: 0.8; stroke-dasharray: 2 1.6; }
+.zarf__stamp-inner { fill: color-mix(in srgb, var(--z-line, #b8913f) 38%, #efe3c6); stroke: none; }
+.zarf__stamp-mark { fill: none; stroke: color-mix(in srgb, var(--z-ink2, #5a3c1a) 80%, #000); stroke-width: 1; opacity: 0.7; }
+.zarf--open .zarf__flap { z-index: 1; transform: rotateX(180deg); /* the seal cracks first (0.3s), then the flap lifts */ transition: transform 0.75s cubic-bezier(0.5, 0, 0.2, 1) 0.3s, z-index 0s 0.65s; }
 
+/* Wax seal: embossed rim, highlights and the initials, cut by a jagged break line into two halves. On
+   opening the halves part and fall away (transform/opacity only); on closing the seal comes back whole. */
+.zarf {
+  --z-wax-hi: color-mix(in srgb, var(--z-wax, var(--z-seal)) 55%, #fff);
+  --z-wax-lo: color-mix(in srgb, var(--z-wax, var(--z-seal)) 72%, #000);
+}
 .zarf__seal {
   position: absolute;
   inset-block-start: 50%;
   inset-inline-start: 50%;
   z-index: 6;
-  display: grid;
-  width: calc(var(--zw) * 0.16);
-  height: calc(var(--zw) * 0.16);
-  place-items: center;
-  border-radius: 50%;
-  color: #fff;
-  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--z-seal) 70%, #fff), var(--z-seal) 60%);
-  box-shadow: 0 0.15rem 0.4rem rgb(0 0 0 / 0.35), inset 0 0 0 0.12rem color-mix(in srgb, var(--z-seal) 70%, #000);
-  font-family: var(--z-script);
-  font-size: calc(var(--zw) * 0.058);
-  line-height: 1;
+  width: calc(var(--zw) * 0.17);
+  aspect-ratio: 1;
   transform: translate(-50%, -62%);
-  transition: opacity 0.3s ease 1.3s, transform 0.4s ease 1.3s;
+  pointer-events: none;
 }
-.zarf--open .zarf__seal { transition: opacity 0.25s ease, transform 0.4s ease; opacity: 0; transform: translate(-50%, -62%) scale(0.6); pointer-events: none; }
+.zarf__seal-half { position: absolute; inset: 0; transition: transform 0.45s cubic-bezier(0.3, 0.7, 0.3, 1) 1.45s, opacity 0.3s ease 1.45s; }
+.zarf__seal-half--left { clip-path: polygon(0 0, 54% 0, 47% 14%, 57% 30%, 45% 48%, 56% 66%, 46% 84%, 53% 100%, 0 100%); }
+.zarf__seal-half--right { clip-path: polygon(54% 0, 100% 0, 100% 100%, 53% 100%, 46% 84%, 56% 66%, 45% 48%, 57% 30%, 47% 14%); }
+.zarf--open .zarf__seal-half { transition: transform 0.55s cubic-bezier(0.5, 0, 0.9, 0.6), opacity 0.35s ease 0.2s; opacity: 0; }
+.zarf--open .zarf__seal-half--left { transform: translate(-34%, 95%) rotate(-26deg); }
+.zarf--open .zarf__seal-half--right { transform: translate(34%, 115%) rotate(28deg); }
+.zarf__seal-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 51% 47% 52% 48% / 48% 53% 47% 52%;
+  background: radial-gradient(circle at 34% 28%, var(--z-wax-hi) 0, var(--z-wax, var(--z-seal)) 38%, var(--z-wax-lo) 100%);
+  box-shadow: 0 0.15rem 0.35rem rgb(0 0 0 / 0.4), inset 0 0 0 0.1rem var(--z-wax-lo);
+}
+.zarf__seal-face::before {
+  position: absolute;
+  inset: 13%;
+  border-radius: 50%;
+  box-shadow: inset 0 0.07rem 0.12rem rgb(0 0 0 / 0.38), 0 0.05rem 0 rgb(255 255 255 / 0.28);
+  content: "";
+}
+.zarf__seal-initials {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--z-onseal, #fff);
+  font-family: var(--z-script);
+  font-size: calc(var(--zw) * 0.062);
+  line-height: 1;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.3), 0 -1px 0 rgb(0 0 0 / 0.28);
+}
 
 .zarf__flower { position: absolute; z-index: 7; width: calc(var(--zw) * 0.12); fill: color-mix(in srgb, var(--z-base) 35%, #fff); stroke: var(--z-seal); stroke-width: 0.6; }
 .zarf__flower-heart { fill: var(--z-seal); stroke: none; }
@@ -106,12 +162,13 @@
   z-index: 2;
   width: 70%;
   aspect-ratio: 240 / 228;
-  color: var(--z-ink);
+  color: var(--z-card-ink);
   outline: none;
   transition: transform 0.7s cubic-bezier(0.3, 0.7, 0.2, 1);
 }
-.zarf__card:focus-visible { outline: 2px solid var(--z-ink); outline-offset: 4px; }
-.zarf--open .zarf__card { transform: translateY(-66%); transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.2, 1) 0.45s; }
+.zarf__card:focus-visible { outline: none; }
+.zarf__card:focus-visible .zarf__card-shape { filter: drop-shadow(0 0 3px color-mix(in srgb, var(--z-ink) 72%, transparent)); }
+.zarf--open .zarf__card { transform: translate(-10%, -72%) rotate(-6deg); transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.2, 1) 0.75s; }
 .zarf__card-shape { position: absolute; inset: 0; width: 100%; height: 100%; fill: var(--z-paper); stroke: color-mix(in srgb, var(--z-base) 55%, #fff); stroke-width: 1.5; }
 .zarf__card-body {
   position: absolute;
@@ -135,15 +192,15 @@
 .zarf__photo {
   position: absolute;
   inset-block-start: 34%;
-  inset-inline-end: 4%;
+  inset-inline-end: 2%;
   z-index: 2;
-  width: 29%;
+  width: 36%;
   margin: 0;
   transform: rotate(0deg);
   opacity: 0;
   transition: transform 0.7s cubic-bezier(0.3, 0.7, 0.2, 1), opacity 0.2s ease 0.7s;
 }
-.zarf--open .zarf__photo { opacity: 1; transform: translateY(-125%) rotate(5deg); transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.2, 1) 0.6s, opacity 0.2s ease 0.6s; }
+.zarf--open .zarf__photo { opacity: 1; transform: translate(22%, -125%) rotate(7deg); transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.2, 1) 0.9s, opacity 0.2s ease 0.9s; }
 .zarf__photo-frame {
   position: relative;
   padding: 6% 6% 16%;
@@ -166,8 +223,8 @@
 .zarf__photo-placeholder svg { width: 38%; fill: color-mix(in srgb, var(--z-seal) 70%, #fff); }
 
 .zarf__envelope--closed { cursor: pointer; }
-.zarf--open .zarf__cta-row:empty { display: none; }
-.zarf__cta-row { height: 3.25rem; display: grid; align-items: center; justify-items: center; }
+.zarf__cta-row:empty { display: none; }
+.zarf__cta-row { min-height: 3.25rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.65rem; }
 .zarf__cta {
   min-height: 3rem;
   padding: 0.75rem 1.9rem;
@@ -175,13 +232,15 @@
   border-radius: 999px;
   color: var(--z-cta-fg);
   background: var(--z-cta-bg);
-  box-shadow: 0 0.35rem 0.9rem color-mix(in srgb, var(--z-text) 30%, transparent);
+  box-shadow: inset 0 0 0 2px var(--z-line, transparent), 0 0.35rem 0.9rem color-mix(in srgb, var(--z-text) 30%, transparent);
   font-family: var(--z-script);
   font-size: 1.35rem;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .zarf__cta:hover { transform: translateY(-2px); }
+.zarf__cta:disabled { cursor: default; opacity: 0.62; }
+.zarf__cta:disabled:hover { transform: none; }
 .zarf__cta:focus-visible { outline: 3px solid var(--z-text); outline-offset: 4px; }
 .zarf__hint { max-width: 30rem; margin: 0 auto; font-style: italic; line-height: 1.5; }
 
@@ -203,7 +262,7 @@
 @keyframes zarf-reveal { from { opacity: 0; transform: translateY(0.6rem); } to { opacity: 1; transform: none; } }
 .zarf__details .invite-facts, .zarf__details .invite-program li { border-color: color-mix(in srgb, var(--z-text) 45%, transparent); }
 .zarf__details .invite-program { margin: 0; }
-.zarf__signature { margin: 0; font-family: var(--z-script); font-size: clamp(1.8rem, 7cqi, 2.6rem); }
+.zarf__signature { margin: 0; color: var(--z-sign); font-family: var(--z-script); font-size: clamp(1.8rem, 7cqi, 2.6rem); }
 .zarf .invitation-optional-sections { width: min(100%, 44rem); margin-inline: auto; padding: 0 1.25rem 3rem; text-align: start; }
 
 @keyframes zarf-fade { from { opacity: 0; } to { opacity: 1; } }
@@ -238,6 +297,7 @@
   cursor: pointer;
 }
 .zarf__close:hover { background: color-mix(in srgb, var(--z-base) 25%, transparent); }
+.zarf__close:disabled { cursor: default; opacity: 0.62; }
 .zarf__close:focus-visible { outline: 3px solid var(--z-text); outline-offset: 3px; }
 
 .zarf-accent-picker--compact { display: flex; align-items: center; gap: 0.6rem; }
@@ -247,33 +307,51 @@
 .zarf-accent-picker--compact .zarf-accent-picker__dot { width: 2rem; height: 2rem; }
 
 /* Full-page public demo: the invitation fills the viewport; controls float over it. */
-.template-fullpage-demo { min-height: 100svh; color: #1f2933; background: #fff; }
-.template-fullpage-demo__canvas { min-width: 0; }
+.template-fullpage-demo { position: relative; min-height: 100svh; overflow-x: clip; color: #1f2933; background: transparent; }
+/* The mood belongs to the full public page shell, outside and around the invitation. */
+:root:has(.template-fullpage-demo .zarf--amb-sabah) { background: radial-gradient(ellipse at 50% 8%, #fff7d7 0, transparent 36%), linear-gradient(145deg, #e7f0df, #f7f0df 58%, #dcebe3); }
+:root:has(.template-fullpage-demo .zarf--amb-cayir) { background: radial-gradient(ellipse at 82% 14%, #ffe695 0, transparent 30%), linear-gradient(160deg, #d3e9c5, #f6efc8 54%, #b6d9c6); }
+:root:has(.template-fullpage-demo .zarf--amb-gunbatimi) { background: radial-gradient(ellipse at 50% 12%, #ffe7a8 0, transparent 32%), linear-gradient(165deg, #f3b79f, #f1c0b9 48%, #cb879b); }
+:root:has(.template-fullpage-demo .zarf--amb-gece) { background: radial-gradient(1.5px 1.5px at 12% 18%, #fff 98%, transparent), radial-gradient(1.5px 1.5px at 78% 27%, #fff 98%, transparent), radial-gradient(1px 1px at 34% 68%, #fff 98%, transparent), radial-gradient(1.5px 1.5px at 90% 82%, #fff 98%, transparent), linear-gradient(155deg, #172345, #313363 58%, #503e70); }
+:root:has(.template-fullpage-demo .zarf--amb-safak) { background: radial-gradient(ellipse at 50% 10%, #fff 0, transparent 38%), linear-gradient(155deg, #f9e5ed, #f1b8cf 55%, #d98fab); }
+:root:has(.template-fullpage-demo .zarf--amb-orman) { background: radial-gradient(ellipse at 50% 15%, rgb(198 220 159 / 0.3), transparent 44%), linear-gradient(155deg, #142e27, #285343 58%, #3c604f); }
+:root:has(.template-fullpage-demo .zarf--amb-okyanus) { background: radial-gradient(ellipse at 50% 12%, #fff 0, transparent 38%), repeating-linear-gradient(172deg, transparent 0 72px, rgb(255 255 255 / 0.22) 73px 76px), linear-gradient(160deg, #c6e9ed, #8ecbd5 58%, #61a9ba); }
+:root:has(.template-fullpage-demo .zarf--amb-lila) { background: radial-gradient(ellipse at 50% 14%, #fff 0, transparent 36%), linear-gradient(150deg, #eee8f8, #d2bce9 56%, #a992cf); }
+.template-fullpage-demo__canvas { position: relative; width: 100%; max-width: none; min-width: 0; margin: 0; padding: 0; }
 .template-fullpage-demo__canvas .zarf { --z-chrome: 6rem; padding-block-end: 5rem; }
-.template-fullpage-demo__back, .template-fullpage-demo__bar { position: fixed; z-index: 50; background: rgb(255 255 255 / 0.94); box-shadow: 0 0.2rem 0.9rem rgb(0 0 0 / 0.2); backdrop-filter: blur(6px); }
-.template-fullpage-demo__back { inset-block-start: 0.75rem; inset-inline-start: 0.75rem; display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0 0.9rem; border-radius: 999px; color: #1f2933; font-size: 0.9rem; font-weight: 700; text-decoration: none; }
-.template-fullpage-demo__bar { inset-block-end: max(0.5rem, env(safe-area-inset-bottom)); inset-inline: 0.5rem; display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 0.4rem 0.75rem; max-width: 40rem; margin-inline: auto; padding: 0.4rem 0.75rem; border-radius: 1.2rem; color: #1f2933; }
-.template-fullpage-demo__bar legend { color: #1f2933; }
-.template-fullpage-demo__start { display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0 1.1rem; border-radius: 999px; color: #fff; background: #1f2933; font-size: 0.9rem; font-weight: 700; text-decoration: none; }
-.template-fullpage-demo__close { display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0 1.1rem; border: 1px solid #1f2933; border-radius: 999px; color: #1f2933; background: transparent; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
-.template-fullpage-demo__close:focus-visible, .template-fullpage-demo__back:focus-visible, .template-fullpage-demo__start:focus-visible { outline: 3px solid #1f2933; outline-offset: 2px; }
+.template-fullpage-demo__canvas .zarf__scene { --z-scene-reserved-top: calc(var(--zw) * 0.1); }
+.template-fullpage-demo__canvas .dantel { width: 100%; min-height: calc(100svh - 4.5rem); margin: 0; padding-block-end: 0; }
+.shell-main:has(.template-fullpage-demo) { width: 100%; max-width: none; min-height: 0; padding: 0; }
+.template-fullpage-demo__bar { position: fixed; z-index: 50; border: 1px solid var(--account-border); background: color-mix(in srgb, var(--account-surface) 96%, transparent); box-shadow: 0 0.45rem 1.5rem rgb(31 41 51 / 0.16), 0 1px 3px rgb(31 41 51 / 0.08); backdrop-filter: blur(10px); }
+.template-fullpage-demo__bar { inset-block-end: max(0.75rem, env(safe-area-inset-bottom)); inset-inline: 0.5rem; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: stretch; gap: 0.3rem; max-width: 40rem; margin-inline: auto; padding: 0.35rem; border-radius: 1.2rem; color: var(--account-ink); }
+.template-fullpage-demo__bar legend { color: var(--account-ink); }
+.template-fullpage-demo__toggle { grid-column: span 2; }
+.template-fullpage-demo__start, .template-fullpage-demo__open, .template-fullpage-demo__close, .template-fullpage-demo__custom { display: inline-flex; width: 100%; min-width: 0; align-items: center; justify-content: center; min-height: 2.85rem; padding: 0 0.35rem; border: 1px solid transparent; border-radius: 0.9rem; font-size: 0.9rem; font-weight: 750; white-space: nowrap; cursor: pointer; transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease; }
+.template-fullpage-demo__start, .template-fullpage-demo__open { color: var(--account-on-accent); background: var(--account-accent); text-decoration: none; box-shadow: 0 3px 8px color-mix(in srgb, var(--account-accent) 24%, transparent); }
+.template-fullpage-demo__close, .template-fullpage-demo__custom { border-color: var(--account-border); color: var(--account-ink); background: var(--account-surface); }
+.template-fullpage-demo__open:not(:disabled):hover { transform: translateY(-1px); background: color-mix(in srgb, var(--account-accent) 88%, #000); }
+.template-fullpage-demo__close:not(:disabled):hover, .template-fullpage-demo__custom:hover { transform: translateY(-1px); border-color: var(--account-border-strong); background: var(--account-surface-muted); box-shadow: 0 3px 9px rgb(39 53 45 / 0.1); }
+.template-fullpage-demo__start:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--account-accent) 88%, #000); box-shadow: 0 5px 12px color-mix(in srgb, var(--account-accent) 28%, transparent); }
+.template-fullpage-demo__start:active, .template-fullpage-demo__open:not(:disabled):active, .template-fullpage-demo__close:not(:disabled):active, .template-fullpage-demo__custom:active { transform: translateY(0); }
+.template-fullpage-demo__open:disabled, .template-fullpage-demo__close:disabled { border-color: var(--account-border); color: var(--account-muted); background: var(--account-surface-muted); cursor: default; }
+.template-fullpage-demo__open:focus-visible, .template-fullpage-demo__close:focus-visible, .template-fullpage-demo__custom:focus-visible, .template-fullpage-demo__start:focus-visible { outline: 3px solid var(--account-focus); outline-offset: 3px; }
 
 .template-fullpage-demo__short { display: none; }
 .template-fullpage-demo__bar > * { flex: none; }
 @media (max-width: 30rem) {
-  .template-fullpage-demo__bar { gap: 0.3rem; padding: 0.3rem 0.4rem; }
-  .template-fullpage-demo__long { display: none; }
-  .template-fullpage-demo__short { display: inline; }
-  .template-fullpage-demo__close, .template-fullpage-demo__start, .template-fullpage-demo__custom { min-height: 2.5rem; padding: 0 0.7rem; font-size: 0.85rem; }
+  .template-fullpage-demo__bar { gap: 0; padding: 0.25rem; }
+  .template-fullpage-demo__label { font-size: 0; }
+  .template-fullpage-demo__label::after { content: attr(data-short); font-size: 0.85rem; }
+  .template-fullpage-demo__open, .template-fullpage-demo__close, .template-fullpage-demo__start, .template-fullpage-demo__custom { min-height: 2.5rem; padding: 0 0.7rem; font-size: 0.85rem; }
 }
 
 /* Reserve the scrollbar on any page showing the envelope so opening it (which makes the page taller)
    never changes the horizontal layout. */
-html:has(.zarf) { scrollbar-gutter: stable; }
+html:has(.zarf), html:has(.dantel) { scrollbar-gutter: stable; }
 
 /* Botanicals and fine details. Everything derives from the single accent. */
 .zarf {
-  --z-gold: #b8913f;
+  --z-gold: var(--z-line, #b8913f);
   --z-petal: color-mix(in srgb, var(--z-base) 5%, #fff);
   --z-petal-edge: color-mix(in srgb, var(--z-ink) 30%, #fff);
 }
@@ -285,18 +363,25 @@ html:has(.zarf) { scrollbar-gutter: stable; }
   width: 33%;
   height: auto;
   pointer-events: none;
-  transform-origin: 50% 100%;
+  transform: scale(0.72);
+  transform-origin: 0 100%;
   transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.2, 1);
 }
-.zarf--open .zarf__calla { transform: rotate(-2deg) translateY(-2%); }
+.zarf__envelope--closed .zarf__calla .zarf-art__leaf,
+.zarf__envelope--closed .zarf__calla .zarf-art__stem { opacity: 0; }
+.zarf__calla .zarf-art__leaf,
+.zarf__calla .zarf-art__stem { transition: opacity 0.6s ease; }
+.zarf--open .zarf__calla { transform: scale(1.12) rotate(-4deg) translateY(-3%); }
+.zarf--open .zarf__calla .zarf-art__leaf,
+.zarf--open .zarf__calla .zarf-art__stem { opacity: 1; }
 .zarf-art__leaf { fill: var(--z-leaf); }
 .zarf-art__stem { stroke: var(--z-stem); stroke-width: 2.2; }
 .zarf-art__petal { fill: var(--z-petal); stroke: var(--z-petal-edge); stroke-width: 0.7; }
 .zarf-art__petal-shade { fill: color-mix(in srgb, var(--z-base) 22%, #fff); }
 .zarf-art__spadix { fill: #d2a94a; }
-.zarf-art__pressed-stem { stroke: color-mix(in srgb, var(--z-inner) 62%, #fff); stroke-width: 1.4; }
-.zarf-art__pressed-leaf { fill: color-mix(in srgb, var(--z-inner) 52%, #fff); }
-.zarf-art__pressed-petal { fill: color-mix(in srgb, var(--z-inner) 34%, #fff); }
+.zarf-art__pressed-stem { stroke: color-mix(in srgb, var(--z-lining) 55%, #4a5a3a); stroke-width: 1.4; }
+.zarf-art__pressed-leaf { fill: color-mix(in srgb, var(--z-lining) 60%, #5d6f47); }
+.zarf-art__pressed-petal { fill: color-mix(in srgb, var(--z-lining) 55%, #b98a8a); }
 .zarf__card-emboss { fill: none; stroke: #fff; stroke-width: 1.4; opacity: 0.9; }
 .zarf__card-gold { fill: none; stroke: var(--z-gold); stroke-width: 0.8; opacity: 0.65; }
 .zarf__flap-gold { fill: none; stroke: var(--z-gold); stroke-width: 1.1; opacity: 0.6; }
@@ -311,7 +396,22 @@ html:has(.zarf) { scrollbar-gutter: stable; }
 .zarf-art__fl-3 { fill: var(--z-fl3); }
 .zarf-art__fl-line { stroke: var(--z-fl2); stroke-width: 1.6; }
 .zarf-art__rose-swirl { stroke: var(--z-fl3); stroke-width: 1; }
-.zarf__roses { position: absolute; z-index: 6; inset-block-end: 2%; inset-inline-end: 3%; width: 30%; height: auto; pointer-events: none; }
+.zarf__roses {
+  position: absolute;
+  z-index: 6;
+  inset-block-end: 2%;
+  inset-inline-end: 3%;
+  width: 30%;
+  height: auto;
+  pointer-events: none;
+  transform: scale(0.72);
+  transform-origin: 100% 100%;
+  transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+.zarf__envelope--closed .zarf__roses .zarf-art__leaf { opacity: 0; }
+.zarf__roses .zarf-art__leaf { transition: opacity 0.6s ease; }
+.zarf--open .zarf__roses { transform: scale(1.12) rotate(4deg) translateY(-3%); }
+.zarf--open .zarf__roses .zarf-art__leaf { opacity: 1; }
 .zarf__card-gold { stroke-width: 0.9; }
 
 /* In the Creator's device preview the frame, not the window, sets the height. */
@@ -324,12 +424,15 @@ html:has(.zarf) { scrollbar-gutter: stable; }
    Behind everything, never interactive, only transform/opacity animations, one composited layer each. */
 .zarf__stage { position: relative; }
 .zarf__scene, .zarf__cta-row { position: relative; z-index: 1; }
-.zarf-garden { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; transition: opacity 0.14s ease, transform 0.14s ease; }
+.zarf-garden { position: absolute; inset-inline: 0; inset-block-start: calc(100% - var(--zh)); height: var(--zh); z-index: 0; overflow: visible; pointer-events: none; transition: opacity 0.14s ease, transform 0.14s ease; }
 .zarf-garden--leaving { opacity: 0; transform: scale(0.97); }
-.zarf-garden__side { --gw: clamp(5.5rem, 26cqi, 16rem); position: absolute; inset-block-end: 0; width: var(--gw); aspect-ratio: 200 / 360; }
-.zarf-garden__side--left { inset-inline-start: 0; }
-.zarf-garden__side--right { inset-inline-end: 0; transform: scaleX(-1); }
+.zarf-garden__side { --gw: clamp(5rem, calc(var(--zw) * 0.52), 17rem); position: absolute; inset-block-end: 0; width: var(--gw); aspect-ratio: 200 / 360; }
+.zarf-garden__side--left { inset-inline-start: calc(-1 * var(--gw)); transform: scaleX(-1); }
+.zarf-garden__side--right { inset-inline-start: 100%; }
 .zarf-garden__layer { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; transform-origin: 0 100%; animation: zarf-grow 0.95s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+@media (max-width: 40rem) {
+  .zarf-garden__side { --gw: clamp(3.5rem, calc(var(--zw) * 0.4), 8rem); }
+}
 .zarf-garden__layer--roses { animation-name: zarf-pop; animation-duration: 0.6s; animation-delay: 0.45s; }
 .zarf-garden__layer--blooms { animation-name: zarf-pop; animation-duration: 0.6s; animation-delay: 0.7s; }
 @keyframes zarf-grow { from { opacity: 0; transform: scale(0.08) rotate(-8deg); } 55% { opacity: 1; } to { opacity: 1; transform: none; } }
@@ -378,11 +481,11 @@ html:has(.zarf) { scrollbar-gutter: stable; }
 .zarf--amb-gece .zarf__details a, .zarf--amb-gece .invitation-optional-sections a { color: #ffe9a8; }
 
 /* ---------- flora: petal colours per flower type, tinted by the envelope accent ---------- */
-.zarf--flora-gul { --z-fl1: var(--z-rose); --z-fl2: color-mix(in srgb, var(--z-rose) 82%, var(--z-ink)); --z-fl3: color-mix(in srgb, var(--z-rose) 50%, var(--z-ink)); }
-.zarf--flora-papatya { --z-fl1: #fffdf6; --z-fl2: color-mix(in srgb, #efe3c4 80%, var(--z-base)); --z-fl3: #f0b92b; }
-.zarf--flora-lale { --z-fl1: color-mix(in srgb, #ea6f8b 80%, var(--z-seal)); --z-fl2: color-mix(in srgb, #c24668 82%, var(--z-ink)); --z-fl3: #f6d3dd; }
-.zarf--flora-lavanta { --z-fl1: color-mix(in srgb, #a48fd4 82%, var(--z-seal)); --z-fl2: color-mix(in srgb, #7a64b2 82%, var(--z-ink)); --z-fl3: #c9bde6; }
-.zarf--flora-kiraz { --z-fl1: color-mix(in srgb, #fcdde7 88%, var(--z-base)); --z-fl2: color-mix(in srgb, #f3a9bd 85%, var(--z-seal)); --z-fl3: #e2708d; }
+.zarf--flora-gul, .zarf-fl-gul { --z-fl1: var(--z-rose); --z-fl2: color-mix(in srgb, var(--z-rose) 82%, var(--z-ink)); --z-fl3: color-mix(in srgb, var(--z-rose) 50%, var(--z-ink)); }
+.zarf--flora-papatya, .zarf-fl-papatya { --z-fl1: #fffdf6; --z-fl2: color-mix(in srgb, #efe3c4 80%, var(--z-base)); --z-fl3: #f0b92b; }
+.zarf--flora-lale, .zarf-fl-lale { --z-fl1: color-mix(in srgb, #ea6f8b 80%, var(--z-seal)); --z-fl2: color-mix(in srgb, #c24668 82%, var(--z-ink)); --z-fl3: #f6d3dd; }
+.zarf--flora-lavanta, .zarf-fl-lavanta { --z-fl1: color-mix(in srgb, #a48fd4 82%, var(--z-seal)); --z-fl2: color-mix(in srgb, #7a64b2 82%, var(--z-ink)); --z-fl3: #c9bde6; }
+.zarf--flora-kiraz, .zarf-fl-kiraz { --z-fl1: color-mix(in srgb, #fcdde7 88%, var(--z-base)); --z-fl2: color-mix(in srgb, #f3a9bd 85%, var(--z-seal)); --z-fl3: #e2708d; }
 
 /* ---------- creatures (butterflies, bees, dragonflies, fireflies, ladybugs) and cherry petals ---------- */
 .zarf-critter, .zarf-petal { position: absolute; z-index: 2; pointer-events: none; }
@@ -427,9 +530,173 @@ html:has(.zarf) { scrollbar-gutter: stable; }
 .zarf-chip-flora svg { display: block; width: 84%; height: 84%; }
 
 /* ---------- demo bar: a compact control with a customise panel ---------- */
-.template-fullpage-demo__custom { display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0 1.1rem; border: 1px solid #1f2933; border-radius: 999px; color: #1f2933; background: #fff; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
-.template-fullpage-demo__custom[aria-expanded="true"] { color: #fff; background: #1f2933; }
-.template-fullpage-demo__custom:focus-visible { outline: 3px solid #1f2933; outline-offset: 2px; }
-.template-fullpage-demo__panel { position: absolute; inset-block-end: calc(100% + 0.5rem); inset-inline: 0; display: grid; max-height: 62svh; padding: 0.9rem 1rem; overflow: auto; border-radius: 1.2rem; color: #1f2933; background: #fff; box-shadow: 0 0.4rem 1.4rem rgb(0 0 0 / 0.28); }
-.template-fullpage-demo__panel legend { color: #1f2933; font-size: 0.85rem; }
-.template-fullpage-demo__panel .zarf-accent-picker__dot { width: 2.4rem; height: 2.4rem; }
+.template-fullpage-demo__custom[aria-expanded="true"] { border-color: var(--account-accent); color: var(--account-on-accent); background: var(--account-accent); }
+.template-fullpage-demo__panel { position: absolute; inset-block-end: calc(100% + 0.65rem); inset-inline: 0; display: block; max-height: min(78svh, 46rem); padding: 0.75rem; overflow: auto; overscroll-behavior: contain; border: 1px solid var(--account-border); border-radius: 1.25rem; color: var(--account-ink); background: color-mix(in srgb, var(--account-surface) 97%, transparent); box-shadow: 0 0.65rem 1.8rem rgb(31 41 51 / 0.2); }
+.template-fullpage-demo__panel .zarf-look-pickers { gap: 0.5rem; }
+.template-fullpage-demo__panel .zarf-accent-picker { grid-template-columns: minmax(7.5rem, 0.36fr) minmax(0, 1fr); align-items: center; gap: 0.15rem 0.85rem; min-width: 0; padding: 0.55rem 0.75rem; border: 1px solid var(--account-border); border-radius: 0.9rem; background: linear-gradient(110deg, var(--account-surface-muted), var(--account-surface) 45%); }
+.template-fullpage-demo__panel .zarf-accent-picker legend { grid-column: 1; grid-row: 1; align-self: end; color: var(--account-ink); font-size: 0.82rem; }
+.template-fullpage-demo__panel .zarf-accent-picker .fieldset-help { grid-column: 1; grid-row: 2; align-self: start; margin: 0 !important; color: var(--account-muted); font-size: 0.72rem; line-height: 1.3; }
+.template-fullpage-demo__panel .zarf-accent-picker__swatches { grid-column: 2; grid-row: 1 / span 2; align-items: center; gap: 0.45rem; min-width: 0; }
+.template-fullpage-demo__panel .zarf-accent-picker__swatch { padding: 0.12rem; }
+.template-fullpage-demo__panel .zarf-accent-picker__dot { width: 2.15rem; height: 2.15rem; border-width: 2px; box-shadow: 0 1px 4px rgb(31 41 51 / 0.16); transition: transform 150ms ease, box-shadow 150ms ease; }
+.template-fullpage-demo__panel .zarf-accent-picker__swatch:hover .zarf-accent-picker__dot { transform: scale(1.08); }
+.template-fullpage-demo__panel .zarf-accent-picker__swatch input:checked + .zarf-accent-picker__dot { box-shadow: 0 0 0 2px var(--account-surface), 0 0 0 4px var(--account-accent); }
+@media (max-width: 36rem) {
+  .template-fullpage-demo__panel .zarf-accent-picker { grid-template-columns: minmax(0, 1fr); gap: 0.35rem; }
+  .template-fullpage-demo__panel .zarf-accent-picker legend,
+  .template-fullpage-demo__panel .zarf-accent-picker .fieldset-help,
+  .template-fullpage-demo__panel .zarf-accent-picker__swatches { grid-column: 1; grid-row: auto; }
+  .template-fullpage-demo__panel .zarf-accent-picker__dot { width: 1.9rem; height: 1.9rem; }
+  .template-fullpage-demo__panel .zarf-accent-picker__swatches { gap: 0.3rem; }
+}
+.template-fullpage-demo__panel .zarf-accent-picker--theme { grid-template-columns: minmax(0, 1fr); gap: 0.45rem; }
+.template-fullpage-demo__panel .zarf-accent-picker--theme legend { grid-column: 1; grid-row: 1; }
+.template-fullpage-demo__panel .zarf-accent-picker--theme .fieldset-help { grid-column: 1; grid-row: 2; margin: 0 !important; }
+.template-fullpage-demo__panel .zarf-accent-picker--theme .zarf-accent-picker__swatches { grid-column: 1; grid-row: 3; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.4rem; }
+.template-fullpage-demo__panel .zarf-accent-picker--theme .zarf-accent-picker__swatch { display: grid; grid-template-rows: auto minmax(1.7em, auto); justify-items: center; align-content: start; gap: 0.5rem; min-width: 0; padding: 0.65rem 0.2rem 0.45rem; border: 1px solid var(--account-border); border-radius: 0.75rem; background: var(--account-surface); text-align: center; transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease; }
+.template-fullpage-demo__panel .zarf-accent-picker--theme .zarf-accent-picker__swatch:has(input:checked) { border-color: var(--account-accent); background: var(--account-surface-muted); box-shadow: inset 0 0 0 1px var(--account-accent); }
+.template-fullpage-demo__panel .zarf-accent-picker--theme .zarf-accent-picker__dot { width: 2rem; height: 2rem; }
+.template-fullpage-demo__panel .zarf-accent-picker--theme .zarf-chip-garden { margin-block-start: 0.3rem; }
+.template-fullpage-demo__panel .zarf-accent-picker__theme-name { align-self: start; color: var(--account-ink); font-size: 0.65rem; font-weight: 650; line-height: 1.2; overflow-wrap: anywhere; }
+@media (max-width: 36rem) {
+  .template-fullpage-demo__panel .zarf-accent-picker--theme .zarf-accent-picker__swatches { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .template-fullpage-demo__panel .zarf-accent-picker--theme .zarf-accent-picker__swatch { padding-inline: 0.1rem; }
+  .template-fullpage-demo__panel .zarf-accent-picker__theme-name { font-size: 0.58rem; }
+}
+
+/* ---------- ambiances (colour and atmosphere only) ---------- */
+.zarf--amb-orman {
+  --z-text: #eef3e6;
+  --z-cta-bg: #eef3e6;
+  --z-cta-fg: #0f2a1e;
+  --z-sign: #e9d9a4;
+  background:
+    radial-gradient(50rem 24rem at 50% -10%, rgb(160 214 150 / 0.22), transparent 70%),
+    linear-gradient(112deg, rgb(255 255 255 / 0.07) 0 4%, transparent 4% 13%, rgb(255 255 255 / 0.05) 13% 16%, transparent 16% 100%) top / 100% 55% no-repeat,
+    linear-gradient(180deg, #0f2a1e 0%, #14392a 55%, #1c4a37 100%);
+}
+.zarf--amb-okyanus {
+  background:
+    linear-gradient(var(--z-wash), var(--z-wash)),
+    radial-gradient(44rem 20rem at 50% -6%, rgb(255 255 255 / 0.55), transparent 70%),
+    linear-gradient(180deg, #e2f4f6 0%, #bfe6ea 55%, #9fd5dc 100%);
+}
+.zarf--amb-lila {
+  background:
+    linear-gradient(var(--z-wash), var(--z-wash)),
+    radial-gradient(40rem 20rem at 78% -4%, rgb(255 255 255 / 0.6), transparent 70%),
+    linear-gradient(180deg, #f1eafa 0%, #e3d6f4 55%, #d3c1ec 100%);
+}
+.zarf--amb-gece .zarf__details a, .zarf--amb-gece .invitation-optional-sections a, .zarf--amb-orman .zarf__details a, .zarf--amb-orman .invitation-optional-sections a { color: #ffe9a8; }
+.zarf--amb-gece, .zarf--amb-orman { --z-sign: #ece2c0; }
+
+/* ---------- gardens without flowers hide the calla lilies; creatures that glow must read on light pages too ---------- */
+.zarf--nofl .zarf__calla { display: none; }
+.zarf-critter__halo { fill: #ffd84a; opacity: 0.5; }
+.zarf-critter__spark { fill: #fff3a0; stroke: #c9951a; stroke-width: 0.7; }
+
+/* ---------- picker chips for the new options ---------- */
+.zarf-chip-amb--orman { background: linear-gradient(160deg, #0f2a1e, #2c6a4c); }
+.zarf-chip-amb--okyanus { background: linear-gradient(160deg, #e2f4f6, #7fc4cf); }
+.zarf-chip-amb--lila { background: linear-gradient(160deg, #f1eafa, #c2a9e6); }
+.zarf-chip-garden { position: relative; display: grid; place-items: center; background: #f4f1ea; }
+.zarf-chip-garden__none { display: grid; width: 100%; height: 100%; place-items: center; color: #68736b; font: 500 1.35rem/1 system-ui, sans-serif; }
+.zarf-chip-garden svg { display: block; }
+.zarf-chip-garden__flower { width: 84%; height: 84%; }
+.zarf-chip-garden__critter { position: absolute; inset-inline-end: 2%; inset-block-end: 4%; width: 46%; }
+.zarf-chip-garden__critter svg { width: 100%; height: auto; }
+.zarf-chip-garden__critter--alone { inset: 0; display: grid; width: 70%; margin: auto; place-items: center; }
+.zarf-chip-garden__motif { width: 88%; height: 88%; }
+
+/* The final three themes have their own visual language instead of inheriting garden foliage. */
+.zarf-garden__theme-art { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; animation: zarf-pop 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.zarf-theme-art__line, .zarf-theme-art__ring, .zarf-theme-art__wave, .zarf-theme-art__shell, .zarf-theme-art__staff, .zarf-theme-art__note { stroke: color-mix(in srgb, var(--z-seal) 72%, var(--z-leaf)); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.zarf-theme-art__line { stroke-width: 3; }
+.zarf-theme-art__heart, .zarf-theme-art__planet { fill: color-mix(in srgb, var(--z-rose) 58%, #fff); stroke: var(--z-seal); stroke-width: 1.8; }
+.zarf-theme-art__ring { fill: none; stroke-width: 3; }
+.zarf-theme-art__star, .zarf-theme-art__dot { fill: #f6d786; }
+.zarf-theme-art__bubble { fill: rgb(255 255 255 / 0.38); stroke: #7fc5d0; stroke-width: 1.5; }
+.zarf-theme-art__wave { fill: none; stroke: #58a9bd; stroke-width: 3; }
+.zarf-theme-art__shell { fill: color-mix(in srgb, #f5b5a7 60%, #fff); stroke: #dc8f84; }
+.zarf-theme-art__aurora { fill: #48c9a2; opacity: 0.75; }
+.zarf-theme-art__aurora--two { fill: #7c8be8; opacity: 0.7; }
+.zarf-theme-art__aurora--three { fill: #e17dbb; opacity: 0.62; }
+.zarf-theme-art__mountain { fill: #243d50; }
+.zarf-theme-art__staff, .zarf-theme-art__note { fill: none; stroke: #705185; stroke-width: 2; }
+.zarf-theme-art__notehead { fill: #705185; stroke: #705185; }
+.zarf-theme-art__envelope { fill: #fff5ee; stroke: #ad6573; stroke-width: 2; }
+.zarf-theme-art__sail { fill: #fff8e8; stroke: #3f8796; stroke-width: 2; stroke-linejoin: round; }
+.zarf-theme-art__horizon { fill: none; stroke: #e8b56c; stroke-width: 2; }
+.zarf-theme-art__sun { fill: #f8c979; stroke: #db9860; stroke-width: 1.5; }
+
+/* Open-page illustrations use a full-height, layered scene rather than enlarging the picker glyph. */
+.zarf-scene__ground { fill: #e8d9cf; }
+.zarf-scene__vine, .zarf-scene__letter-fold { fill: none; stroke: #a76b72; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.zarf-scene__leaf { fill: #688c73; stroke: #547762; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.zarf-scene__letter { fill: #fff8ec; stroke: #bb8e67; stroke-width: 2; }
+.zarf-scene__heart { fill: #d87882; stroke: #a64d62; stroke-width: 2; }
+.zarf-scene__spark { fill: #e4b75c; stroke: #b18b45; stroke-width: 1.5; }
+.zarf-scene__moon, .zarf-scene__sun { fill: #f6d58b; }
+.zarf-scene__moon-cut { fill: #101b3e; }
+.zarf-scene__orbit { fill: none; stroke: #8279c6; stroke-width: 2; stroke-dasharray: 4 5; }
+.zarf-scene__rocket { fill: #f4f0e8; stroke: #d97878; stroke-width: 3; stroke-linejoin: round; }
+.zarf-scene__rocket-fin { fill: #db7476; stroke: #a74d60; stroke-width: 2; stroke-linejoin: round; }
+.zarf-scene__window { fill: #83d4e6; stroke: #eaf5f6; stroke-width: 3; }
+.zarf-scene__flame { fill: #f5a14f; stroke: #f7d275; stroke-width: 2; stroke-linejoin: round; }
+.zarf-scene__star { fill: #fff0a5; }
+.zarf-scene__sea { fill: #4b9fb0; }
+.zarf-scene__horizon { fill: none; stroke: #f7d394; stroke-width: 2; }
+.zarf-scene__wave { fill: none; stroke: #c4edf0; stroke-width: 3; stroke-linecap: round; opacity: .9; }
+.zarf-scene__island { fill: #477b68; }
+.zarf-scene__boat { fill: #f7efe0; stroke: #9b6856; stroke-width: 2; stroke-linejoin: round; }
+.zarf-scene__mast { fill: none; stroke: #6a5547; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.zarf-scene__cloud { fill: #fff8e9; stroke: #bddfe0; stroke-width: 2; }
+.zarf-scene__bird { fill: none; stroke: #55747b; stroke-width: 2; stroke-linecap: round; }
+.zarf-scene__coral { fill: none; stroke: #f3a18e; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.zarf-scene__aurora-band { opacity: .74; }
+.zarf-scene__aurora-band--a { fill: #55d6a4; }
+.zarf-scene__aurora-band--b { fill: #73bfe3; opacity: .63; }
+.zarf-scene__aurora-band--c { fill: #bd7ed0; opacity: .58; }
+.zarf-scene__mountains-back { fill: #334969; }
+.zarf-scene__mountains-front { fill: #202f49; }
+.zarf-scene__cabin { fill: #9c6655; stroke: #e1b27c; stroke-width: 2; }
+.zarf-scene__cabin-roof { fill: #704c49; stroke: #e1b27c; stroke-width: 2; }
+.zarf-scene__stars { fill: #fff0a5; }
+.zarf-scene__window { fill: #ffd884; }
+.zarf-scene__stage { fill: #e9d7bf; }
+.zarf-scene__record { fill: #453450; stroke: #272137; stroke-width: 3; }
+.zarf-scene__record-groove { fill: none; stroke: #a78bb7; stroke-width: 1.5; opacity: .75; }
+.zarf-scene__record-label { fill: #d18b7b; stroke: #f1d1a2; stroke-width: 2; }
+.zarf-scene__record-hole { fill: #30293b; }
+.zarf-scene__tonearm, .zarf-scene__tonearm-joint { fill: none; stroke: #e9cf9d; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.zarf-scene__tonearm-joint { fill: #bd8a58; }
+.zarf-scene__note, .zarf-scene__music-line { fill: none; stroke: #624c70; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.zarf-scene__music-line { stroke: #b18791; stroke-width: 2; }
+.zarf__theme-ornament { position: absolute; z-index: 4; inset-inline-start: 2%; inset-block-end: 2%; width: 26%; height: 28%; overflow: visible; pointer-events: none; transition: transform 0.6s ease; }
+.zarf__theme-ornament--space { inset-inline-start: 4%; inset-block-end: 5%; width: 24%; height: 25%; }
+.zarf__theme-ornament--sea { inset-inline-start: 2%; inset-block-end: 3%; width: 30%; height: 25%; }
+.zarf--open .zarf__theme-ornament { transform: scale(1.12) translateY(-4%); }
+.zarf--nofl .zarf__calla, .zarf--nofl .zarf__roses { display: none; }
+.zarf-scene__ring { fill: none; stroke: #e5b85e; stroke-width: 5; }
+.zarf-scene__ribbon { fill: none; stroke: #bd6d78; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.zarf-scene__planet { fill: #7565bd; stroke: #c8b8f1; stroke-width: 3; }
+.zarf-scene__planet-mark { fill: none; stroke: #b8a9ec; stroke-width: 4; stroke-linecap: round; }
+.zarf-scene__satellite { fill: none; stroke: #dbe7f4; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.zarf-scene__constellation { fill: #fff5bd; }
+.zarf-scene__cliff { fill: #537b70; stroke: #355a55; stroke-width: 2; }
+.zarf-scene__lighthouse { fill: #fff3d8; stroke: #b56859; stroke-width: 2; }
+.zarf-scene__lighthouse-roof { fill: #bf685e; stroke: #813f4e; stroke-width: 2; }
+.zarf-scene__lighthouse-light { fill: none; stroke: #f6d58b; stroke-width: 4; }
+.zarf-scene__fish { fill: #f4bd68; stroke: #bd8154; stroke-width: 2; }
+.zarf-scene__fish-eye { fill: #263d49; }
+.zarf-scene__pine { fill: #263e42; stroke: #526d5d; stroke-width: 2; stroke-linejoin: round; }
+.zarf-scene__lake { fill: none; stroke: #8cc3d0; stroke-width: 3; stroke-linecap: round; }
+.zarf-scene__guitar { fill: #c97955; stroke: #754b50; stroke-width: 3; }
+.zarf-scene__guitar-neck { fill: #815a4e; stroke: #d6ad79; stroke-width: 3; stroke-linejoin: round; }
+.zarf-scene__guitar-hole { fill: #513a42; stroke: #edce91; stroke-width: 2; }
+.zarf-scene__string { fill: none; stroke: #f4e4c2; stroke-width: 1.5; }
+.zarf--nofl .zarf__card-shape .zarf-art__fl-1,
+.zarf--nofl .zarf__card-shape .zarf-art__fl-2,
+.zarf--nofl .zarf__card-shape .zarf-art__fl-3 { display: none; }
+.template-fullpage-demo__panel .zarf-accent-picker__swatches { gap: 0.3rem; }
+.template-fullpage-demo__panel .zarf-accent-picker__dot { width: 2.1rem; height: 2.1rem; border-width: 2px; }
