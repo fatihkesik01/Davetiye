@@ -42,13 +42,18 @@ describe('draftModel', () => {
     expect(snapshot?.content.programItems[0]).toMatchObject({ description: 'Salon', startsAtLocal: '2027-06-19T17:00' })
   })
 
-  it('round-trips the zarf look (colour, ambiance, flowers) through the autosaved content', () => {
-    const content = toDraftContent({ ...emptyEditableDraft, accentColor: 'bordo', ambiance: 'gece', flora: 'kiraz' })
-    expect(content).toMatchObject({ accentColor: 'bordo', ambiance: 'gece', flora: 'kiraz' })
-    expect(toEditableDraft(content)).toMatchObject({ accentColor: 'bordo', ambiance: 'gece', flora: 'kiraz' })
+  it('round-trips the zarf look (colours, ambiance, garden) through the autosaved content', () => {
+    const content = toDraftContent({ ...emptyEditableDraft, accentColor: 'bordo', accentColor2: 'gumus', ambiance: 'gece', garden: 'kiraz' })
+    expect(content).toMatchObject({ accentColor: 'bordo', accentColor2: 'gumus', ambiance: 'gece', garden: 'kiraz' })
+    expect(toEditableDraft(content)).toMatchObject({ accentColor: 'bordo', accentColor2: 'gumus', ambiance: 'gece', garden: 'kiraz' })
+    // An old draft that only has `flora` opens on the matching garden and saves `garden` only.
+    expect(toEditableDraft({ flora: 'papatya' }).garden).toBe('papatya-kelebek')
+    expect(toDraftContent(toEditableDraft({ flora: 'lale' }))).toMatchObject({ garden: 'lale-ugurbocegi' })
+    expect(toDraftContent(toEditableDraft({ flora: 'lale' }))).not.toHaveProperty('flora')
     const defaults = toDraftContent(emptyEditableDraft)
     expect(defaults).not.toHaveProperty('ambiance')
-    expect(defaults).not.toHaveProperty('flora')
+    expect(defaults).not.toHaveProperty('garden')
+    expect(defaults).not.toHaveProperty('accentColor2')
   })
 
   it('does not persist an unconfirmed time zone', () => {

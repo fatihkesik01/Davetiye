@@ -18,8 +18,9 @@ import {
 import { LoadingState } from '../../components/feedback/LoadingState'
 import { InternalLink } from '../../components/ui/InternalLink'
 import { DevicePreview } from './DevicePreview'
-import { ZarfLookPickers } from '../templates/rendering/ZarfLookPickers'
+import { DantelLookPickers, ZarfLookPickers } from '../templates/rendering/ZarfLookPickers'
 import { zarfTemplateKey } from '../templates/rendering/zarfAccent'
+import { templateCategoryLabel } from '../templates/catalog/templateLabels'
 import { DraftValidationSummary } from './DraftValidationSummary'
 import { PublicationPanel } from './PublicationPanel'
 import { TrashInvitationControl } from './TrashInvitationControl'
@@ -527,11 +528,13 @@ function WizardStep({
       {template.previewImageUrl ? <img src={template.previewImageUrl} alt="" width="960" height="640" /> : null}
       <span className="template-choice-card__copy">
         <strong>{template.name}</strong>
-        <small>{template.category} · {template.isPremium ? t('creatorFormsUi.editor.premium') : t('creatorFormsUi.editor.free')}</small>
+        <small>{templateCategoryLabel(template)} · {template.isPremium ? t('creatorFormsUi.editor.premium') : t('creatorFormsUi.editor.free')}</small>
       </span>
     </label>)}
   </fieldset>
-  {draft.templateKey === zarfTemplateKey ? <ZarfLookPickers values={content} onAccent={key => update('accentColor', key)} onAmbiance={key => update('ambiance', key)} onFlora={key => update('flora', key)} /> : null}
+  {draft.templateKey === zarfTemplateKey ? <ZarfLookPickers values={content} onAccent={key => update('accentColor', key)} onAccent2={key => update('accentColor2', key)} onAmbiance={key => update('ambiance', key)} onGarden={key => update('garden', key)} />
+    : draft.templateKey === 'dantel-davetiye' ? <DantelLookPickers values={content} onAccent={key => update('accentColor', key)} onAccent2={key => update('accentColor2', key)} onAmbiance={key => update('ambiance', key)} onGarden={key => update('garden', key)} />
+      : null}
   </>
 
   if (step === 3) return <div className="wizard-fields">

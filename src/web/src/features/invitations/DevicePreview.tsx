@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import { InvitationRenderer } from '../templates/rendering/InvitationRenderer'
 import { normalizeDraftContent } from '../templates/rendering/model'
-import type { DraftContentInput } from '../../api/generated/client'
+import type { ZarfDraftContent } from '../templates/rendering/zarfTheme'
 
 type PreviewDevice = 'phone' | 'tablet' | 'desktop'
 
@@ -11,7 +11,7 @@ interface DevicePreviewProps {
   invitationId: string
   templateKey: string | null
   rendererVersion: number | null
-  content: DraftContentInput
+  content: ZarfDraftContent
 }
 
 export function DevicePreview({ invitationId, templateKey, rendererVersion, content }: DevicePreviewProps) {

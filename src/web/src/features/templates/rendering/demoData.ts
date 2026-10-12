@@ -4,9 +4,26 @@ import type { DraftContentInput } from '../../../api/generated/client'
 const demos: Record<string, DraftContentInput> = {
   'zarf-davetiye': {
     eventType: 'dugun', headline: 'Hande & Fatih', hostNames: ['Hande', 'Fatih'],
-    startsAt: '2027-09-11T17:00:00+03:00', timeZoneId: 'Europe/Istanbul', accentColor: 'adacayi',
+    startsAt: '2026-10-10T17:00:00+03:00', timeZoneId: 'Europe/Istanbul', accentColor: 'adacayi',
     venue: { name: 'Zeytinlik Bahçe', address: 'Urla, İzmir' },
-    programItems: [{ title: 'Karşılama', startsAt: '2027-09-11T17:00:00+03:00' }, { title: 'Akşam yemeği', startsAt: '2027-09-11T19:30:00+03:00' }],
+    programItems: [{ title: 'Karşılama', startsAt: '2026-10-10T17:00:00+03:00' }, { title: 'Akşam yemeği', startsAt: '2026-10-10T19:30:00+03:00' }],
+  },
+  'dantel-davetiye': {
+    eventType: 'dugun', headline: 'Hande & Fatih', hostNames: ['Hande', 'Fatih'],
+    message: 'Bu özel günümüzde sevincimizi sizinle paylaşmak istiyoruz. Varlığınız bize mutluluk verecek.',
+    startsAt: '2026-10-10T17:00:00+03:00', timeZoneId: 'Europe/Istanbul',
+    accentColor: 'pudra-pembe', accentColor2: 'gulkurusu', ambiance: 'sabah', garden: 'yok',
+    venue: { name: 'Zeytinlik Bahçe', address: 'Urla, İzmir' },
+    programItems: [
+      { title: 'Karşılama ve kokteyl', startsAt: '2026-10-10T17:00:00+03:00' },
+      { title: 'Nikâh töreni', startsAt: '2026-10-10T17:45:00+03:00' },
+      { title: 'Aile fotoğrafları', startsAt: '2026-10-10T18:30:00+03:00' },
+      { title: 'Akşam yemeği', startsAt: '2026-10-10T19:30:00+03:00' },
+      { title: 'İlk dans', startsAt: '2026-10-10T21:00:00+03:00' },
+      { title: 'Pasta ve kutlama', startsAt: '2026-10-10T21:30:00+03:00' },
+      { title: 'Müzik ve dans', startsAt: '2026-10-10T22:00:00+03:00' },
+      { title: 'Veda', startsAt: '2026-10-10T23:30:00+03:00' },
+    ],
   },
   'zamansiz-dugun': {
     eventType: 'dugun', headline: 'Zeynep & Kerem', hostNames: ['Zeynep', 'Kerem'],

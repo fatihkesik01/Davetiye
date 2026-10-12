@@ -75,13 +75,13 @@ public sealed class TemplateCatalogInitializerTests(PostgreSqlFixture postgreSql
         var first = listed[0];
         Assert.Equal("zarf-davetiye", first.Key);
         Assert.Equal("Zarf Davetiye", first.Name);
-        Assert.Equal("Düğün / Save the Date", first.Category);
+        Assert.Equal("Düğün / Tarih Duyurusu", first.Category);
         Assert.False(first.IsPremium);
         Assert.Equal(1, first.RendererVersion);
         Assert.Equal("/template-previews/zarf-davetiye.jpg", first.PreviewImageUrl);
         Assert.Equal(["hero", "dateVenue", "countdown", "calendar", "contact", "rsvp", "gallery", "giftRegistry", "qr"], first.SupportedModules);
         Assert.Equal(
-            ["pastel-baby-shower", "romantik-nisan", "zarf-davetiye"],
+            ["dantel-davetiye", "pastel-baby-shower", "romantik-nisan", "zarf-davetiye"],
             listed.Where(item => item.SupportedModules.Contains("giftRegistry")).Select(item => item.Key).Order().ToArray());
         Assert.Equal(["headline", "startsAt", "venue.name"], first.RequiredFields);
         Assert.Equal(["message", "hostNames"], first.RecommendedFields);

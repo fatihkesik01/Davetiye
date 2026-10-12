@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useId, useRef, useState, type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import './zarf.css'
 import { InvitationOptionalSections } from './InvitationOptionalSections'
 import { type NormalizedInvitationRenderModel } from './model'
 import { DateVenue, Program, type TemplateRendererProps } from './renderers'
-import { CallaLilies, FloraCluster, FloraHead, Garden, PressedFlower } from './ZarfFlowers'
-import { resolveZarfAccent, zarfPalettes } from './zarfAccent'
-import { resolveZarfAmbiance, resolveZarfFlora } from './zarfTheme'
+import { CallaLilies, FloraCluster, FloraHead, Garden, ZarfThemeOrnament } from './ZarfFlowers'
+import { FlapLining } from './ZarfVintage'
+import { resolveZarfAccent, resolveZarfAccent2, zarfPalettes, zarfPalettes2 } from './zarfAccent'
+import { primaryFlora, resolveZarfAmbiance, resolveZarfGarden, zarfDarkAmbiances, zarfGardenSpecs } from './zarfTheme'
 
 /**
  * Scalloped heart outline for the Save-the-Date card: the classic parametric heart sampled at equal
@@ -87,10 +88,10 @@ function cardDate(model: NormalizedInvitationRenderModel) {
 }
 
 /** The invitation content mounts as the card starts sliding out (the flap has lifted by then). */
-const revealDelayMs = 500
+const revealDelayMs = 760
 
 /** The botanical frame starts growing when the flap lifts, a little before the content, so the two mounts do not land in one frame. */
-const gardenDelayMs = 220
+const gardenDelayMs = 480
 
 /** On closing the content fades out this fast, then unmounts, while the envelope keeps closing. */
 const leaveMs = 140
@@ -99,7 +100,7 @@ function prefersReducedMotion(): boolean {
   return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false, open: controlledOpen, hideInlineClose = false }: TemplateRendererProps) {
+export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false, open: controlledOpen, hideInlineControls = false }: TemplateRendererProps) {
   // `open` drives the animation classes; `revealed` mounts the rest of the invitation. Nothing but the
   // cover exists in the DOM until the envelope has been opened, and it is removed again after closing.
   const { t } = useTranslation()
@@ -114,12 +115,19 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
   const closeTimer = useRef<number | undefined>(undefined)
   const revealTimer = useRef<number | undefined>(undefined)
   const palette = zarfPalettes[resolveZarfAccent(model.accentColor)]
+  const palette2 = zarfPalettes2[resolveZarfAccent2(model.accentColor2)]
   const ambiance = resolveZarfAmbiance(model.ambiance)
-  const flora = resolveZarfFlora(model.flora)
-  // On the dark ambiance the foliage is lightened so the frame stays visible against the night sky.
-  const night = ambiance === 'gece'
+  const gardenKey = resolveZarfGarden(model.garden)
+  const spec = zarfGardenSpecs[gardenKey]
+  const flora = primaryFlora(spec)
+  const noFlowers = spec.flowers.every(kind => kind === 'none')
+  const liningId = `zarf-lining-${useId().replace(/:/g, '')}`
+  // On a dark ambiance the foliage is lightened so the frame stays visible against the background.
+  const night = zarfDarkAmbiances.includes(ambiance)
   const style = {
-    '--z-base': palette.base, '--z-ink': palette.ink, '--z-seal': palette.seal, '--z-rose': palette.rose,
+    '--z-base': palette.base, '--z-ink': palette.ink, '--z-rose': palette.rose,
+    // The second colour drives the seal, the fine lines and the card lettering.
+    '--z-seal': palette2.main, '--z-wax': palette2.main, '--z-line': palette2.main, '--z-ink2': palette2.ink, '--z-onseal': palette2.onSeal,
     '--z-leaf': night ? `color-mix(in srgb, ${palette.leaf} 55%, #cfe6d3)` : palette.leaf,
     '--z-stem': night ? `color-mix(in srgb, ${palette.stem} 50%, #d5ead8)` : palette.stem,
   } as CSSProperties
@@ -192,24 +200,22 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reacts only to the host's request
   }, [controlledOpen])
 
-  return <article className={`invitation-template zarf zarf--amb-${ambiance} zarf--flora-${flora}${open ? ' zarf--open' : ''}`} aria-label={model.headline} style={style}>
+  return <article className={`invitation-template zarf zarf--amb-${ambiance} zarf--flora-${flora} zarf--garden-${gardenKey}${noFlowers ? ' zarf--nofl' : ''}${open ? ' zarf--open' : ''}`} aria-label={model.headline} style={style}>
     <section className="zarf__stage" ref={stageRef}>
-      {garden ? <Garden leaving={leaving} ambiance={ambiance} flora={flora} /> : null}
       <h1 className="visually-hidden">{model.headline}</h1>
 
       <div className="zarf__scene">
+        {garden && gardenKey !== 'yok' ? <Garden key={gardenKey} leaving={leaving} garden={gardenKey} /> : null}
         <div className={`zarf__envelope${open ? '' : ' zarf__envelope--closed'}`} onClick={open ? undefined : openEnvelope}>
-          <svg className="zarf__back" viewBox="0 0 300 200" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-            <rect width="300" height="200" rx="6" />
-          </svg>
+          <svg className="zarf__back" viewBox="0 0 300 200" preserveAspectRatio="none" aria-hidden="true" focusable="false" />
 
           <div className="zarf__card" ref={cardRef} tabIndex={-1} role="group" aria-label="Tarihi not edin kartı" aria-hidden={!open}>
             <svg className="zarf__card-shape" viewBox="0 0 240 228" preserveAspectRatio="none" aria-hidden="true" focusable="false">
               <path d={cardPath} />
               <path className="zarf__card-emboss" d={cardPath} transform="translate(120 114) scale(0.94) translate(-120 -114)" />
               <path className="zarf__card-gold" d={cardPath} transform="translate(120 114) scale(0.88) translate(-120 -114)" />
-              <FloraHead kind={flora} transform="translate(58 30) scale(0.78)" full />
-              <FloraHead kind={flora} transform="translate(190 34) scale(0.62) rotate(30)" full />
+              <FloraHead kind={spec.flowers[0]!} transform="translate(58 30) scale(0.78)" full />
+              <FloraHead kind={spec.flowers[1 % spec.flowers.length]!} transform="translate(190 34) scale(0.62) rotate(30)" full />
             </svg>
             <div className="zarf__card-body">
               <p className={`zarf__card-names zarf__card-names--${nameSize}`}>{names}</p>
@@ -241,20 +247,28 @@ export function ZarfEnvelopeRenderer({ model, onOpenChange, initialOpen = false,
 
           <div className="zarf__flap" aria-hidden="true">
             <svg className="zarf__flap-face zarf__flap-face--outer" viewBox="0 0 300 110" preserveAspectRatio="none" focusable="false"><path d={flapPath} /><path className="zarf__flap-gold" d={flapPath} transform="translate(0 -5)" /></svg>
-            <svg className="zarf__flap-face zarf__flap-face--inner" viewBox="0 0 300 110" preserveAspectRatio="none" focusable="false"><path d={flapPath} /><PressedFlower /></svg>
+            <svg className="zarf__flap-face zarf__flap-face--inner" viewBox="0 0 300 110" preserveAspectRatio="none" focusable="false"><FlapLining flapPath={flapPath} idPrefix={liningId} flora={noFlowers ? 'none' : flora} motif={spec.motif} /></svg>
           </div>
 
-          <div className="zarf__seal" aria-hidden="true"><span>{monogram}</span></div>
-          <CallaLilies className="zarf__calla" flora={flora} />
-          <FloraCluster className="zarf__roses" flora={flora} />
+          <div className="zarf__seal" aria-hidden="true">
+            {(['left', 'right'] as const).map(half => <span key={half} className={`zarf__seal-half zarf__seal-half--${half}`}>
+              <span className="zarf__seal-face"><span className="zarf__seal-initials">{monogram}</span></span>
+            </span>)}
+          </div>
+          <CallaLilies className="zarf__calla" flowers={spec.flowers} />
+          <FloraCluster className="zarf__roses" flowers={spec.flowers} />
+          {spec.motif === 'love' || spec.motif === 'space' || spec.motif === 'sea' || spec.motif === 'aurora' || spec.motif === 'music'
+            ? <ZarfThemeOrnament motif={spec.motif} variant="envelope" className={`zarf__theme-ornament zarf__theme-ornament--${spec.motif}`} />
+            : null}
         </div>
       </div>
 
-      {/* One fixed-height slot: the open and close controls swap places without moving anything. */}
+      {/* Keep both controls in one stable slot; disable the action that matches the current state. */}
       <div className="zarf__cta-row">
-        {open
-          ? (hideInlineClose ? null : <button type="button" className="zarf__close" onClick={closeEnvelope}>{t('templateUi.zarf.close')}</button>)
-          : <button type="button" className="zarf__cta" ref={ctaRef} aria-expanded={false} onClick={openEnvelope}>{t('templateUi.zarf.open')}</button>}
+        {hideInlineControls ? null : <>
+          <button type="button" className="zarf__cta" ref={ctaRef} aria-expanded={open} disabled={open} onClick={openEnvelope}>{t('templateUi.zarf.open')}</button>
+          <button type="button" className="zarf__close" disabled={!open} onClick={closeEnvelope}>{t('templateUi.zarf.close')}</button>
+        </>}
       </div>
     </section>
 

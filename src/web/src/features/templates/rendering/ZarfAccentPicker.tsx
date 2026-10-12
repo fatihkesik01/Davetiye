@@ -8,18 +8,19 @@ interface ZarfAccentPickerProps {
   value: string | null | undefined
   onChange: (key: ZarfAccentKey) => void
   disabled?: boolean
+  template?: 'zarf' | 'dantel'
   /** Small inline variant for floating bars (the legend stays available to assistive tech). */
   compact?: boolean
 }
 
 /** Single-colour choice for zarf-davetiye: curated keys only, each swatch has an accessible name. */
-export function ZarfAccentPicker({ value, onChange, disabled, compact }: ZarfAccentPickerProps) {
+export function ZarfAccentPicker({ value, onChange, disabled, compact, template = 'zarf' }: ZarfAccentPickerProps) {
   const { t } = useTranslation()
   const name = useId()
   const current = resolveZarfAccent(value)
   return <fieldset className={`zarf-accent-picker${compact ? ' zarf-accent-picker--compact' : ''}`} disabled={disabled}>
-    <legend>{t('templateUi.zarfAccent.label')}</legend>
-    {compact ? null : <p className="fieldset-help">{t('templateUi.zarfAccent.help')}</p>}
+    <legend>{t(template === 'dantel' ? 'templateUi.dantelAccent.label' : 'templateUi.zarfAccent.label')}</legend>
+    {compact ? null : <p className="fieldset-help">{t(template === 'dantel' ? 'templateUi.dantelAccent.help' : 'templateUi.zarfAccent.help')}</p>}
     <div className="zarf-accent-picker__swatches">
       {zarfAccentKeys.map(key => <label key={key} className="zarf-accent-picker__swatch">
         <input type="radio" name={name} value={key} checked={current === key} onChange={() => onChange(key)} aria-label={t(`templateUi.zarfAccent.colors.${key}`)} />

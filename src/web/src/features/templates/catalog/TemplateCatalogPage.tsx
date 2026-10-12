@@ -8,6 +8,9 @@ import {
 import { LoadingState } from '../../../components/feedback/LoadingState'
 import { InternalLink } from '../../../components/ui/InternalLink'
 import { TemplateDemoRenderer } from '../rendering/InvitationRenderer'
+import { includeLocalDantelTemplate } from './localTemplateCatalog'
+import { templateCategoryLabel } from './templateLabels'
+import { templatePublicSlug } from './templateRouting'
 
 interface TemplateCatalogPageProps {
   demoTemplateKey?: string
@@ -23,7 +26,7 @@ export function TemplateCatalogPage({ demoTemplateKey }: TemplateCatalogPageProp
   useEffect(() => {
     const controller = new AbortController()
     void api.listTemplates(controller.signal)
-      .then(setTemplates)
+      .then(items => setTemplates(includeLocalDantelTemplate(items)))
       .catch(error => {
         if (error instanceof DOMException && error.name === 'AbortError') return
         setFailed(true)
@@ -81,17 +84,17 @@ export function TemplateCatalogCard({ template }: { template: TemplateCatalogIte
       : <div className="template-card__image-placeholder" aria-hidden="true" />}
     <div className="template-card__body">
       <div className="template-card__meta">
-        <span>{template.category}</span>
+        <span>{templateCategoryLabel(template)}</span>
         <span className={`template-badge ${template.isPremium ? 'template-badge--premium' : ''}`}>
           {template.isPremium ? 'Premium' : t('templateUi.free')}
         </span>
       </div>
-      <h3>{template.name}</h3>
+      <h3>{template.key === 'dantel-davetiye' ? t('templateUi.gate.name') : template.key === 'zarf-davetiye' ? 'Zarf' : template.name}</h3>
       {template.description ? <p>{template.description}</p> : null}
       <p>{template.supportedModules.length > 0
         ? t('templateUi.compatibleSections', { count: template.supportedModules.length })
         : t('templateUi.simple')}</p>
-      <InternalLink className="button button--secondary" to={`/sablonlar/${encodeURIComponent(template.key)}`}>
+      <InternalLink className="button button--secondary" to={`/sablonlar/${encodeURIComponent(templatePublicSlug(template.key))}`}>
         {t('templateUi.preview')}
       </InternalLink>
     </div>
@@ -105,12 +108,12 @@ function TemplateDemoPage({ template }: { template: TemplateCatalogItem }) {
       <InternalLink to="/sablonlar">← {t('templateUi.allTemplates')}</InternalLink>
       <InternalLink
         className="button button--primary"
-        to={`/panel/davetiyeler/yeni?template=${encodeURIComponent(template.key)}`}
+        to={`/panel/davetiyeler/yeni?template=${encodeURIComponent(templatePublicSlug(template.key))}`}
       >{t('templateUi.startWith')}</InternalLink>
     </nav>
     <header className="template-demo__header">
-      <p className="eyebrow">{template.category} · {template.isPremium ? 'Premium' : 'Ücretsiz'}</p>
-      <h2 id="template-demo-heading">{template.name}</h2>
+      <p className="eyebrow">{templateCategoryLabel(template)} · {template.isPremium ? 'Premium' : 'Ücretsiz'}</p>
+      <h2 id="template-demo-heading">{template.key === 'dantel-davetiye' ? t('templateUi.gate.name') : template.key === 'zarf-davetiye' ? 'Zarf' : template.name}</h2>
       <p>{t('templateUi.sampleData')}</p>
     </header>
     <div className="template-demo__canvas">

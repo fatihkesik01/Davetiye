@@ -6,6 +6,8 @@ import './zarf.css'
 import { InvitationOptionalSections } from './InvitationOptionalSections'
 import { DateVenue, Program, type TemplateRendererProps } from './renderers'
 import { RoyalGateScene, RoyalGateSteps, RoyalLeaf } from './DantelRoyalGate'
+import { DantelThemeInterior, DantelThemeLeaf, DantelThemeScene } from './DantelThemeArtwork'
+import { isDantelTheme } from './dantelThemes'
 import { FloraHead } from './ZarfFlowers'
 import { defaultZarfAccent2, resolveZarfAccent, resolveZarfAccent2, zarfPalettes, zarfPalettes2 } from './zarfAccent'
 import { primaryFlora, resolveZarfAmbiance, resolveZarfGarden, zarfGardenSpecs, type ZarfAmbianceKey } from './zarfTheme'
@@ -20,7 +22,7 @@ const closeMs = 900
 const animatingMs = 1300
 
 /** Doorway width as a fraction of the scene width, per theme (the camera zoom makes it as wide as the paper). */
-const doorwayRatio = (royal: boolean) => (royal ? 0.525 : 1)
+const doorwayRatio = (royal: boolean, archedGate: boolean) => (royal ? 0.525 : archedGate ? 0.605 : 1)
 const maxPaperRem = 44
 
 const dantelAmbiance: Record<ZarfAmbianceKey, { tint: string; background: string }> = {
@@ -62,6 +64,37 @@ const RoyalInteriorArtwork = memo(function RoyalInteriorArtwork() {
   </svg>
 })
 
+/** Simple architectural side columns for the undecorated theme, so the closed panels still read as a gate. */
+const PlainGateColumns = memo(function PlainGateColumns() {
+  return <svg className="dantel__plain-columns" viewBox="0 0 400 500" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    {[24, 330].map(x => <g key={x} transform={`translate(${x} 0)`}>
+      <path className="dantel__plain-column-shadow" d="M-4 474V111l5-10h42l5 10v363z" />
+      <path className="dantel__plain-column-shaft" d="M0 462V115l5-8h34l5 8v347z" />
+      <path className="dantel__plain-column-flutes" d="M10 118v326m12-326v326m12-326v326" />
+      <path className="dantel__plain-column-highlight" d="M3 116v344m39-344v344" />
+      <path className="dantel__plain-column-cap" d="M-7 99h58v9h-58zm-4-9h66v8h-66z" />
+      <path className="dantel__plain-column-base" d="M-7 462h58v9h-58zm-4 10h66v8h-66z" />
+      <path className="dantel__plain-column-detail" d="M22 180l8 10-8 10-8-10z" />
+    </g>)}
+  </svg>
+})
+
+/** Quiet, raised wood panels for the no-theme choice: finished carpentry without an added motif. */
+const PlainGateLeaf = memo(function PlainGateLeaf({ side }: { side: 'left' | 'right' }) {
+  return <svg className={`dantel__plain-leaf dantel__plain-leaf--${side}`} viewBox="0 0 120 385" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <g transform={side === 'right' ? 'translate(120 0) scale(-1 1)' : undefined}>
+      <path className="dantel__plain-leaf-edge" d="M0 385V104A120 104 0 0 1 120 0V385Z" />
+      <path className="dantel__plain-panel-shadow" d="M15 349V111A105 105 0 0 1 105 18V349Z" />
+      <path className="dantel__plain-panel" d="M19 345V114A101 101 0 0 1 101 24V345Z" />
+      <path className="dantel__plain-panel-highlight" d="M22 341V115A98 98 0 0 1 98 28M25 173h68v66H25zm0 91h68v62H25z" />
+      <path className="dantel__plain-panel-recess" d="M29 177h60v58H29zm0 91h60v54H29z" />
+      <path className="dantel__plain-grain" d="M34 191q8 18 0 35m49-35q-8 18 0 35M34 281q8 14 0 27m49-27q-8 14 0 27" />
+      <circle className="dantel__plain-knob-shadow" cx="83" cy="252" r="5" />
+      <circle className="dantel__plain-knob" cx="82" cy="250" r="4" />
+    </g>
+  </svg>
+})
+
 function prefersReducedMotion() {
   return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
@@ -71,18 +104,22 @@ const BackScene = memo(function BackScene({ royal }: { royal: boolean }) {
   return royal ? <RoyalGateSteps /> : <div className="dantel__ground" aria-hidden="true" />
 })
 
-interface FrontSceneProps { royal: boolean; flower: 'gul' | 'papatya' | 'lale' | 'lavanta' | 'kiraz'; hideFiligree: boolean; monogram: string; onMedallion: () => void }
+interface FrontSceneProps { royal: boolean; theme: ReturnType<typeof resolveZarfGarden>; flower: 'gul' | 'papatya' | 'lale' | 'lavanta' | 'kiraz'; hideFiligree: boolean; monogram: string; onMedallion: () => void }
 
 /** The stone portal (royal) or valance (lace), the two leaves and the monogram plaque. Static: memoised. */
-const FrontScene = memo(function FrontScene({ royal, flower, hideFiligree, monogram, onMedallion }: FrontSceneProps) {
+const FrontScene = memo(function FrontScene({ royal, theme, flower, hideFiligree, monogram, onMedallion }: FrontSceneProps) {
+  const themed = isDantelTheme(theme)
   return <>
-    {royal ? <RoyalGateScene /> : <div className="dantel__valance" aria-hidden="true" />}
+    {royal ? <RoyalGateScene /> : hideFiligree || themed ? null : <div className="dantel__valance" aria-hidden="true" />}
+    {themed ? <DantelThemeScene theme={theme} /> : null}
     <div className="dantel__doors" aria-hidden="true">
       {(['left', 'right'] as const).map(side => <div key={side} className={`dantel__door dantel__door--${side}`}>
         <div className="dantel__door-wash" />
-        {royal ? <RoyalLeaf side={side} /> : hideFiligree ? null : <LaceFiligree side={side} flower={flower} />}
+        {royal ? <RoyalLeaf side={side} /> : themed ? <DantelThemeLeaf theme={theme} side={side} /> : hideFiligree ? <PlainGateLeaf side={side} /> : <LaceFiligree side={side} flower={flower} />}
+        <span className="dantel__material" aria-hidden="true" />
         <span className="dantel__panel-edge" />
       </div>)}
+      {hideFiligree && !royal ? <PlainGateColumns /> : null}
       <span className="dantel__center-seam" />
     </div>
     <button type="button" className="dantel__medallion" aria-label="Davetiye mührünü aç" onClick={onMedallion}>
@@ -108,6 +145,10 @@ export function DantelInvitationRenderer({ model, onOpenChange, initialOpen = fa
   const ambiance = resolveZarfAmbiance(model.ambiance)
   const gardenKey = model.garden ? resolveZarfGarden(model.garden) : 'yok'
   const royal = gardenKey === 'saray-kapisi'
+  const plainGate = gardenKey === 'yok'
+  const customTheme = isDantelTheme(gardenKey) ? gardenKey : null
+  const customGate = customTheme !== null
+  const archedGate = plainGate || customGate
   const spec = zarfGardenSpecs[gardenKey]
   const flower = primaryFlora(spec)
   const selectedFlower = flower === 'none' ? 'gul' : flower
@@ -134,7 +175,7 @@ export function DantelInvitationRenderer({ model, onOpenChange, initialOpen = fa
     if (!root || !stage || !book) return
     const measure = () => {
       const paperWidth = Math.min(stage.clientWidth - 24, maxPaperRem * 16)
-      const doorway = book.offsetWidth * doorwayRatio(royal)
+      const doorway = book.offsetWidth * doorwayRatio(royal, archedGate)
       if (doorway > 0) root.style.setProperty('--dantel-zoom', Math.min(3.4, Math.max(1.12, paperWidth / doorway)).toFixed(3))
     }
     measure()
@@ -143,7 +184,7 @@ export function DantelInvitationRenderer({ model, onOpenChange, initialOpen = fa
     observer.observe(stage)
     observer.observe(book)
     return () => observer.disconnect()
-  }, [royal])
+  }, [archedGate, royal])
 
   useEffect(() => () => {
     window.clearTimeout(closeTimer.current)
@@ -201,20 +242,20 @@ export function DantelInvitationRenderer({ model, onOpenChange, initialOpen = fa
     // eslint-disable-next-line react-hooks/exhaustive-deps -- controlled state is the host's request.
   }, [controlledOpen])
 
-  return <article ref={rootRef} className={`invitation-template dantel zarf--amb-${ambiance} zarf--flora-${selectedFlower} dantel--theme-${gardenKey}${phase !== 'closed' ? ' dantel--shown' : ''}${open ? ' dantel--open' : ''}${phase === 'closing' ? ' dantel--closing' : ''}`} aria-label={model.headline} style={style}>
+  return <article ref={rootRef} className={`invitation-template dantel zarf--amb-${ambiance} zarf--flora-${selectedFlower} dantel--theme-${gardenKey}${royal || archedGate ? ' dantel--arched-gate' : ''}${customGate ? ' dantel--custom-gate-theme' : ''}${phase !== 'closed' ? ' dantel--shown' : ''}${open ? ' dantel--open' : ''}${phase === 'closing' ? ' dantel--closing' : ''}`} aria-label={model.headline} style={style}>
     <section className="dantel__stage" ref={stageRef}>
       <h1 className="visually-hidden">{model.headline}</h1>
       <div className="dantel__book" ref={bookRef} role="group" aria-label={t(open ? 'templateUi.gate.openInvitation' : 'templateUi.gate.closedInvitation')}>
         <div className="dantel__layer dantel__layer--back"><BackScene royal={royal} /></div>
         <div className="dantel__layer dantel__layer--front">
-          <FrontScene royal={royal} flower={selectedFlower} hideFiligree={gardenKey === 'yok'} monogram={monogram} onMedallion={onMedallion} />
+          <FrontScene royal={royal} theme={gardenKey} flower={selectedFlower} hideFiligree={gardenKey === 'yok'} monogram={monogram} onMedallion={onMedallion} />
         </div>
       </div>
 
       {/* The invitation: hidden while closed, it unrolls downward out of the doorway and continues as the page. */}
       <div className="dantel__paper">
       <div className="dantel__inside" ref={insideRef} tabIndex={-1} aria-hidden={!open}>
-        {royal ? <RoyalInteriorArtwork /> : null}
+        {royal ? <RoyalInteriorArtwork /> : customTheme ? <DantelThemeInterior theme={customTheme} /> : null}
         <div className="dantel__inside-rule" aria-hidden="true" />
         <div className="dantel__content">
           <header className="dantel__inside-heading">

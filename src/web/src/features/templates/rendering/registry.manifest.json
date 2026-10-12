@@ -16,6 +16,7 @@
     { "templateKey": "pastel-baby-shower", "rendererVersion": 2 },
     { "templateKey": "modern-mezuniyet", "rendererVersion": 2 },
     { "templateKey": "minimal-acilis", "rendererVersion": 2 },
-    { "templateKey": "zarf-davetiye", "rendererVersion": 1 }
+    { "templateKey": "zarf-davetiye", "rendererVersion": 1 },
+    { "templateKey": "dantel-davetiye", "rendererVersion": 1 }
   ]
 }

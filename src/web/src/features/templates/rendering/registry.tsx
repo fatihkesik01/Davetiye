@@ -14,6 +14,7 @@ import {
   type TemplateRendererProps,
 } from './renderers'
 import { ZarfEnvelopeRenderer } from './ZarfEnvelopeRenderer'
+import { DantelInvitationRenderer } from './DantelInvitationRenderer'
 
 export interface TemplateRendererRegistration {
   templateKey: string
@@ -40,6 +41,7 @@ for (const [id, Original] of Object.entries({ ...rendererComponents })) {
 
 // Zarf Davetiye is born at V1 and renders the additive optional sections itself.
 rendererComponents['zarf-davetiye@1'] = ZarfEnvelopeRenderer
+rendererComponents['dantel-davetiye@1'] = DantelInvitationRenderer
 
 const manifestIds = rendererManifest.supportedRenderers.map(
   ({ templateKey, rendererVersion }) => `${templateKey}@${rendererVersion}`,

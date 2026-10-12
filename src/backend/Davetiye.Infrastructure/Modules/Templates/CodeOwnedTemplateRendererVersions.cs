@@ -28,6 +28,7 @@ public static class CodeOwnedTemplateRendererVersions
         new("pastel-baby-shower", 2),
         new("modern-mezuniyet", 2),
         new("minimal-acilis", 2),
-        new("zarf-davetiye", 1)
+        new("zarf-davetiye", 1),
+        new("dantel-davetiye", 1)
     ];
 }

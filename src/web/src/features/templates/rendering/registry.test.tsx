@@ -6,9 +6,9 @@ import { InvitationRenderer } from './InvitationRenderer'
 import { resolveTemplateRenderer, templateRendererRegistrations } from './registry'
 
 describe('template renderer registry', () => {
-  it('retains eight V1 pins alongside eight additive V2 pins plus the V1-only zarf-davetiye, and rejects unknown versions', () => {
-    expect(templateRendererRegistrations).toHaveLength(17)
-    expect(new Set(templateRendererRegistrations.map(item => item.templateKey)).size).toBe(9)
+  it('retains eight V1 pins alongside eight additive V2 pins plus the V1-only zarf-davetiye and dantel-davetiye, and rejects unknown versions', () => {
+    expect(templateRendererRegistrations).toHaveLength(18)
+    expect(new Set(templateRendererRegistrations.map(item => item.templateKey)).size).toBe(10)
 
     for (const registration of templateRendererRegistrations) {
       expect(resolveTemplateRenderer(registration.templateKey, registration.rendererVersion)).toBe(registration)

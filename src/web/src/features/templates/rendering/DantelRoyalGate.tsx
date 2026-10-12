@@ -132,12 +132,16 @@ function Panel({ y, height }: { y: number; height: number }) {
 export const RoyalLeaf = memo(function RoyalLeaf({ side }: { side: 'left' | 'right' }) {
   const id = useId().replace(/:/g, '')
   const wood = `${id}-wood`
+  const woodClip = `${id}-wood-clip`
   return <svg className={`dantel-gate__leaf dantel-gate__leaf--${side}`} viewBox="0 0 105 385" preserveAspectRatio="none" aria-hidden="true" focusable="false">
     <defs>
-      <linearGradient id={wood} x1="0" y1="0" x2="1" y2="0">{stop(0, 'var(--gate-wood-light)')}{stop(0.55, 'var(--gate-wood)')}{stop(1, 'var(--gate-wood-dark)')}</linearGradient>
+      <linearGradient id={wood} x1="0" y1="0" x2="1" y2="0">{stop(0, 'var(--gate-wood-light)')}{stop(0.55, 'var(--gate-wood)')}{stop(1, 'var(--gate-wood)')}</linearGradient>
+      <clipPath id={woodClip}><path d="M0 385V105A105 105 0 0 1 105 0V385Z" /></clipPath>
     </defs>
     <g transform={side === 'right' ? 'translate(105 0) scale(-1 1)' : undefined}>
       <path className="dantel-gate__wood" style={{ fill: `url(#${wood})` }} d="M0 385V105A105 105 0 0 1 105 0V385Z" />
+      <image className="dantel-gate__wood-texture" href="/template-textures/gate/palace.webp" x="0" y="0" width="105" height="385" preserveAspectRatio="none" clipPath={`url(#${woodClip})`} />
+      <path className="dantel-gate__leaf-outline" d="M0 385V105A105 105 0 0 1 105 0" />
       <path className="dantel-gate__grain" d="M20 120V385M45 90V385M70 60V385M90 30V385" />
       {/* transom: iron fan / sunburst tracery in the arched head */}
       <path className="dantel-gate__iron-line" d={`${fanRays}M9 105A96 96 0 0 1 105 9M43 105A62 62 0 0 1 105 43M77 105A28 28 0 0 1 105 77M0 112H105`} />

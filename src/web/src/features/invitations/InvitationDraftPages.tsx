@@ -12,6 +12,7 @@ import { InternalLink } from '../../components/ui/InternalLink'
 import { navigate } from '../../routes/navigation'
 import { InvitationRenderer } from '../templates/rendering/InvitationRenderer'
 import { normalizeDraftContent } from '../templates/rendering/model'
+import { templateKeyFromPublicSlug } from '../templates/catalog/templateRouting'
 import { InvitationDraftEditor } from './InvitationDraftEditor'
 
 export function InvitationDraftDashboard() {
@@ -73,7 +74,8 @@ export function InvitationDraftDashboard() {
 
 export function NewInvitationPage() {
   const api = useMemo(() => new DavetiyeApiClient(), [])
-  const templateKey = new URLSearchParams(window.location.search).get('template')
+  const templateSlug = new URLSearchParams(window.location.search).get('template')
+  const templateKey = templateSlug ? templateKeyFromPublicSlug(templateSlug) : null
   const [template, setTemplate] = useState<TemplateCatalogItem | null>(null)
   const [templateStatus, setTemplateStatus] = useState<'idle' | 'loading' | 'resolved' | 'missing' | 'error'>(
     templateKey ? 'loading' : 'idle',

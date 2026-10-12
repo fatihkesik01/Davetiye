@@ -18,7 +18,8 @@ describe('zarf-davetiye renderer', () => {
     expect(container.querySelector('.zarf--open')).toBeNull()
     fireEvent.click(button)
     expect(container.querySelector('.zarf--open')).not.toBeNull()
-    expect(screen.queryByRole('button', { name: 'Davetiyeyi Aç' })).toBeNull()
+    // The cover control stays in its fixed slot but is disabled once opened (no layout shift).
+    expect((screen.getByRole('button', { name: 'Davetiyeyi Aç' }) as HTMLButtonElement).disabled).toBe(true)
   })
 
   it('renders nothing but the cover before opening, and the envelope itself is tappable', async () => {
@@ -109,8 +110,8 @@ describe('zarf-davetiye renderer', () => {
     const { container } = renderZarf(base)
     const card = container.querySelector('.zarf__card')!
     expect(card.querySelector('.zarf__card-names')?.textContent).toBe('Hande & Fatih')
-    expect(card.querySelector('.zarf__date-day')?.textContent).toBe('11')
-    expect(card.querySelector('.zarf__date-month')?.textContent).toBe('Eylül 2027')
+    expect(card.querySelector('.zarf__date-day')?.textContent).toBe('10')
+    expect(card.querySelector('.zarf__date-month')?.textContent).toBe('Ekim 2026')
     expect(card.textContent).not.toContain('Zeytinlik')
     expect(card.textContent).not.toContain('17:00')
     expect(card.textContent).not.toContain('Cumartesi')
@@ -159,30 +160,48 @@ describe('zarf-davetiye renderer', () => {
     vi.unstubAllGlobals()
   })
 
-  it('maps ambiance and flora keys to classes, falls back to the defaults for unknown values', () => {
+  it('maps ambiance, garden and second-colour keys, falls back to the defaults for unknown values', () => {
     const base = getTemplateDemoModel('zarf-davetiye')!
-    expect(normalizeDraftContent({ ambiance: 'gece', flora: 'kiraz' })).toMatchObject({ ambiance: 'gece', flora: 'kiraz' })
-    expect(normalizeDraftContent({ ambiance: 'url(x)', flora: '<script>' })).toMatchObject({ ambiance: 'sabah', flora: 'gul' })
+    expect(normalizeDraftContent({ ambiance: 'gece', garden: 'kiraz', accentColor2: 'gumus' })).toMatchObject({ ambiance: 'gece', garden: 'kiraz', accentColor2: 'gumus' })
+    expect(normalizeDraftContent({ ambiance: 'url(x)', garden: '<script>', accentColor2: '#ff0000' })).toMatchObject({ ambiance: 'sabah', garden: 'gul', accentColor2: 'altin' })
+    // A legacy `flora` still maps onto a garden when no garden is stored.
+    expect(normalizeDraftContent({ flora: 'lavanta' }).garden).toBe('lavanta-ari')
     expect(normalizeDraftContent({}).ambiance).toBeUndefined()
-    const known = renderZarf({ ...base, ambiance: 'safak', flora: 'lale' })
-    expect(known.container.querySelector('article')?.className).toContain('zarf--amb-safak zarf--flora-lale')
+    const known = renderZarf({ ...base, ambiance: 'orman', garden: 'lale-ugurbocegi' })
+    const cls = known.container.querySelector('article')?.className ?? ''
+    expect(cls).toContain('zarf--amb-orman')
+    expect(cls).toContain('zarf--garden-lale-ugurbocegi')
     known.unmount()
-    const none = renderZarf({ ...base, ambiance: undefined, flora: undefined })
-    expect(none.container.querySelector('article')?.className).toContain('zarf--amb-sabah zarf--flora-gul')
+    const none = renderZarf({ ...base, ambiance: undefined, garden: undefined })
+    expect(none.container.querySelector('article')?.className).toContain('zarf--amb-sabah')
+    expect(none.container.querySelector('article')?.className).toContain('zarf--garden-gul')
   })
 
   it.each([
-    ['sabah', 'butterfly'], ['cayir', 'bee'], ['gunbatimi', 'dragonfly'], ['gece', 'firefly'], ['safak', 'ladybug'],
-  ] as const)('shows the %s creature (%s) only while open and leaves none behind', (ambiance, critter) => {
+    ['gul', null], ['papatya-kelebek', 'butterfly'], ['lale-ugurbocegi', 'ladybug'], ['lavanta-ari', 'bee'], ['kelebekler', 'butterfly'],
+  ] as const)('garden %s shows its creatures (%s) only while open and leaves none behind', (garden, critter) => {
     vi.stubGlobal('matchMedia', () => ({ matches: true }))
-    const { container } = renderZarf({ ...getTemplateDemoModel('zarf-davetiye')!, ambiance, flora: 'kiraz' })
+    const { container } = renderZarf({ ...getTemplateDemoModel('zarf-davetiye')!, garden })
     expect(container.querySelector('.zarf-critter')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Davetiyeyi Aç' }))
-    expect(container.querySelectorAll(`.zarf-critter--${critter}`)).toHaveLength(6)
-    expect(container.querySelectorAll('.zarf-petal')).toHaveLength(6)
+    if (critter) expect(container.querySelectorAll(`.zarf-critter--${critter}`)).toHaveLength(6)
+    else expect(container.querySelector('.zarf-critter')).toBeNull()
     expect(container.querySelector('.zarf-garden')?.getAttribute('aria-hidden')).toBe('true')
     act(() => { fireEvent.click(screen.getByRole('button', { name: 'Zarfı kapat' })) })
     expect(container.querySelector('.zarf-critter')).toBeNull()
+    expect(container.querySelector('.zarf-garden')).toBeNull()
+    vi.unstubAllGlobals()
+  })
+
+  it('cherry blossom drops petals only while open, and the seal is two halves that crack apart on opening', () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
+    const { container } = renderZarf({ ...getTemplateDemoModel('zarf-davetiye')!, garden: 'kiraz' })
+    expect(container.querySelectorAll('.zarf__seal-half')).toHaveLength(2)
+    expect(container.querySelector('.zarf-petal')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Davetiyeyi Aç' }))
+    expect(container.querySelectorAll('.zarf-petal')).toHaveLength(6)
+    expect(container.querySelector('.zarf--open .zarf__seal-half')).not.toBeNull()
+    act(() => { fireEvent.click(screen.getByRole('button', { name: 'Zarfı kapat' })) })
     expect(container.querySelector('.zarf-petal')).toBeNull()
     vi.unstubAllGlobals()
   })

@@ -26,10 +26,13 @@ public static class InvitationDraftContract
         "sabah", "cayir", "gunbatimi", "gece", "safak", "orman", "okyanus", "lila",
     };
 
-    /// <summary>Allow-listed decor keys (zarf-davetiye flowers/butterflies/bugs); null means the frontend default.</summary>
+    /// <summary>Allow-listed decor/theme keys (zarf-davetiye floral, love, celestial, ocean and music motifs); null means the frontend default.</summary>
     public static readonly IReadOnlySet<string> GardenKeys = new HashSet<string>(StringComparer.Ordinal)
     {
         "gul", "papatya-kelebek", "lale-ugurbocegi", "lavanta-ari", "kiraz", "kelebekler", "ugur-isik", "karisik",
+        "ask-mektubu", "yildizli-gece", "deniz-esintisi", "aurora-gecesi", "muzik-notalari",
+        "saray-kapisi", "japon-bahcesi", "akdeniz-avlusu", "buz-sarayi", "gul-serasi",
+        "venedik-karnavali", "yildiz-gecidi", "yok",
     };
 
     /// <summary>Legacy flora keys, still accepted for backward compatibility; superseded by <see cref="GardenKeys"/>.</summary>

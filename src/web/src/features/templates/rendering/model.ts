@@ -1,6 +1,6 @@
 import type { DraftContentInput } from '../../../api/generated/client'
-import { resolveZarfAccent, type ZarfAccentKey } from './zarfAccent'
-import { resolveZarfAmbiance, resolveZarfFlora, type ZarfAmbianceKey, type ZarfFloraKey } from './zarfTheme'
+import { resolveZarfAccent, resolveZarfAccent2, type ZarfAccent2Key, type ZarfAccentKey } from './zarfAccent'
+import { resolveZarfAmbiance, resolveZarfGarden, type ZarfAmbianceKey, type ZarfExtraFields, type ZarfGardenKey } from './zarfTheme'
 
 export interface InvitationRenderVenue {
   name: string
@@ -30,31 +30,32 @@ export interface NormalizedInvitationRenderModel {
   timeZoneId?: string
   venue?: InvitationRenderVenue
   programItems: InvitationRenderProgramItem[]
-  /** Curated palette key (zarf-davetiye). Always a known key, never raw content. */
+  /** Curated palette key for coded templates that expose a cover palette. */
   accentColor?: ZarfAccentKey
-  /** Page mood and flower type (zarf-davetiye); always known keys, never raw content. */
+  /** Second colour, page mood and decorative flower/theme keys; always known keys, never raw content. */
+  accentColor2?: ZarfAccent2Key
   ambiance?: ZarfAmbianceKey
-  flora?: ZarfFloraKey
+  garden?: ZarfGardenKey
   /** Short-lived delivery URL of the Cover photo, supplied by the public page for templates that place it inline. */
   coverImageUrl?: string
 }
 
 /** Templates whose cover must be opened before any other part of the page is shown or reachable. */
 export function templateGatesContentUntilOpened(templateKey: string): boolean {
-  return templateKey === 'zarf-davetiye'
+  return templateKey === 'zarf-davetiye' || templateKey === 'dantel-davetiye'
 }
 
 /** Templates whose public demo is a full page (like a real invitation) instead of a framed preview. */
 export function templateDemoIsFullPage(templateKey: string): boolean {
-  return templateKey === 'zarf-davetiye'
+  return templateKey === 'zarf-davetiye' || templateKey === 'dantel-davetiye'
 }
 
 /** Templates that draw the Cover photo inside the design instead of the generic cover block above it. */
 export function templateRendersCoverInline(templateKey: string): boolean {
-  return templateKey === 'zarf-davetiye'
+  return templateKey === 'zarf-davetiye' || templateKey === 'dantel-davetiye'
 }
 
-export function normalizeDraftContent(content: DraftContentInput): NormalizedInvitationRenderModel {
+export function normalizeDraftContent(content: DraftContentInput & ZarfExtraFields): NormalizedInvitationRenderModel {
   const hostNames = (content.hostNames ?? []).map(value => value.trim()).filter(Boolean)
   const venueName = content.venue?.name?.trim()
 
@@ -65,7 +66,9 @@ export function normalizeDraftContent(content: DraftContentInput): NormalizedInv
     transportStops: (content.transportStops ?? []).map(stop => ({ name: stop.name.trim(), address: stop.address?.trim() || undefined, departureTime: stop.departureTime?.trim() || undefined })).filter(stop => stop.name),
     accentColor: content.accentColor?.trim() ? resolveZarfAccent(content.accentColor) : undefined,
     ambiance: content.ambiance?.trim() ? resolveZarfAmbiance(content.ambiance) : undefined,
-    flora: content.flora?.trim() ? resolveZarfFlora(content.flora) : undefined,
+    accentColor2: content.accentColor2?.trim() ? resolveZarfAccent2(content.accentColor2) : undefined,
+    // The old `flora` field still maps onto a garden when no garden is stored.
+    garden: content.garden?.trim() || content.flora?.trim() ? resolveZarfGarden(content.garden, content.flora) : undefined,
     eventType: content.eventType?.trim() || 'genel',
     headline: content.headline?.trim() || 'Etkinlik başlığı',
     hostNames,

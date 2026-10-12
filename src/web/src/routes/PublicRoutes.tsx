@@ -9,6 +9,7 @@ import {
 import { FullPageTemplateDemo } from '../features/templates/catalog/FullPageTemplateDemo'
 import { templateDemoIsFullPage } from '../features/templates/rendering/model'
 import { TemplateCatalogPage } from '../features/templates/catalog/TemplateCatalogPage'
+import { templateKeyFromPublicSlug } from '../features/templates/catalog/templateRouting'
 import { TemplateDemoRenderer } from '../features/templates/rendering/InvitationRenderer'
 import { LandingPage } from '../features/landing/LandingPage'
 import { PublicInvitationPage } from '../features/invitations/PublicInvitationPage'
@@ -36,7 +37,10 @@ export default function PublicRoutes() {
   const pathname = window.location.pathname
   const auth = authRoute(pathname)
   const isInvitation = pathname.startsWith('/davetiye/')
-  const catalogDemoKey = /^\/sablonlar\/([^/]+)$/.exec(pathname)?.[1]
+  const catalogDemoSlug = /^\/sablonlar\/([^/]+)$/.exec(pathname)?.[1]
+  const catalogDemoKey = catalogDemoSlug
+    ? templateKeyFromPublicSlug(decodeURIComponent(catalogDemoSlug))
+    : undefined
   const visualTemplateKey = import.meta.env.DEV
     ? /^\/__visual\/templates\/([^/]+)$/.exec(pathname)?.[1]
     : undefined
@@ -61,13 +65,13 @@ export default function PublicRoutes() {
 
   if (isInvitation) return <PublicInvitationPage key={pathname} pathname={pathname} />
 
-  if (catalogDemoKey && templateDemoIsFullPage(decodeURIComponent(catalogDemoKey))) {
-    return <FullPageTemplateDemo templateKey={decodeURIComponent(catalogDemoKey)} />
+  if (catalogDemoKey && templateDemoIsFullPage(catalogDemoKey)) {
+    return <FullPageTemplateDemo key={catalogDemoKey} templateKey={catalogDemoKey} />
   }
 
   if (pathname === '/sablonlar' || catalogDemoKey) {
     return <RouteShell title={t(catalogDemoKey ? 'templateUi.demoTitle' : 'templateUi.title')} zone="public">
-      <TemplateCatalogPage demoTemplateKey={catalogDemoKey ? decodeURIComponent(catalogDemoKey) : undefined} />
+      <TemplateCatalogPage demoTemplateKey={catalogDemoKey} />
     </RouteShell>
   }
 

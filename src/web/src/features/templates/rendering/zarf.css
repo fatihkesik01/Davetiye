@@ -375,6 +375,8 @@ html:has(.zarf), html:has(.dantel) { scrollbar-gutter: stable; }
 .zarf--open .zarf__calla .zarf-art__leaf,
 .zarf--open .zarf__calla .zarf-art__stem { opacity: 1; }
 .zarf-art__leaf { fill: var(--z-leaf); }
+.zarf__calla .zarf-art__leaf,
+.zarf__roses .zarf-art__leaf { stroke: color-mix(in srgb, var(--z-leaf) 76%, #172c20); stroke-width: 0.55; }
 .zarf-art__stem { stroke: var(--z-stem); stroke-width: 2.2; }
 .zarf-art__petal { fill: var(--z-petal); stroke: var(--z-petal-edge); stroke-width: 0.7; }
 .zarf-art__petal-shade { fill: color-mix(in srgb, var(--z-base) 22%, #fff); }
@@ -393,7 +395,12 @@ html:has(.zarf), html:has(.dantel) { scrollbar-gutter: stable; }
 /* Roses: layered petals tinted by the palette's rose colour. */
 .zarf-art__rose-1, .zarf-art__fl-1 { fill: var(--z-fl1); }
 .zarf-art__rose-2, .zarf-art__fl-2 { fill: var(--z-fl2); }
+.zarf-art__rose-1, .zarf-art__rose-2, .zarf-art__fl-1, .zarf-art__fl-2 { stroke: color-mix(in srgb, var(--z-fl2) 55%, #fff); stroke-width: 0.42; }
+.zarf-art__rose-center, .zarf-art__fl-center { fill: var(--z-fl3); stroke: color-mix(in srgb, var(--z-fl3) 60%, #745a35); stroke-width: 0.55; }
+.zarf-art__rose-glint, .zarf-art__fl-center-glint { fill: #fff8d9; opacity: 0.8; }
 .zarf-art__fl-3 { fill: var(--z-fl3); }
+.zarf-art__fl-sepal { fill: color-mix(in srgb, var(--z-leaf) 78%, #f8f4db); stroke: color-mix(in srgb, var(--z-leaf) 65%, #1e3f30); stroke-width: 0.7; }
+.zarf-art__fl-highlight { fill: none; stroke: color-mix(in srgb, var(--z-fl1) 50%, #fff); stroke-width: 1; stroke-linecap: round; opacity: 0.78; }
 .zarf-art__fl-line { stroke: var(--z-fl2); stroke-width: 1.6; }
 .zarf-art__rose-swirl { stroke: var(--z-fl3); stroke-width: 1; }
 .zarf__roses {
@@ -609,7 +616,7 @@ html:has(.zarf), html:has(.dantel) { scrollbar-gutter: stable; }
 .zarf-chip-garden__motif { width: 88%; height: 88%; }
 
 /* The final three themes have their own visual language instead of inheriting garden foliage. */
-.zarf-garden__theme-art { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; animation: zarf-pop 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.zarf-garden__theme-art { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0.5rem 0.45rem rgb(23 39 49 / 0.15)); animation: zarf-pop 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 .zarf-theme-art__line, .zarf-theme-art__ring, .zarf-theme-art__wave, .zarf-theme-art__shell, .zarf-theme-art__staff, .zarf-theme-art__note { stroke: color-mix(in srgb, var(--z-seal) 72%, var(--z-leaf)); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .zarf-theme-art__line { stroke-width: 3; }
 .zarf-theme-art__heart, .zarf-theme-art__planet { fill: color-mix(in srgb, var(--z-rose) 58%, #fff); stroke: var(--z-seal); stroke-width: 1.8; }
@@ -634,19 +641,19 @@ html:has(.zarf), html:has(.dantel) { scrollbar-gutter: stable; }
 .zarf-scene__vine, .zarf-scene__letter-fold { fill: none; stroke: #a76b72; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .zarf-scene__leaf { fill: #688c73; stroke: #547762; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .zarf-scene__letter { fill: #fff8ec; stroke: #bb8e67; stroke-width: 2; }
-.zarf-scene__heart { fill: #d87882; stroke: #a64d62; stroke-width: 2; }
+.zarf-scene__heart { fill: #d87882; stroke: #a64d62; stroke-width: 2; filter: drop-shadow(1px 2px 1px rgb(77 36 42 / 0.26)); }
 .zarf-scene__spark { fill: #e4b75c; stroke: #b18b45; stroke-width: 1.5; }
-.zarf-scene__moon, .zarf-scene__sun { fill: #f6d58b; }
+.zarf-scene__moon, .zarf-scene__sun { fill: #f6d58b; filter: drop-shadow(0 0 7px rgb(255 235 170 / 0.72)); }
 .zarf-scene__moon-cut { fill: #101b3e; }
 .zarf-scene__orbit { fill: none; stroke: #8279c6; stroke-width: 2; stroke-dasharray: 4 5; }
-.zarf-scene__rocket { fill: #f4f0e8; stroke: #d97878; stroke-width: 3; stroke-linejoin: round; }
+.zarf-scene__rocket { fill: #f4f0e8; stroke: #d97878; stroke-width: 3; stroke-linejoin: round; filter: drop-shadow(2px 4px 2px rgb(25 37 63 / 0.3)); }
 .zarf-scene__rocket-fin { fill: #db7476; stroke: #a74d60; stroke-width: 2; stroke-linejoin: round; }
 .zarf-scene__window { fill: #83d4e6; stroke: #eaf5f6; stroke-width: 3; }
 .zarf-scene__flame { fill: #f5a14f; stroke: #f7d275; stroke-width: 2; stroke-linejoin: round; }
 .zarf-scene__star { fill: #fff0a5; }
-.zarf-scene__sea { fill: #4b9fb0; }
+.zarf-scene__sea { fill: #4b9fb0; stroke: #27798c; stroke-width: 1; }
 .zarf-scene__horizon { fill: none; stroke: #f7d394; stroke-width: 2; }
-.zarf-scene__wave { fill: none; stroke: #c4edf0; stroke-width: 3; stroke-linecap: round; opacity: .9; }
+.zarf-scene__wave { fill: none; stroke: #c4edf0; stroke-width: 3; stroke-linecap: round; opacity: .9; filter: drop-shadow(0 1px 1px rgb(15 69 84 / 0.5)); }
 .zarf-scene__island { fill: #477b68; }
 .zarf-scene__boat { fill: #f7efe0; stroke: #9b6856; stroke-width: 2; stroke-linejoin: round; }
 .zarf-scene__mast { fill: none; stroke: #6a5547; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
@@ -664,8 +671,8 @@ html:has(.zarf), html:has(.dantel) { scrollbar-gutter: stable; }
 .zarf-scene__stars { fill: #fff0a5; }
 .zarf-scene__window { fill: #ffd884; }
 .zarf-scene__stage { fill: #e9d7bf; }
-.zarf-scene__record { fill: #453450; stroke: #272137; stroke-width: 3; }
-.zarf-scene__record-groove { fill: none; stroke: #a78bb7; stroke-width: 1.5; opacity: .75; }
+.zarf-scene__record { fill: #302a3c; stroke: #171722; stroke-width: 3; filter: drop-shadow(3px 5px 3px rgb(20 20 30 / 0.38)); }
+.zarf-scene__record-groove { fill: none; stroke: #b4a1bd; stroke-width: 1; opacity: .68; }
 .zarf-scene__record-label { fill: #d18b7b; stroke: #f1d1a2; stroke-width: 2; }
 .zarf-scene__record-hole { fill: #30293b; }
 .zarf-scene__tonearm, .zarf-scene__tonearm-joint { fill: none; stroke: #e9cf9d; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
@@ -695,8 +702,16 @@ html:has(.zarf), html:has(.dantel) { scrollbar-gutter: stable; }
 .zarf-scene__guitar-neck { fill: #815a4e; stroke: #d6ad79; stroke-width: 3; stroke-linejoin: round; }
 .zarf-scene__guitar-hole { fill: #513a42; stroke: #edce91; stroke-width: 2; }
 .zarf-scene__string { fill: none; stroke: #f4e4c2; stroke-width: 1.5; }
+.zarf-scene__island, .zarf-scene__cliff, .zarf-scene__mountains-back, .zarf-scene__mountains-front { stroke: color-mix(in srgb, currentColor 40%, #162a35); stroke-width: 1; }
+.zarf-scene__lighthouse, .zarf-scene__boat, .zarf-scene__guitar, .zarf-scene__cabin { filter: drop-shadow(2px 3px 2px rgb(28 39 43 / 0.28)); }
+.zarf-scene__constellation { filter: drop-shadow(0 0 3px rgb(255 238 166 / 0.85)); }
+.zarf-scene__aurora-band { filter: drop-shadow(0 0 5px currentColor); }
 .zarf--nofl .zarf__card-shape .zarf-art__fl-1,
 .zarf--nofl .zarf__card-shape .zarf-art__fl-2,
-.zarf--nofl .zarf__card-shape .zarf-art__fl-3 { display: none; }
+.zarf--nofl .zarf__card-shape .zarf-art__fl-3,
+.zarf--nofl .zarf__card-shape .zarf-art__fl-center,
+.zarf--nofl .zarf__card-shape .zarf-art__fl-center-glint,
+.zarf--nofl .zarf__card-shape .zarf-art__fl-sepal,
+.zarf--nofl .zarf__card-shape .zarf-art__fl-highlight { display: none; }
 .template-fullpage-demo__panel .zarf-accent-picker__swatches { gap: 0.3rem; }
 .template-fullpage-demo__panel .zarf-accent-picker__dot { width: 2.1rem; height: 2.1rem; border-width: 2px; }

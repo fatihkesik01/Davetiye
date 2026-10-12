@@ -6,6 +6,7 @@ import type {
   InvitationFaqInput,
   InvitationTransportStopInput,
 } from '../../api/generated/client'
+import { resolveZarfGarden, type ZarfDraftContent } from '../templates/rendering/zarfTheme'
 
 export const eventTypes = [
   { value: 'dugun', label: 'Düğün' },
@@ -74,8 +75,9 @@ export interface EditableDraftContent {
   /** zarf-davetiye palette key; empty means the template default. */
   accentColor: string
   /** zarf-davetiye page mood and flower type; empty means the template defaults. */
+  accentColor2: string
   ambiance: string
-  flora: string
+  garden: string
 }
 
 export const emptyEditableDraft: EditableDraftContent = {
@@ -91,8 +93,9 @@ export const emptyEditableDraft: EditableDraftContent = {
   mapUrl: '',
   programItems: [],
   accentColor: '',
+  accentColor2: '',
   ambiance: '',
-  flora: '',
+  garden: '',
 }
 
 export function toEditableDraft(content: DraftContentInput): EditableDraftContent {
@@ -116,12 +119,14 @@ export function toEditableDraft(content: DraftContentInput): EditableDraftConten
       startsAtLocal: toLocalDateTime(item.startsAt),
     })),
     accentColor: content.accentColor ?? '',
+    accentColor2: (content as ZarfDraftContent).accentColor2 ?? '',
     ambiance: content.ambiance ?? '',
-    flora: content.flora ?? '',
+    // An old draft that only has `flora` opens on the matching garden; saving writes `garden` only.
+    garden: (content as ZarfDraftContent).garden ?? (content.flora ? resolveZarfGarden(null, content.flora) : ''),
   }
 }
 
-export function toDraftContent(content: EditableDraftContent): DraftContentInput {
+export function toDraftContent(content: EditableDraftContent): ZarfDraftContent {
   const hasVenue = Boolean(content.venueName.trim() || content.venueAddress.trim() || content.mapUrl.trim())
 
   // The editor does not yet ask the Creator to choose an IANA time zone. The
@@ -133,8 +138,9 @@ export function toDraftContent(content: EditableDraftContent): DraftContentInput
     ...(content.faqs.length ? { faqs: content.faqs } : {}),
     ...(content.transportStops.length ? { transportStops: content.transportStops } : {}),
     ...(content.accentColor ? { accentColor: content.accentColor } : {}),
+    ...(content.accentColor2 ? { accentColor2: content.accentColor2 } : {}),
     ...(content.ambiance ? { ambiance: content.ambiance } : {}),
-    ...(content.flora ? { flora: content.flora } : {}),
+    ...(content.garden ? { garden: content.garden } : {}),
     eventType: nullIfBlank(content.eventType),
     headline: nullIfBlank(content.headline),
     hostNames: content.hostNamesText

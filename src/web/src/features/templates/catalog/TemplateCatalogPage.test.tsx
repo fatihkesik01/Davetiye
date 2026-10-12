@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TemplateCatalogItem } from '../../../api/generated/client'
 import { TemplateCatalogPage } from './TemplateCatalogPage'
@@ -18,7 +18,9 @@ const premiumTemplate: TemplateCatalogItem = {
 }
 
 describe('TemplateCatalogPage', () => {
-  afterEach(() => vi.unstubAllGlobals())
+  // The in-progress local gate card is only injected in development; tests exercise the production catalog.
+  beforeEach(() => vi.stubEnv('DEV', false))
+  afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs() })
 
   it('announces its loading state', () => {
     vi.stubGlobal('fetch', vi.fn(() => new Promise(() => undefined)))
@@ -69,3 +71,15 @@ function jsonResponse(value: unknown): Response {
     headers: { 'Content-Type': 'application/json' },
   })
 }
+
+describe('TemplateCatalogPage in development', () => {
+  afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs() })
+
+  it('keeps the in-progress gate template visible after zarf-davetiye and links to its readable slug', async () => {
+    vi.stubEnv('DEV', true)
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([{ ...premiumTemplate, key: 'zarf-davetiye', name: 'Zarf Davetiye' }, premiumTemplate])))
+    render(<TemplateCatalogPage />)
+    const links = await screen.findAllByRole('link', { name: 'Demoyu incele' })
+    expect(links.map(link => link.getAttribute('href'))).toEqual(['/sablonlar/zarf-davetiye', '/sablonlar/kapi-davetiye', '/sablonlar/zamansiz-dugun'])
+  })
+})
