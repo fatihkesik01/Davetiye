@@ -47,7 +47,8 @@ test('public catalog and demo are responsive, keyboard reachable and accessible'
 
   await expect(page.getByRole('heading', { name: 'Etkinliğinize yakışan görünümü seçin' })).toBeVisible()
   await expect(page.getByText('Premium', { exact: true })).toBeVisible()
-  const demoLink = page.getByRole('link', { name: 'Demoyu incele' })
+  // The dev server also lists the local 'Kapı' card, so target the stubbed template's own card.
+  const demoLink = page.getByRole('article').filter({ hasText: 'Zamansız Düğün' }).getByRole('link', { name: 'Demoyu incele' })
   await demoLink.focus()
   await page.keyboard.press('Enter')
   await expect(page).toHaveURL(/\/sablonlar\/zamansiz-dugun$/)
