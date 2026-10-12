@@ -1,20 +1,27 @@
-import { memo, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import './dantel.css'
 import './zarf.css'
 import { InvitationOptionalSections } from './InvitationOptionalSections'
 import { DateVenue, Program, type TemplateRendererProps } from './renderers'
-import { RoyalGateScene, RoyalLeaf } from './DantelRoyalGate'
+import { RoyalGateScene, RoyalGateSteps, RoyalLeaf } from './DantelRoyalGate'
 import { FloraHead } from './ZarfFlowers'
 import { defaultZarfAccent2, resolveZarfAccent, resolveZarfAccent2, zarfPalettes, zarfPalettes2 } from './zarfAccent'
 import { primaryFlora, resolveZarfAmbiance, resolveZarfGarden, zarfGardenSpecs, type ZarfAmbianceKey } from './zarfTheme'
 
-/** Content is mounted just after the doors begin to open; the page layout grows to it once they are open. */
-const revealMs = 120
-const expandMs = 640
-/** On closing the content fades out this fast, then unmounts, while the doors keep closing. */
-const leaveMs = 140
+/**
+ * One state, three phases: the whole opening is a class flip (`dantel--open`) driven by CSS: the camera
+ * push-in on the gate layers, the leaves swinging and the paper unrolling out of the doorway. The paper
+ * stays laid out while it rolls back up (`closing`) and is only removed from layout afterwards.
+ */
+type Phase = 'closed' | 'open' | 'closing'
+const closeMs = 900
+const animatingMs = 1300
+
+/** Doorway width as a fraction of the scene width, per theme (the camera zoom makes it as wide as the paper). */
+const doorwayRatio = (royal: boolean) => (royal ? 0.525 : 1)
+const maxPaperRem = 44
 
 const dantelAmbiance: Record<ZarfAmbianceKey, { tint: string; background: string }> = {
   sabah: { tint: '#f3df9a', background: 'radial-gradient(ellipse at 50% 8%, #fff7d7 0, transparent 36%), linear-gradient(145deg, #e7f0df, #f7f0df 58%, #dcebe3)' },
@@ -59,23 +66,48 @@ function prefersReducedMotion() {
   return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-/** A separate, code-owned renderer for the tall lace-and-pearl folding invitation. */
+/** The part of the gate that stays behind the paper: steps and the soft ground shadow. */
+const BackScene = memo(function BackScene({ royal }: { royal: boolean }) {
+  return royal ? <RoyalGateSteps /> : <div className="dantel__ground" aria-hidden="true" />
+})
+
+interface FrontSceneProps { royal: boolean; flower: 'gul' | 'papatya' | 'lale' | 'lavanta' | 'kiraz'; hideFiligree: boolean; monogram: string; onMedallion: () => void }
+
+/** The stone portal (royal) or valance (lace), the two leaves and the monogram plaque. Static: memoised. */
+const FrontScene = memo(function FrontScene({ royal, flower, hideFiligree, monogram, onMedallion }: FrontSceneProps) {
+  return <>
+    {royal ? <RoyalGateScene /> : <div className="dantel__valance" aria-hidden="true" />}
+    <div className="dantel__doors" aria-hidden="true">
+      {(['left', 'right'] as const).map(side => <div key={side} className={`dantel__door dantel__door--${side}`}>
+        <div className="dantel__door-wash" />
+        {royal ? <RoyalLeaf side={side} /> : hideFiligree ? null : <LaceFiligree side={side} flower={flower} />}
+        <span className="dantel__panel-edge" />
+      </div>)}
+      <span className="dantel__center-seam" />
+    </div>
+    <button type="button" className="dantel__medallion" aria-label="Davetiye mührünü aç" onClick={onMedallion}>
+      <span className="dantel__medallion-inner"><span>{monogram}</span><i aria-hidden="true">✦</i></span>
+    </button>
+  </>
+})
+
+/** A separate, code-owned renderer for the folding gate invitation (palace gate and lace themes). */
 export function DantelInvitationRenderer({ model, onOpenChange, initialOpen = false, open: controlledOpen, hideInlineControls = false }: TemplateRendererProps) {
   const { t } = useTranslation()
-  const [open, setOpen] = useState(initialOpen)
-  const [revealed, setRevealed] = useState(initialOpen)
-  const [expanded, setExpanded] = useState(initialOpen)
-  const [leaving, setLeaving] = useState(false)
-  const revealTimer = useRef<number | undefined>(undefined)
-  const expandTimer = useRef<number | undefined>(undefined)
-  const closeTimer = useRef<number | undefined>(undefined)
+  const [phase, setPhase] = useState<Phase>(initialOpen ? 'open' : 'closed')
+  const open = phase === 'open'
+  const rootRef = useRef<HTMLElement>(null)
   const stageRef = useRef<HTMLElement>(null)
+  const bookRef = useRef<HTMLDivElement>(null)
   const insideRef = useRef<HTMLDivElement>(null)
   const openActionRef = useRef<HTMLButtonElement>(null)
+  const closeTimer = useRef<number | undefined>(undefined)
+  const animTimer = useRef<number | undefined>(undefined)
   const palette = zarfPalettes[resolveZarfAccent(model.accentColor ?? 'pudra-pembe')]
   const palette2 = zarfPalettes2[resolveZarfAccent2(model.accentColor2 ?? defaultZarfAccent2)]
   const ambiance = resolveZarfAmbiance(model.ambiance)
   const gardenKey = model.garden ? resolveZarfGarden(model.garden) : 'yok'
+  const royal = gardenKey === 'saray-kapisi'
   const spec = zarfGardenSpecs[gardenKey]
   const flower = primaryFlora(spec)
   const selectedFlower = flower === 'none' ? 'gul' : flower
@@ -94,106 +126,112 @@ export function DantelInvitationRenderer({ model, onOpenChange, initialOpen = fa
     '--dantel-atmosphere-bg': dantelAmbiance[ambiance].background,
   } as CSSProperties
 
+  // The camera zoom makes the doorway as wide as the paper: measured once per size change, never per frame.
+  useLayoutEffect(() => {
+    const root = rootRef.current
+    const stage = stageRef.current
+    const book = bookRef.current
+    if (!root || !stage || !book) return
+    const measure = () => {
+      const paperWidth = Math.min(stage.clientWidth - 24, maxPaperRem * 16)
+      const doorway = book.offsetWidth * doorwayRatio(royal)
+      if (doorway > 0) root.style.setProperty('--dantel-zoom', Math.min(3.4, Math.max(1.12, paperWidth / doorway)).toFixed(3))
+    }
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    observer.observe(stage)
+    observer.observe(book)
+    return () => observer.disconnect()
+  }, [royal])
+
   useEffect(() => () => {
-    window.clearTimeout(revealTimer.current)
-    window.clearTimeout(expandTimer.current)
     window.clearTimeout(closeTimer.current)
+    window.clearTimeout(animTimer.current)
   }, [])
 
+  // will-change is only present while the animation runs (a data attribute survives React re-renders).
+  const markAnimating = () => {
+    const root = rootRef.current
+    if (!root) return
+    root.dataset.animating = '1'
+    window.clearTimeout(animTimer.current)
+    animTimer.current = window.setTimeout(() => { delete root.dataset.animating }, animatingMs)
+  }
+
   const openInvitation = (fromCover = false) => {
-    window.clearTimeout(revealTimer.current)
-    window.clearTimeout(expandTimer.current)
     window.clearTimeout(closeTimer.current)
-    setLeaving(false)
-    setOpen(true)
-    const reveal = () => {
-      setRevealed(true)
-      onOpenChange?.(true)
-    }
-    const expand = () => setExpanded(true)
-    // Opened from the cover itself: hand keyboard focus to the invitation (the medallion has just gone).
+    markAnimating()
+    setPhase('open')
+    onOpenChange?.(true)
+    // Opened from the cover itself: hand keyboard focus to the invitation (the plaque has just gone).
     if (fromCover) window.requestAnimationFrame(() => insideRef.current?.focus({ preventScroll: true }))
-    if (prefersReducedMotion()) {
-      reveal()
-      expand()
-    } else {
-      revealTimer.current = window.setTimeout(reveal, revealMs)
-      expandTimer.current = window.setTimeout(expand, expandMs)
-    }
   }
 
   const closeInvitation = () => {
-    window.clearTimeout(revealTimer.current)
-    window.clearTimeout(expandTimer.current)
     window.clearTimeout(closeTimer.current)
-    setOpen(false)
+    onOpenChange?.(false)
+    const stage = stageRef.current
+    const reduced = prefersReducedMotion()
+    // The paper rolls back up into the doorway; bring the cover into view while it does.
+    if (stage && stage.getBoundingClientRect().top < 0) stage.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' })
     const finish = () => {
-      // Bring the cover back into view in the same frame the content is removed (no jump away from it).
-      const stage = stageRef.current
-      if (stage && stage.getBoundingClientRect().top < 0) stage.scrollIntoView({ behavior: 'auto', block: 'start' })
-      setRevealed(false)
-      setExpanded(false)
-      setLeaving(false)
-      onOpenChange?.(false)
+      setPhase('closed')
       window.requestAnimationFrame(() => openActionRef.current?.focus({ preventScroll: true }))
     }
-    // Fast text exit while the doors close; nothing is removed before the fade has played.
-    if (prefersReducedMotion() || !revealed) finish()
+    if (reduced) finish()
     else {
-      setLeaving(true)
-      closeTimer.current = window.setTimeout(finish, leaveMs)
+      markAnimating()
+      setPhase('closing')
+      closeTimer.current = window.setTimeout(finish, closeMs)
     }
   }
+
+  // Stable handler so the memoised gate scene is not re-rendered by state changes.
+  const openRef = useRef(openInvitation)
+  useEffect(() => { openRef.current = openInvitation })
+  const onMedallion = useCallback(() => openRef.current(true), [])
 
   useEffect(() => {
     if (controlledOpen === undefined) return
     /* eslint-disable react-hooks/set-state-in-effect */
-    if (controlledOpen && !open) openInvitation()
-    else if (!controlledOpen && open) closeInvitation()
+    if (controlledOpen && phase !== 'open') openInvitation()
+    else if (!controlledOpen && phase === 'open') closeInvitation()
     /* eslint-enable react-hooks/set-state-in-effect */
     // eslint-disable-next-line react-hooks/exhaustive-deps -- controlled state is the host's request.
   }, [controlledOpen])
 
-  return <article className={`invitation-template dantel zarf--amb-${ambiance} zarf--flora-${selectedFlower} dantel--theme-${gardenKey}${open ? ' dantel--open' : ''}${revealed ? ' dantel--revealed' : ''}${expanded ? ' dantel--expanded' : ''}`} aria-label={model.headline} style={style}>
+  return <article ref={rootRef} className={`invitation-template dantel zarf--amb-${ambiance} zarf--flora-${selectedFlower} dantel--theme-${gardenKey}${phase !== 'closed' ? ' dantel--shown' : ''}${open ? ' dantel--open' : ''}${phase === 'closing' ? ' dantel--closing' : ''}`} aria-label={model.headline} style={style}>
     <section className="dantel__stage" ref={stageRef}>
       <h1 className="visually-hidden">{model.headline}</h1>
-      <div className="dantel__book" aria-label={t(open ? 'templateUi.gate.openInvitation' : 'templateUi.gate.closedInvitation')}>
-        {gardenKey === 'saray-kapisi' ? <RoyalGateScene /> : null}
-        <div className="dantel__inside" ref={insideRef} tabIndex={-1} aria-hidden={!revealed}>
-          {gardenKey === 'saray-kapisi' ? <RoyalInteriorArtwork /> : null}
-          <div className="dantel__inside-rule" aria-hidden="true" />
-          {revealed ? <div className={`dantel__content${leaving ? ' dantel__content--leaving' : ''}`}>
-            <header className="dantel__inside-heading">
-              <p className="dantel__eyebrow">Birlikte kutlamaya davetlisiniz</p>
-              <h2>{names}</h2>
-              <span className="dantel__inside-flourish" aria-hidden="true">✦</span>
-            </header>
-            {model.coverImageUrl ? <figure className="dantel__photo"><img src={model.coverImageUrl} alt="Davetiye fotoğrafı" width="300" height="400" /></figure> : null}
-            {model.message ? <p className="dantel__message">{model.message}</p> : null}
-            <DateVenue model={model} />
-            <Program model={model} title="Günün akışı" />
-            <InvitationOptionalSections model={model} />
-            <footer className="dantel__inside-footer">Sevgiyle bekliyoruz</footer>
-          </div> : null}
-        </div>
-
-        <div className={`dantel__doors${open ? ' dantel__doors--open' : ''}`} aria-hidden={open}>
-          <div className="dantel__door dantel__door--left">
-            <div className="dantel__door-wash" />
-            {gardenKey === 'saray-kapisi' ? <RoyalLeaf side="left" /> : gardenKey !== 'yok' ? <LaceFiligree side="left" flower={selectedFlower} /> : null}
-            <span className="dantel__panel-edge" />
-          </div>
-          <div className="dantel__door dantel__door--right">
-            <div className="dantel__door-wash" />
-            {gardenKey === 'saray-kapisi' ? <RoyalLeaf side="right" /> : gardenKey !== 'yok' ? <LaceFiligree side="right" flower={selectedFlower} /> : null}
-            <span className="dantel__panel-edge" />
-          </div>
-          <span className="dantel__center-seam" />
-          <button type="button" className="dantel__medallion" aria-label="Davetiye mührünü aç" disabled={open} tabIndex={open ? -1 : 0} onClick={() => openInvitation(true)}>
-            <span className="dantel__medallion-inner"><span>{monogram}</span><i aria-hidden="true">✦</i></span>
-          </button>
+      <div className="dantel__book" ref={bookRef} role="group" aria-label={t(open ? 'templateUi.gate.openInvitation' : 'templateUi.gate.closedInvitation')}>
+        <div className="dantel__layer dantel__layer--back"><BackScene royal={royal} /></div>
+        <div className="dantel__layer dantel__layer--front">
+          <FrontScene royal={royal} flower={selectedFlower} hideFiligree={gardenKey === 'yok'} monogram={monogram} onMedallion={onMedallion} />
         </div>
       </div>
+
+      {/* The invitation: hidden while closed, it unrolls downward out of the doorway and continues as the page. */}
+      <div className="dantel__paper">
+      <div className="dantel__inside" ref={insideRef} tabIndex={-1} aria-hidden={!open}>
+        {royal ? <RoyalInteriorArtwork /> : null}
+        <div className="dantel__inside-rule" aria-hidden="true" />
+        <div className="dantel__content">
+          <header className="dantel__inside-heading">
+            <p className="dantel__eyebrow">Birlikte kutlamaya davetlisiniz</p>
+            <h2>{names}</h2>
+            <span className="dantel__inside-flourish" aria-hidden="true">✦</span>
+          </header>
+          {model.coverImageUrl ? <figure className="dantel__photo"><img src={model.coverImageUrl} alt="Davetiye fotoğrafı" width="300" height="400" /></figure> : null}
+          {model.message ? <p className="dantel__message">{model.message}</p> : null}
+          <DateVenue model={model} />
+          <Program model={model} title="Günün akışı" />
+          <InvitationOptionalSections model={model} />
+          <footer className="dantel__inside-footer">Sevgiyle bekliyoruz</footer>
+        </div>
+      </div>
+      </div>
+
       {!hideInlineControls ? <div className="dantel__controls">
         {!open ? <button type="button" ref={openActionRef} className="dantel__action" onClick={() => openInvitation(true)}>{t('templateUi.dantel.openControl')}</button>
           : <button type="button" ref={openActionRef} className="dantel__action dantel__action--secondary" onClick={closeInvitation}>{t('templateUi.dantel.close')}</button>}

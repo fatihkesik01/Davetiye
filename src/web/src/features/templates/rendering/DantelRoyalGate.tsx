@@ -58,8 +58,6 @@ export const RoyalGateScene = memo(function RoyalGateScene() {
       <linearGradient id={wall} x1="0" y1="0" x2="1" y2="0">{stop(0, 'var(--gate-stone-light)')}{stop(0.45, 'var(--gate-stone)')}{stop(1, 'var(--gate-stone-mid)')}</linearGradient>
       <linearGradient id={shaft} x1="0" y1="0" x2="1" y2="0">{stop(0, 'var(--gate-stone-light)')}{stop(0.55, 'var(--gate-stone-light)')}{stop(1, 'var(--gate-stone)')}</linearGradient>
     </defs>
-    {/* soft contact shadow under the gate */}
-    <ellipse className="dantel-gate__contact" cx="200" cy="499" rx="188" ry="6" />
     {/* wall with the arched opening cut out */}
     <path fillRule="evenodd" style={{ fill: `url(#${wall})` }} d={`M8 46H392V${BOTTOM}H8ZM${OPEN_LEFT} ${BOTTOM}V${SPRING}A105 105 0 0 1 ${OPEN_RIGHT} ${SPRING}V${BOTTOM}Z`} />
     {/* cornice with dentils */}
@@ -90,6 +88,15 @@ export const RoyalGateScene = memo(function RoyalGateScene() {
     <Pilaster x={330} side="right" shaft={shaft} />
     <Lantern x={66} />
     <Lantern x={346} />
+    {/* masonry joints */}
+    <path className="dantel-gate__joint" d="M8 96H88M8 142H18M312 96H392M382 142H392M8 330H18M382 330H392M8 400H18M382 400H392" />
+  </svg>
+})
+
+/** Steps and the soft ground shadow: a separate layer behind the paper, so the invitation rolls out over them. */
+export const RoyalGateSteps = memo(function RoyalGateSteps() {
+  return <svg className="dantel-gate__scene" viewBox="0 0 400 500" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false">
+    <ellipse className="dantel-gate__contact" cx="200" cy="499" rx="188" ry="6" />
     {/* stone steps with lit treads */}
     <rect className="dantel-gate__stone-mid" x="70" y="470" width="260" height="10" />
     <rect className="dantel-gate__lit" x="70" y="470" width="260" height="2" />
@@ -97,8 +104,6 @@ export const RoyalGateScene = memo(function RoyalGateScene() {
     <rect className="dantel-gate__lit" x="48" y="480" width="304" height="2" />
     <rect className="dantel-gate__stone-mid" x="26" y="490" width="348" height="10" />
     <path className="dantel-gate__edge" d="M70 480H330M48 490H352" />
-    {/* masonry joints */}
-    <path className="dantel-gate__joint" d="M8 96H88M8 142H18M312 96H392M382 142H392M8 330H18M382 330H392M8 400H18M382 400H392" />
   </svg>
 })
 
