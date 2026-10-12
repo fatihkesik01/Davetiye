@@ -58,19 +58,18 @@
    downward out of the doorway (a paint-only clip) and carries on as the page. */
 .dantel__paper {
   position: relative;
-  z-index: 1;
+  z-index: 3;
   display: none;
   width: var(--dantel-paper-w);
   margin: calc(var(--dantel-h) * -0.83) auto 0;
-  /* While the camera pushes in, only the doorway-wide middle of the paper is visible; it widens with the zoom. */
-  --dantel-clip-x: calc(50% - 50% / var(--dantel-zoom));
-  clip-path: inset(0 var(--dantel-clip-x) 0 var(--dantel-clip-x));
 }
 .dantel--shown .dantel__paper { display: block; }
-/* An animation (not a transition) because the paper goes from display:none to laid out in the same flip. */
-.dantel--open .dantel__paper { clip-path: inset(-1rem -2rem -4rem -2rem); animation: dantel-widen 1000ms cubic-bezier(0.55, 0, 0.2, 1) backwards; }
-.dantel--closing .dantel__paper { clip-path: inset(0 var(--dantel-clip-x) 0 var(--dantel-clip-x)); animation: dantel-widen 1000ms cubic-bezier(0.55, 0, 0.2, 1) reverse backwards; }
-@keyframes dantel-widen { from { clip-path: inset(0 var(--dantel-clip-x) 0 var(--dantel-clip-x)); } to { clip-path: inset(-1rem -2rem -4rem -2rem); } }
+/* The sheet hangs in front of the gate from the doorway: it unrolls downward (clip-path only) and is never
+   clipped afterwards (the animation does not fill forwards). */
+.dantel--open .dantel__paper { animation: dantel-unroll 1250ms cubic-bezier(0.45, 0, 0.2, 1) backwards; }
+.dantel--closing .dantel__paper { animation: dantel-unroll 950ms cubic-bezier(0.45, 0, 0.2, 1) reverse both; }
+@keyframes dantel-unroll { from { clip-path: inset(0 -2rem 100% -2rem); } to { clip-path: inset(-1rem -2rem -4rem -2rem); } }
+.dantel__paper::before { position: absolute; z-index: 1; inset: -0.9rem 0 auto; height: 1.2rem; background: radial-gradient(ellipse at 50% 100%, rgb(40 28 18 / 0.28), transparent 70%); content: ""; pointer-events: none; }
 .dantel__inside {
   position: relative;
   display: flex;
@@ -91,9 +90,6 @@
     var(--dantel-paper);
   box-shadow: 0 0.75rem 2rem rgb(53 39 34 / 0.16);
 }
-.dantel--open .dantel__inside { animation: dantel-unroll 1050ms cubic-bezier(0.4, 0, 0.2, 1) both; }
-.dantel--closing .dantel__inside { animation: dantel-unroll 850ms cubic-bezier(0.4, 0, 0.2, 1) reverse both; }
-@keyframes dantel-unroll { from { clip-path: inset(0 0 100% 0); opacity: 0; } 2% { opacity: 1; } to { clip-path: inset(0 0 -2rem 0); opacity: 1; } }
 .dantel__content { display: flex; flex-direction: column; align-items: center; gap: inherit; width: 100%; flex: 1 1 auto; }
 /* Content fades in progressively as the paper passes, with a short stagger. */
 .dantel--open .dantel__content > * { animation: dantel-reveal 520ms ease backwards; animation-delay: 380ms; }
